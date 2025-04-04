@@ -1,0 +1,5 @@
+k8s:
+  in_cluster: false
+
+prometheus:
+  endpoint_port: 8080

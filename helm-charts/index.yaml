@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  placement-controller:
+  - apiVersion: v2
+    appVersion: 0.1.0-dev.0.build-fix.7bacc2ea
+    created: "2025-04-07T12:53:07.257465154Z"
+    description: Placement controller for decentralized control plane.
+    digest: 932bc7a717aff10738c1efe3f681d84603bc2747daea46a0e7eaa5daa9075548
+    name: placement-controller
+    type: application
+    urls:
+    - https://HIRO-MicroDataCenters-BV.github.io/placement-controller/helm-charts/placement-controller-0.1.0-dev.0.build-fix.7bacc2ea.tgz
+    version: 0.1.0-dev.0.build-fix.7bacc2ea
+generated: "2025-04-07T12:53:07.256411363Z"

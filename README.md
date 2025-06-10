@@ -1,6 +1,6 @@
 # Placement Controller
 
-Rudmintary Placement Service for Decentralized Control Plane
+Rudimentary Placement Controller for Decentralized Control Plane
 
   * [Installation](#installation)
   * [Package](#package)
@@ -89,7 +89,7 @@ pyenv install 3.12
 ### Step 4: Connect Poetry to it
 Do this in the template dir. Pycharm will automatically connect to it later
 ```bash
-poetry env use ~/.pyenv/versions/3.12.1/bin/python
+poetry env use ~/.pyenv/versions/3.12.9/bin/python
 ```
 (change the version number accordingly to what is installed)
 

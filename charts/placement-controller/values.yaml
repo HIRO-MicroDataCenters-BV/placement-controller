@@ -46,16 +46,34 @@ readinessProbe:
   initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 5
+
 # Placement Controller for Decentralized Control Plane
 settings:
   # Kubernetes configuration
   k8s:
 
     # -- in cluster or out service cluster execution
-    in_cluster: true
+    incluster: true
 
   # Prometheus metric exposure configuration
   prometheus:
 
     # -- KG exporter '/metrics' API port
     endpoint_port: 8080
+
+  # Placement settings
+  placement:
+    # namespace to watch
+    namespace: default
+
+    # all avilable zones
+    available_zones: []
+
+    # current zone
+    current_zone:
+
+  # Placement API settings
+  api:
+
+    # API port
+    port: 8000

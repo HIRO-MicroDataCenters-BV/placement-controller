@@ -1,5 +1,17 @@
 k8s:
-  in_cluster: false
+  incluster: false
+  context: kind-kind-cluster1
+
+placement:
+  namespace: test
+  available_zones:
+    - emdc
+    - kind-kind-cluster1
+
+  current_zone: "kind-kind-cluster1"
+
+api:
+  port: 8000
 
 prometheus:
   endpoint_port: 8080

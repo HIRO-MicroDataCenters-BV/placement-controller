@@ -53,11 +53,8 @@ class ContextBuilder:
 
     def build(self) -> Context:
         clock = ClockImpl()
-        k8s_client = KubeClientImpl(self.settings.k8s, asyncio.get_event_loop())
+        loop = asyncio.get_event_loop()
+        client = KubeClientImpl(self.settings.k8s, loop)
 
-        context = Context(
-            clock,
-            k8s_client,
-            self.settings,
-        )
+        context = Context(clock, client, self.settings, loop)
         return context

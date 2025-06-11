@@ -32,9 +32,12 @@ class KubeClient:
         self,
         gvk: GroupVersionKind,
         namespace: Optional[str],
-        version_since: str,
+        version_since: int,
         timeout_seconds: int,
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
+        raise NotImplementedError
+
+    def stop_watch(self, subscriber_id: SubscriberId) -> None:
         raise NotImplementedError
 
     async def patch(self, gvk: GroupVersionKind, object: Dict[str, Any]) -> Optional[Dict[str, Any]]:

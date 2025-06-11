@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, override
 
 import copy
 from dataclasses import dataclass
@@ -31,11 +31,12 @@ class FakeClient(KubeClient):
         self.uids = 0
         self.subscriber_ids = 0
 
+    @override
     def watch(
         self,
         gvk: GroupVersionKind,
         namespace: Optional[str],
-        version_since: str,
+        version_since: int,
         timeout_seconds: int,
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         queue = AsyncQueue[KubeEvent]()
@@ -44,9 +45,11 @@ class FakeClient(KubeClient):
         self.subscriptions[self.subscriber_ids] = subscription
         return self.subscriber_ids, queue
 
+    @override
     def stop_watch(self, subscriber_id: SubscriberId) -> None:
         del self.subscriptions[subscriber_id]
 
+    @override
     async def patch(self, gvk: GroupVersionKind, object: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         object = copy.deepcopy(object)
         self.ensure_version(object)
@@ -63,6 +66,7 @@ class FakeClient(KubeClient):
 
         return object
 
+    @override
     async def patch_status(
         self, gvk: GroupVersionKind, name: NamespacedName, status: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
@@ -83,12 +87,18 @@ class FakeClient(KubeClient):
         )
         return current
 
+    @override
     async def get(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
         named_objects = self.objects.get(gvk)
         if not named_objects:
             return None
-        return named_objects.get(name)
+        object = named_objects.get(name)
+        if not object:
+            return None
+        else:
+            return copy.deepcopy(object)
 
+    @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
         named_objects = self.objects.get(gvk)
         if not named_objects:

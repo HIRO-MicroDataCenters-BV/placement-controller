@@ -2,10 +2,10 @@ from typing import Any, Dict, Optional, Tuple
 
 from dataclasses import dataclass
 
-from app.clients.k8s.k8s_event import K8SEvent
+from app.clients.k8s.event import KubeEvent
 from app.core.async_queue import AsyncQueue
 
-type SubscriberId = int
+SubscriberId = int
 
 
 @dataclass(frozen=True, eq=True)
@@ -27,14 +27,14 @@ class GroupVersionKind:
     kind: str
 
 
-class K8SClient:
+class KubeClient:
     def watch(
         self,
         gvk: GroupVersionKind,
         namespace: Optional[str],
         version_since: str,
         timeout_seconds: int,
-    ) -> Tuple[SubscriberId, AsyncQueue[K8SEvent]]:
+    ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         raise NotImplementedError
 
     async def patch(self, gvk: GroupVersionKind, object: Dict[str, Any]) -> Optional[Dict[str, Any]]:

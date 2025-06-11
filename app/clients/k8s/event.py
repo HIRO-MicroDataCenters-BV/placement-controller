@@ -11,7 +11,7 @@ class EventType(StrEnum):
 
 
 @dataclass
-class K8SEvent:
+class KubeEvent:
     event: EventType
     version: int
     object: Dict[str, Any]

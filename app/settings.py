@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 
-from app.clients.k8s.k8s_settings import K8SSettings
+from app.clients.k8s.settings import K8SSettings
 
 
 class PrometheusSettings(BaseSettings):

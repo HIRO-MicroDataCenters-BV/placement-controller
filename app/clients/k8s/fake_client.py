@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import copy
 from dataclasses import dataclass
 
-from app.clients.k8s.k8s_client import GroupVersionKind, K8SClient, NamespacedName, SubscriberId
-from app.clients.k8s.k8s_event import EventType, K8SEvent
+from app.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
+from app.clients.k8s.event import EventType, KubeEvent
 from app.core.async_queue import AsyncQueue
 
 
@@ -12,13 +12,13 @@ from app.core.async_queue import AsyncQueue
 class Subscription:
     gvk: GroupVersionKind
     namespace: str
-    queue: AsyncQueue[K8SEvent]
+    queue: AsyncQueue[KubeEvent]
 
 
-class FakeK8SClient(K8SClient):
+class FakeClient(KubeClient):
     objects: Dict[GroupVersionKind, Dict[NamespacedName, Dict[str, Any]]]
     subscriptions: Dict[SubscriberId, Subscription]
-    events: List[K8SEvent]
+    events: List[KubeEvent]
     versions: int
     subscriber_ids: SubscriberId
     uids: int
@@ -37,8 +37,8 @@ class FakeK8SClient(K8SClient):
         namespace: Optional[str],
         version_since: str,
         timeout_seconds: int,
-    ) -> Tuple[SubscriberId, AsyncQueue[K8SEvent]]:
-        queue = AsyncQueue[K8SEvent]()
+    ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
+        queue = AsyncQueue[KubeEvent]()
         subscription = Subscription(gvk=gvk, queue=queue, namespace=namespace or "default")
         self.subscriber_ids += 1
         self.subscriptions[self.subscriber_ids] = subscription
@@ -59,7 +59,7 @@ class FakeK8SClient(K8SClient):
             event_type = EventType.ADDED
         named_objects[name] = object
 
-        self.send_event(K8SEvent(event=event_type, version=int(object["metadata"]["resourceVersion"]), object=object))
+        self.send_event(KubeEvent(event=event_type, version=int(object["metadata"]["resourceVersion"]), object=object))
 
         return object
 
@@ -79,7 +79,7 @@ class FakeK8SClient(K8SClient):
         named_objects[name] = current
 
         self.send_event(
-            K8SEvent(event=EventType.MODIFIED, version=int(current["metadata"]["resourceVersion"]), object=current)
+            KubeEvent(event=EventType.MODIFIED, version=int(current["metadata"]["resourceVersion"]), object=current)
         )
         return current
 
@@ -99,7 +99,7 @@ class FakeK8SClient(K8SClient):
             object = copy.deepcopy(object)
             self.ensure_version(object)
             self.send_event(
-                K8SEvent(event=EventType.DELETED, version=int(object["metadata"]["resourceVersion"]), object=object)
+                KubeEvent(event=EventType.DELETED, version=int(object["metadata"]["resourceVersion"]), object=object)
             )
             return object
         else:
@@ -112,7 +112,7 @@ class FakeK8SClient(K8SClient):
             self.uids += 1
             object["metadata"]["uid"] = str(self.uids)
 
-    def send_event(self, event: K8SEvent) -> None:
+    def send_event(self, event: KubeEvent) -> None:
         self.events.append(event)
         for _, subscription in self.subscriptions.items():
             namespace = event.object["metadata"]["namespace"]

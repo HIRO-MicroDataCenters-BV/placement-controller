@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from app.clients.k8s.fake_k8s_client import FakeK8SClient
-from app.clients.k8s.k8s_settings import K8SSettings
+from app.clients.k8s.fake_client import FakeClient
+from app.clients.k8s.settings import K8SSettings
 from app.context import Context
 from app.settings import PrometheusSettings, Settings
 from app.util.clock import Clock
@@ -10,11 +10,11 @@ from app.util.mock_clock import MockClock
 
 class ContextTest(TestCase):
     clock: Clock
-    k8s_client: FakeK8SClient
+    k8s_client: FakeClient
 
     def setUp(self) -> None:
         self.clock = MockClock()
-        self.k8s_client = FakeK8SClient()
+        self.k8s_client = FakeClient()
         self.settings = self.make_settings()
         self.context = Context(
             self.clock,

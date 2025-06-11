@@ -10,9 +10,9 @@ from kubernetes_asyncio.dynamic import DynamicClient
 from kubernetes_asyncio.watch import Watch
 from loguru import logger
 
-from app.clients.k8s.k8s_client import GroupVersionKind, K8SClient, NamespacedName, SubscriberId
-from app.clients.k8s.k8s_event import EventType, K8SEvent
-from app.clients.k8s.k8s_settings import K8SSettings
+from app.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
+from app.clients.k8s.event import EventType, KubeEvent
+from app.clients.k8s.settings import K8SSettings
 from app.core.async_queue import AsyncQueue
 
 T = TypeVar("T")
@@ -20,11 +20,11 @@ T = TypeVar("T")
 
 @dataclass
 class Subscription:
-    queue: AsyncQueue[K8SEvent]
+    queue: AsyncQueue[KubeEvent]
     task: asyncio.Task[Any]
 
 
-class K8SClientImpl(K8SClient):
+class KubeClientImpl(KubeClient):
     settings: K8SSettings
     configuration: Optional[Configuration]
     subscriptions: Dict[SubscriberId, Subscription]
@@ -44,8 +44,8 @@ class K8SClientImpl(K8SClient):
         namespace: Optional[str],
         version_since: str,
         timeout_seconds: int,
-    ) -> Tuple[SubscriberId, AsyncQueue[K8SEvent]]:
-        queue = AsyncQueue[K8SEvent]()
+    ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
+        queue = AsyncQueue[KubeEvent]()
 
         async def watch_internal(api_client: ApiClient) -> None:
             api = CustomObjectsApi(api_client)
@@ -61,7 +61,7 @@ class K8SClientImpl(K8SClient):
                     type = watch_event["type"]
                     object = watch_event["object"]
                     version = object["metadata"]["resourceVersion"]
-                    event = K8SEvent(
+                    event = KubeEvent(
                         event=EventType[type],
                         object=object,
                         version=version,

@@ -3,20 +3,20 @@ from typing import Any, Dict
 import asyncio
 from unittest import TestCase
 
-from app.clients.k8s.fake_k8s_client import FakeK8SClient
-from app.clients.k8s.k8s_client import GroupVersionKind, NamespacedName
-from app.clients.k8s.k8s_event import EventType, K8SEvent
+from app.clients.k8s.client import GroupVersionKind, NamespacedName
+from app.clients.k8s.event import EventType, KubeEvent
+from app.clients.k8s.fake_client import FakeClient
 
 
 class FakeClientTest(TestCase):
     runner: asyncio.Runner
-    client: FakeK8SClient
+    client: FakeClient
     gvk: GroupVersionKind
     name: NamespacedName
 
     def setUp(self) -> None:
         self.loop = asyncio.get_event_loop()
-        self.client = FakeK8SClient()
+        self.client = FakeClient()
         self.gvk = GroupVersionKind(group="dcp.hiro.io", version="v1", kind="AnyApplication")
         self.name = NamespacedName(name="nginx-app", namespace="test")
 
@@ -61,7 +61,7 @@ class FakeClientTest(TestCase):
         object["metadata"]["uid"] = "1"
 
         actual_event = self.loop.run_until_complete(queue.get())
-        expected_event = K8SEvent(event=EventType.ADDED, version=1, object=object)
+        expected_event = KubeEvent(event=EventType.ADDED, version=1, object=object)
         self.assertEqual(actual_event, expected_event)
 
         # update
@@ -71,7 +71,7 @@ class FakeClientTest(TestCase):
         object["metadata"]["resourceVersion"] = "2"
 
         actual_event = self.loop.run_until_complete(queue.get())
-        expected_event = K8SEvent(event=EventType.MODIFIED, version=2, object=object)
+        expected_event = KubeEvent(event=EventType.MODIFIED, version=2, object=object)
         self.assertEqual(actual_event, expected_event)
 
         # delete
@@ -79,7 +79,7 @@ class FakeClientTest(TestCase):
         object["metadata"]["resourceVersion"] = "3"
 
         actual_event = self.loop.run_until_complete(queue.get())
-        expected_event = K8SEvent(event=EventType.DELETED, version=3, object=object)
+        expected_event = KubeEvent(event=EventType.DELETED, version=3, object=object)
         self.assertEqual(actual_event, expected_event)
 
         self.client.stop_watch(sub_id)

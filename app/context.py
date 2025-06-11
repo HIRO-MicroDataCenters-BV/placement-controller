@@ -5,7 +5,7 @@ import asyncio
 from loguru import logger
 from prometheus_async.aio.web import start_http_server
 
-from app.clients.k8s.k8s_client import K8SClient
+from app.clients.k8s.client import KubeClient
 from app.settings import Settings
 from app.util.clock import Clock
 
@@ -19,7 +19,7 @@ class Context:
     def __init__(
         self,
         clock: Clock,
-        k8s_client: K8SClient,
+        k8s_client: KubeClient,
         settings: Settings,
     ):
         self.settings = settings

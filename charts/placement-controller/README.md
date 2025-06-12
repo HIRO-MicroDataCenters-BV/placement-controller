@@ -40,6 +40,7 @@ Placement controller for decentralized control plane.
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
 | settings.api.port | int | `8000` |  |
+| settings.k8s.context | string | `nil` | kube context |
 | settings.k8s.incluster | bool | `true` | in cluster or out service cluster execution |
 | settings.placement.available_zones | list | `[]` |  |
 | settings.placement.current_zone | string | `nil` |  |

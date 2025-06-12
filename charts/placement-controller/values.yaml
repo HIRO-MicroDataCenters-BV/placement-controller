@@ -55,6 +55,9 @@ settings:
     # -- in cluster or out service cluster execution
     incluster: true
 
+    # -- kube context
+    context: null
+
   # Prometheus metric exposure configuration
   prometheus:
 

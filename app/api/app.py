@@ -3,7 +3,9 @@ from typing import List
 from fastapi import Depends, FastAPI
 from uvicorn import Config, Server
 
-from app.core.applications import Application, Applications
+from app.api.model import ApplicationModel
+from app.clients.k8s.client import NamespacedName
+from app.core.applications import Applications
 
 
 async def start_fastapi(port: int, applications: Applications) -> None:
@@ -20,12 +22,20 @@ def create_app(applications: Applications) -> FastAPI:
     app.state.applications = applications
 
     @app.get("/")
-    async def read_root():
-        return {"message": "Hello from FastAPI"}
+    async def root():
+        return {"application": "Placement Controller", "status": "OK"}
 
-    @app.get("/applications/", response_model=List[Application])
-    def list_applications(apps: Applications = Depends(lambda: get_applications(app))) -> List[Application]:
-        return apps.list()
+    @app.get("/applications/", response_model=List[ApplicationModel])
+    def list_applications(apps: Applications = Depends(lambda: get_applications(app))) -> List[ApplicationModel]:
+        return [ApplicationModel.from_object(app) for app in apps.list()]
+
+    @app.put("/applications/{namespace}/{name}", response_model=ApplicationModel)
+    async def set_placements(
+        namespace: str, name: str, zones: List[str], apps: Applications = Depends(lambda: get_applications(app))
+    ) -> ApplicationModel:
+        namespaced_name = NamespacedName(name=name, namespace=namespace)
+        application = await apps.set_placement(namespaced_name, zones)
+        return ApplicationModel.from_object(application)
 
     return app
 

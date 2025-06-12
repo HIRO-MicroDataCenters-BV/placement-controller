@@ -1,45 +1,20 @@
-from typing import Any, Dict, List, Optional
+from typing import Dict, List
 
 import asyncio
 
-from pydantic import BaseModel
+from loguru import logger
 
 from app.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName
 from app.clients.k8s.event import EventType, KubeEvent
+from app.core.application import Application
 from app.settings import PlacementSettings
-
-
-class ApplicationId(BaseModel):
-    name: str
-    namespace: str
-
-    class Config:
-        frozen = True
-
-    @staticmethod
-    def from_object(object: Dict[str, Any]) -> "ApplicationId":
-        name = object["metadata"]["name"]
-        namespace = object["metadata"]["namespace"]
-        return ApplicationId(name=name, namespace=namespace)
-
-
-class Application(BaseModel):
-    id: ApplicationId
-    placements: Optional[List[str]]
-
-    @staticmethod
-    def from_object(object: Dict[str, Any]) -> "Application":
-        id = ApplicationId.from_object(object)
-        status = object.get("status") or {}
-        placements = status.get("placements") or None
-        return Application(id=id, placements=placements)
 
 
 class Applications:
     client: KubeClient
     settings: PlacementSettings
     is_terminated: asyncio.Event
-    applications: Dict[ApplicationId, Application]
+    applications: Dict[NamespacedName, Application]
     gvk: GroupVersionKind
 
     def __init__(self, client: KubeClient, is_terminated: asyncio.Event, settings: PlacementSettings):
@@ -56,32 +31,40 @@ class Applications:
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:
+                logger.info(f"incoming event {event.event}")
                 self.handle_event(event)
             except Exception as e:
-                print(f"error while handling event {e}")
+                logger.error(f"error while handling event {e}")
         self.client.stop_watch(subscriber_id)
 
     def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
-            application = Application.from_object(event.object)
-            self.applications[application.id] = application
+            application = Application(event.object)
+            self.applications[application.get_namespaced_name()] = application
+            self.set_default_placement(application)
         elif event.event == EventType.DELETED:
-            application = Application.from_object(event.object)
-            del self.applications[application.id]
+            application = Application(event.object)
+            del self.applications[application.get_namespaced_name()]
         else:
             raise NotImplementedError(f"Unknown event type {event.event}")
 
     def list(self) -> List[Application]:
         return list(self.applications.values())
 
-    async def set_placement(self, application_id: ApplicationId, zones: List[str]) -> None:
-        name = NamespacedName(application_id.name, application_id.namespace)
+    async def set_placement(self, name: NamespacedName, zones: List[str]) -> Application:
         object = await self.client.get(self.gvk, name)
         if not object:
             raise Exception("object not found")
-        status = object.get("status")
-        if not status:
-            raise Exception("status is not available")
-        status["placements"] = [{"zone": zone, "node-affinity": None} for zone in zones]
-        to_update = {"status": status}
-        await self.client.patch_status(self.gvk, name, to_update)
+
+        application = Application(object)
+        application.set_placement_zones(zones)
+
+        updated = await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
+        if not updated:
+            raise Exception("updated object is not available")
+        return Application(updated)
+
+    def set_default_placement(self, application: Application) -> None:
+        if application.get_status() and application.get_owner_zone() == self.settings.current_zone:
+            if len(application.get_placement_zones()) == 0:
+                application.set_placement_zones([self.settings.current_zone])

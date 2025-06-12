@@ -1,10 +1,11 @@
 from typing import List, Optional, Tuple
 
 import argparse
+import asyncio
 from argparse import Namespace
 from io import StringIO
 
-from app.clients.k8s.k8s_client_impl import K8SClientImpl
+from app.clients.k8s.client_impl import KubeClientImpl
 from app.context import Context
 from app.pydantic_yaml import from_yaml
 from app.settings import Settings
@@ -52,11 +53,8 @@ class ContextBuilder:
 
     def build(self) -> Context:
         clock = ClockImpl()
-        k8s_client = K8SClientImpl(self.settings.k8s)
+        loop = asyncio.get_event_loop()
+        client = KubeClientImpl(self.settings.k8s, loop)
 
-        context = Context(
-            clock,
-            k8s_client,
-            self.settings,
-        )
+        context = Context(clock, client, self.settings, loop)
         return context

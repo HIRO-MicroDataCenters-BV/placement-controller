@@ -626,3 +626,4 @@ MigrationBackup/
 .dist
 .env
 .obsidian
+/env

@@ -5,46 +5,46 @@ import asyncio
 from loguru import logger
 from prometheus_async.aio.web import start_http_server
 
-from app.clients.k8s.k8s_client import K8SClient
+from app.api.app import start_fastapi
+from app.clients.k8s.client import KubeClient
+from app.core.applications import Applications
 from app.settings import Settings
 from app.util.clock import Clock
 
 
 class Context:
-    runner: asyncio.Runner
+    loop: asyncio.AbstractEventLoop
     terminated: asyncio.Event
     tasks: List[asyncio.Task[Any]]
     settings: Settings
+    applications: Applications
 
-    def __init__(
-        self,
-        clock: Clock,
-        k8s_client: K8SClient,
-        settings: Settings,
-    ):
+    def __init__(self, clock: Clock, client: KubeClient, settings: Settings, loop: asyncio.AbstractEventLoop):
         self.settings = settings
         self.terminated = asyncio.Event()
-        self.runner = asyncio.Runner()
+        self.loop = loop
         self.tasks = []
+        self.applications = Applications(client, self.terminated, settings.placement)
 
     def start(self) -> None:
         if self.terminated.is_set():
             return
         self.terminated.clear()
-        self.runner.run(self.run_tasks())
+        self.loop.run_until_complete(self.run_tasks())
 
     async def run_tasks(self) -> None:
-        # self.tasks.append(asyncio.create_task(self.k8s_pool.run()))
+        self.tasks.append(self.loop.create_task(self.applications.run()))
+        self.tasks.append(self.loop.create_task(start_fastapi(self.settings.api.port, self.applications)))
         self.prometheus_server = await start_http_server(port=self.settings.prometheus.endpoint_port)
 
     def stop(self) -> None:
         self.terminated.set()
-        self.runner.run(self.prometheus_server.close())
         for task in self.tasks:
             task.cancel()
+        self.loop.run_until_complete(self.prometheus_server.close())
 
     def wait_for_termination(self) -> None:
-        self.runner.run(self.terminated.wait())
+        self.loop.run_until_complete(self.terminated.wait())
         logger.info("Application terminated.")
 
     def exit_gracefully(self, _1: Any, _2: Any) -> None:

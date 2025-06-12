@@ -4,11 +4,6 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 
-class Kind(StrEnum):
-    POD = "Pod"
-    NODE = "Node"
-
-
 class EventType(StrEnum):
     ADDED = "ADDED"
     MODIFIED = "MODIFIED"
@@ -16,8 +11,7 @@ class EventType(StrEnum):
 
 
 @dataclass
-class K8SEvent:
+class KubeEvent:
     event: EventType
-    kind: Kind
     version: int
-    resource: Dict[str, Any]
+    object: Dict[str, Any]

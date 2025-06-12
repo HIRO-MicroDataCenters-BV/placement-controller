@@ -1,5 +1,8 @@
+from typing import Optional
+
 from pydantic_settings import BaseSettings
 
 
 class K8SSettings(BaseSettings):
-    in_cluster: bool
+    incluster: bool
+    context: Optional[str]

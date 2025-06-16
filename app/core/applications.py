@@ -24,6 +24,8 @@ class Applications:
         self.applications = {}
         self.gvk = GroupVersionKind(group="dcp.hiro.io", version="v1", kind="AnyApplication")
 
+        logger.info(f"owner zone '{settings.current_zone}'")
+
     async def run(self) -> None:
         subscriber_id, queue = self.client.watch(
             self.gvk, self.settings.namespace, version_since=0, timeout_seconds=86400
@@ -32,16 +34,16 @@ class Applications:
             event = await queue.get()
             try:
                 logger.info(f"incoming event {event.event}")
-                self.handle_event(event)
+                await self.handle_event(event)
             except Exception as e:
                 logger.error(f"error while handling event {e}")
         self.client.stop_watch(subscriber_id)
 
-    def handle_event(self, event: KubeEvent) -> None:
+    async def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
             application = Application(event.object)
             self.applications[application.get_namespaced_name()] = application
-            self.set_default_placement(application)
+            await self.set_default_placement(application)
         elif event.event == EventType.DELETED:
             application = Application(event.object)
             del self.applications[application.get_namespaced_name()]
@@ -64,7 +66,18 @@ class Applications:
             raise Exception("updated object is not available")
         return Application(updated)
 
-    def set_default_placement(self, application: Application) -> None:
-        if application.get_status() and application.get_owner_zone() == self.settings.current_zone:
-            if len(application.get_placement_zones()) == 0:
-                application.set_placement_zones([self.settings.current_zone])
+    async def set_default_placement(self, application: Application) -> None:
+        status = application.get_status()
+        if status and application.get_owner_zone() == self.settings.current_zone:
+            status = status.get("status") or {}
+            if status.get("state") == "Placement":
+                spec = application.get_spec()
+                strategy = spec.get("placement-strategy") or {}
+                if strategy.get("strategy") == "Global":
+                    # setting default placement zone to current
+                    if len(application.get_placement_zones()) == 0:
+                        zones = [self.settings.current_zone]
+                        name = application.get_namespaced_name()
+                        application.set_placement_zones(zones)
+                        await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
+                        logger.info(f"{name} setting placement zones {zones}")

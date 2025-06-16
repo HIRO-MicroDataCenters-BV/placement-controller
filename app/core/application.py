@@ -14,6 +14,9 @@ class Application:
         namespace = self.object["metadata"]["namespace"]
         return NamespacedName(name, namespace)
 
+    def get_spec(self) -> Dict[str, Any]:
+        return self.object.get("spec") or {}
+
     def get_owner_zone(self) -> Optional[str]:
         status = self.object.get("status") or {}
         return status.get("owner")

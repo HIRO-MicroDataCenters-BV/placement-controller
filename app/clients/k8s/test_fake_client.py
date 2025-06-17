@@ -52,7 +52,7 @@ class FakeClientTest(TestCase):
         self.assertEqual(object, actual)
 
     def test_lifecycle(self):
-        sub_id, queue = self.client.watch(self.gvk, "test", 0, 0)
+        sub_id, queue = self.client.watch(self.gvk, "test", 0, asyncio.Event())
 
         # create
         object = self.make_object()

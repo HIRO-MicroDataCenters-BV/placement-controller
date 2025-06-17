@@ -58,6 +58,9 @@ settings:
     # -- kube context
     context: null
 
+    # -- event listener timeout
+    timeout_seconds: 360
+
   # Prometheus metric exposure configuration
   prometheus:
 

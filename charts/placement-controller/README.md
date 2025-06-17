@@ -42,6 +42,7 @@ Placement controller for decentralized control plane.
 | settings.api.port | int | `8000` |  |
 | settings.k8s.context | string | `nil` | kube context |
 | settings.k8s.incluster | bool | `true` | in cluster or out service cluster execution |
+| settings.k8s.timeout_seconds | int | `360` | event listener timeout |
 | settings.placement.available_zones | list | `[]` |  |
 | settings.placement.current_zone | string | `nil` |  |
 | settings.placement.namespace | string | `"default"` |  |

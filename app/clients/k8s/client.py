@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, Tuple
 
+import asyncio
 from dataclasses import dataclass
 
 from app.clients.k8s.event import KubeEvent
@@ -29,11 +30,7 @@ class GroupVersionKind:
 
 class KubeClient:
     def watch(
-        self,
-        gvk: GroupVersionKind,
-        namespace: Optional[str],
-        version_since: int,
-        timeout_seconds: int,
+        self, gvk: GroupVersionKind, namespace: Optional[str], version_since: int, is_terminated: asyncio.Event
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         raise NotImplementedError
 

@@ -29,9 +29,7 @@ class Applications:
         logger.info(f"owner zone '{settings.current_zone}'")
 
     async def run(self) -> None:
-        subscriber_id, queue = self.client.watch(
-            self.gvk, self.settings.namespace, version_since=0, timeout_seconds=86400
-        )
+        subscriber_id, queue = self.client.watch(self.gvk, self.settings.namespace, 0, self.is_terminated)
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:

@@ -1,11 +1,12 @@
 k8s:
   incluster: false
   context: kind-kind-cluster1
+  timeout_seconds: 360
 
 placement:
   namespace: test
   available_zones:
-    - emdc
+    - emdc1
     - kind-kind-cluster1
 
   current_zone: "kind-kind-cluster1"

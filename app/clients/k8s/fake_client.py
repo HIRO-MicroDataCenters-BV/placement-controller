@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple, override
 
+import asyncio
 import copy
 from dataclasses import dataclass
 
@@ -33,11 +34,7 @@ class FakeClient(KubeClient):
 
     @override
     def watch(
-        self,
-        gvk: GroupVersionKind,
-        namespace: Optional[str],
-        version_since: int,
-        timeout_seconds: int,
+        self, gvk: GroupVersionKind, namespace: Optional[str], version_since: int, is_terminated: asyncio.Event
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         queue = AsyncQueue[KubeEvent]()
         subscription = Subscription(gvk=gvk, queue=queue, namespace=namespace or "default")

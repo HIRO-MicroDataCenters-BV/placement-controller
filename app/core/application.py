@@ -45,6 +45,13 @@ class Application:
         placements = status.get("placements") or []
         return [placement["zone"] for placement in placements]
 
+    def set_owner_zone(self, owner: str) -> None:
+        status: Optional[Dict[str, Any]] = self.object.get("status")
+        if not status:
+            raise Exception("status is not available")
+
+        status["owner"] = owner
+
     def fail_if_none(self, value: Any, msg: str) -> None:
         if not value:
             raise Exception(msg)

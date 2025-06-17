@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 import asyncio
 
@@ -8,6 +8,8 @@ from app.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName
 from app.clients.k8s.event import EventType, KubeEvent
 from app.core.application import Application
 from app.settings import PlacementSettings
+
+ApplicationFnMut = Callable[[Application], None]
 
 
 class Applications:
@@ -27,9 +29,7 @@ class Applications:
         logger.info(f"owner zone '{settings.current_zone}'")
 
     async def run(self) -> None:
-        subscriber_id, queue = self.client.watch(
-            self.gvk, self.settings.namespace, version_since=0, timeout_seconds=86400
-        )
+        subscriber_id, queue = self.client.watch(self.gvk, self.settings.namespace, 0, self.is_terminated)
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:
@@ -53,19 +53,6 @@ class Applications:
     def list(self) -> List[Application]:
         return list(self.applications.values())
 
-    async def set_placement(self, name: NamespacedName, zones: List[str]) -> Application:
-        object = await self.client.get(self.gvk, name)
-        if not object:
-            raise Exception("object not found")
-
-        application = Application(object)
-        application.set_placement_zones(zones)
-
-        updated = await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
-        if not updated:
-            raise Exception("updated object is not available")
-        return Application(updated)
-
     async def set_default_placement(self, application: Application) -> None:
         status = application.get_status()
         if status and application.get_owner_zone() == self.settings.current_zone:
@@ -81,3 +68,22 @@ class Applications:
                         application.set_placement_zones(zones)
                         await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
                         logger.info(f"{name} setting placement zones {zones}")
+
+    async def set_placement(self, name: NamespacedName, zones: List[str]) -> Application:
+        return await self.patch_status(name, lambda app: app.set_placement_zones(zones))
+
+    async def set_owner(self, name: NamespacedName, owner: str) -> Application:
+        return await self.patch_status(name, lambda app: app.set_owner_zone(owner))
+
+    async def patch_status(self, name: NamespacedName, update_function: ApplicationFnMut) -> Application:
+        object = await self.client.get(self.gvk, name)
+        if not object:
+            raise Exception("object not found")
+
+        application = Application(object)
+        update_function(application)
+
+        updated = await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
+        if not updated:
+            raise Exception("updated object is not available")
+        return Application(updated)

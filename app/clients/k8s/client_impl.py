@@ -44,32 +44,40 @@ class KubeClientImpl(KubeClient):
         gvk: GroupVersionKind,
         namespace: Optional[str],
         version_since: int,
-        timeout_seconds: int,
+        is_terminated: asyncio.Event,
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         queue = AsyncQueue[KubeEvent]()
 
         async def watch_internal(api_client: ApiClient) -> None:
-            api = CustomObjectsApi(api_client)
-            w = Watch()
-            async for watch_event in w.stream(
-                lambda **kwargs: api.list_namespaced_custom_object(
-                    group=gvk.group, version=gvk.version, namespace=namespace, plural="anyapplications", **kwargs
-                ),
-                resource_version=str(version_since),
-                timeout_seconds=timeout_seconds,
-            ):
+            while not is_terminated.is_set():
                 try:
-                    type = watch_event["type"]
-                    object = watch_event["object"]
-                    version = object["metadata"]["resourceVersion"]
-                    event = KubeEvent(
-                        event=EventType[type],
-                        object=object,
-                        version=version,
-                    )
-                    queue.put_nowait(event)
+                    api = CustomObjectsApi(api_client)
+                    w = Watch()
+                    async for watch_event in w.stream(
+                        lambda **kwargs: api.list_namespaced_custom_object(
+                            group=gvk.group,
+                            version=gvk.version,
+                            namespace=namespace,
+                            plural="anyapplications",
+                            **kwargs,
+                        ),
+                        resource_version=str(version_since),
+                        timeout_seconds=self.settings.timeout_seconds,
+                    ):
+                        try:
+                            type = watch_event["type"]
+                            object = watch_event["object"]
+                            version = object["metadata"]["resourceVersion"]
+                            event = KubeEvent(
+                                event=EventType[type],
+                                object=object,
+                                version=version,
+                            )
+                            queue.put_nowait(event)
+                        except Exception as e:
+                            logger.error("error parsing error {exception}", exception=str(e))
                 except Exception as e:
-                    logger.error("error parsing error {exception}", exception=str(e))
+                    logger.error(f"watch exception {type(e)}: {e}")
 
         task = self.loop.create_task(self.execute(watch_internal, is_dynamic_client=False))
         subscription = Subscription(queue, task)

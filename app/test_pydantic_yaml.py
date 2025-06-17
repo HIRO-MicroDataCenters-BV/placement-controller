@@ -9,7 +9,7 @@ from app.settings import ApiSettings, PlacementSettings, PrometheusSettings, Set
 class PyDanticYamlTest(TestCase):
     def test_dump_load_settings(self):
         expected = Settings(
-            k8s=K8SSettings(incluster=True, context=None),
+            k8s=K8SSettings(incluster=True, context=None, timeout_seconds=10),
             api=ApiSettings(port=8000),
             placement=PlacementSettings(namespace="test", current_zone="zone1", available_zones=["zone1", "zone2"]),
             prometheus=PrometheusSettings(endpoint_port=8080),

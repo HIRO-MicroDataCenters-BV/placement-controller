@@ -26,7 +26,7 @@ class ContextTest(TestCase):
 
     def make_settings(self) -> Settings:
         settings = Settings(
-            k8s=K8SSettings(incluster=True, context=None),
+            k8s=K8SSettings(incluster=True, context=None, timeout_seconds=10),
             api=ApiSettings(port=8000),
             placement=PlacementSettings(namespace="test", current_zone="zone1", available_zones=["zone1", "zone2"]),
             prometheus=PrometheusSettings(endpoint_port=8080),

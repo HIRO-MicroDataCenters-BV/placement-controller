@@ -50,16 +50,16 @@ class KubeClientImpl(KubeClient):
 
         async def watch_internal(api_client: ApiClient) -> None:
             while not is_terminated.is_set():
-                api = CustomObjectsApi(api_client)
-                w = Watch()
                 try:
+                    api = CustomObjectsApi(api_client)
+                    w = Watch()
                     async for watch_event in w.stream(
                         lambda **kwargs: api.list_namespaced_custom_object(
                             group=gvk.group,
                             version=gvk.version,
                             namespace=namespace,
                             plural="anyapplications",
-                            **kwargs
+                            **kwargs,
                         ),
                         resource_version=str(version_since),
                         timeout_seconds=self.settings.timeout_seconds,
@@ -77,7 +77,7 @@ class KubeClientImpl(KubeClient):
                         except Exception as e:
                             logger.error("error parsing error {exception}", exception=str(e))
                 except Exception as e:
-                    logger.error("watch exception  {exception}", exception=str(e))
+                    logger.error(f"watch exception {type(e)}: {e}")
 
         task = self.loop.create_task(self.execute(watch_internal, is_dynamic_client=False))
         subscription = Subscription(queue, task)

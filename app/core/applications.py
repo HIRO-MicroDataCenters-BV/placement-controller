@@ -59,7 +59,7 @@ class Applications:
             status = status.get("status") or {}
             if status.get("state") == "Placement":
                 spec = application.get_spec()
-                strategy = spec.get("placement-strategy") or {}
+                strategy = spec.get("placementStrategy") or {}
                 if strategy.get("strategy") == "Global":
                     # setting default placement zone to current
                     if len(application.get_placement_zones()) == 0:

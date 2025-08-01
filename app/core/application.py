@@ -38,7 +38,7 @@ class Application:
         status: Optional[Dict[str, Any]] = self.object.get("status")
         if not status:
             raise Exception("status is not available")
-        ownership = status.get("ownership") or {}
+        ownership = status.get("ownership")
         if not ownership:
             raise Exception("ownership is not available")
 
@@ -51,7 +51,7 @@ class Application:
         return [placement["zone"] for placement in placements]
 
     def get_global_state(self) -> Optional[str]:
-        status = self.get_status() or {}
+        status = self.object.get("status") or {}
         ownership = status.get("ownership") or {}
         return ownership.get("state")
 
@@ -59,7 +59,7 @@ class Application:
         status: Optional[Dict[str, Any]] = self.object.get("status")
         if not status:
             raise Exception("status is not available")
-        ownership = status.get("ownership") or {}
+        ownership = status.get("ownership")
         if not ownership:
             raise Exception("ownership is not available")
 

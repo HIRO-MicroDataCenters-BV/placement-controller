@@ -54,8 +54,7 @@ class Applications:
         return list(self.applications.values())
 
     async def set_default_placement(self, application: Application) -> None:
-        status = application.get_status()
-        if status and application.get_owner_zone() == self.settings.current_zone:
+        if application.get_owner_zone() == self.settings.current_zone:
             if application.get_global_state() == "Placement":
                 spec = application.get_spec()
                 strategy = spec.get("placementStrategy") or {}

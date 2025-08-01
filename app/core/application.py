@@ -40,7 +40,7 @@ class Application:
             raise Exception("status is not available")
         ownership = status.get("ownership")
         if not ownership:
-            raise Exception("ownership is not available")
+            raise Exception("Application status missing ownership section.")
 
         ownership["placements"] = [{"zone": zone, "node-affinity": None} for zone in zones]
 
@@ -61,7 +61,7 @@ class Application:
             raise Exception("status is not available")
         ownership = status.get("ownership")
         if not ownership:
-            raise Exception("ownership is not available")
+            raise Exception("Application status missing ownership section")
 
         ownership["owner"] = owner
         ownership["epoch"] = ownership.get("epoch", 0) + 1

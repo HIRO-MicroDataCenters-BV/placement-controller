@@ -1,8 +1,9 @@
 from typing import Any, Dict, List
 
 from fastapi import Depends, FastAPI
-from uvicorn import Config, Server
 from fastapi.openapi.utils import get_openapi
+from uvicorn import Config, Server
+
 from placement_controller.api.model import ApplicationModel
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.applications import Applications

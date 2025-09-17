@@ -12,18 +12,16 @@
     Do not edit the class manually.
 """  # noqa: E501
 
-import warnings
-from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from pydantic import StrictStr
-from typing import Any, List
-from placement_client.models.application_model import ApplicationModel
+import warnings
 
 from placement_client.api_client import ApiClient, RequestSerialized
 from placement_client.api_response import ApiResponse
+from placement_client.models.application_model import ApplicationModel
 from placement_client.rest import RESTResponseType
+from pydantic import Field, StrictFloat, StrictInt, StrictStr, validate_call
 
 
 class DefaultApi:

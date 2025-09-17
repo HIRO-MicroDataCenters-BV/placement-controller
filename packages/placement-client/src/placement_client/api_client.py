@@ -13,9 +13,9 @@
 """  # noqa: E501
 
 
+from typing import Dict, List, Optional, Tuple, Union
+
 import datetime
-from dateutil.parser import parse
-from enum import Enum
 import decimal
 import json
 import mimetypes
@@ -23,24 +23,25 @@ import os
 import re
 import tempfile
 import uuid
-
+from enum import Enum
 from urllib.parse import quote
-from typing import Tuple, Optional, List, Dict, Union
-from pydantic import SecretStr
 
-from placement_client.configuration import Configuration
-from placement_client.api_response import ApiResponse, T as ApiResponseT
 import placement_client.models
+from dateutil.parser import parse
 from placement_client import rest
+from placement_client.api_response import ApiResponse
+from placement_client.api_response import T as ApiResponseT
+from placement_client.configuration import Configuration
 from placement_client.exceptions import (
-    ApiValueError,
     ApiException,
+    ApiValueError,
     BadRequestException,
-    UnauthorizedException,
     ForbiddenException,
     NotFoundException,
-    ServiceException
+    ServiceException,
+    UnauthorizedException,
 )
+from pydantic import SecretStr
 
 RequestSerialized = Tuple[str, str, Dict[str, str], Optional[str], List[str]]
 

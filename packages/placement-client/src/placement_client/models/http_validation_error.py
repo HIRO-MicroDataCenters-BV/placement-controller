@@ -14,15 +14,17 @@
 
 
 from __future__ import annotations
+
+from typing import Any, ClassVar, Dict, List, Optional, Set
+from typing_extensions import Self
+
+import json
 import pprint
 import re  # noqa: F401
-import json
 
-from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List, Optional
 from placement_client.models.validation_error import ValidationError
-from typing import Optional, Set
-from typing_extensions import Self
+from pydantic import BaseModel, ConfigDict
+
 
 class HTTPValidationError(BaseModel):
     """

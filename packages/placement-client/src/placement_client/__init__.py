@@ -38,23 +38,25 @@ __all__ = [
 if __import__("typing").TYPE_CHECKING:
     # import apis into sdk package
     from placement_controller_client.api.default_api import DefaultApi as DefaultApi
-    
+    from placement_controller_client.api_client import ApiClient as ApiClient
+
     # import ApiClient
     from placement_controller_client.api_response import ApiResponse as ApiResponse
-    from placement_controller_client.api_client import ApiClient as ApiClient
     from placement_controller_client.configuration import Configuration as Configuration
-    from placement_controller_client.exceptions import OpenApiException as OpenApiException
-    from placement_controller_client.exceptions import ApiTypeError as ApiTypeError
-    from placement_controller_client.exceptions import ApiValueError as ApiValueError
-    from placement_controller_client.exceptions import ApiKeyError as ApiKeyError
     from placement_controller_client.exceptions import ApiAttributeError as ApiAttributeError
     from placement_controller_client.exceptions import ApiException as ApiException
-    
+    from placement_controller_client.exceptions import ApiKeyError as ApiKeyError
+    from placement_controller_client.exceptions import ApiTypeError as ApiTypeError
+    from placement_controller_client.exceptions import ApiValueError as ApiValueError
+    from placement_controller_client.exceptions import OpenApiException as OpenApiException
+
     # import models into sdk package
     from placement_controller_client.models.application_model import ApplicationModel as ApplicationModel
     from placement_controller_client.models.http_validation_error import HTTPValidationError as HTTPValidationError
     from placement_controller_client.models.validation_error import ValidationError as ValidationError
-    from placement_controller_client.models.validation_error_loc_inner import ValidationErrorLocInner as ValidationErrorLocInner
+    from placement_controller_client.models.validation_error_loc_inner import (
+        ValidationErrorLocInner as ValidationErrorLocInner,
+    )
     
 else:
     from lazy_imports import LazyModule, as_package, load

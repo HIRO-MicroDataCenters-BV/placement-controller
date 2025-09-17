@@ -13,15 +13,15 @@
 """  # noqa: E501
 
 
+from typing import Optional, Union
+
 import io
 import json
 import re
 import ssl
-from typing import Optional, Union
 
 import aiohttp
 import aiohttp_retry
-
 from placement_client.exceptions import ApiException, ApiValueError
 
 RESTResponseType = aiohttp.ClientResponse

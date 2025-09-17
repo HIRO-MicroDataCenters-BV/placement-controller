@@ -1,11 +1,11 @@
-import os
-import sys
-import argparse
-import subprocess
-import tempfile
-import shutil
 from typing import Dict, Optional
 
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))

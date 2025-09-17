@@ -12,14 +12,15 @@
     Do not edit the class manually.
 """  # noqa: E501
 
-import copy
-import logging
-from logging import FileHandler
-import sys
-from typing import Optional, Dict, Any
-import urllib3
+from typing import Any, Dict, Optional
 
+import copy
 import http.client as httplib
+import logging
+import sys
+from logging import FileHandler
+
+import urllib3
 
 JSON_SCHEMA_VALIDATION_KEYWORDS = {
     'multipleOf', 'maximum', 'exclusiveMaximum',

@@ -64,6 +64,8 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         push: true
+        sbom: true
+        provenance: true
         tags: ${{ env.DOCKER_IMAGES }}
         labels: ${{ steps.meta.outputs.labels }}
         platforms: linux/amd64, linux/arm64

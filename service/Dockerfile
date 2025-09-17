@@ -9,6 +9,6 @@ RUN pip install --no-cache-dir poetry \
     && poetry install --no-root --without dev,test \
     && rm -rf $(poetry config cache-dir)/{cache,artifacts}
 
-COPY ./app /code/app
+COPY ./service/src/placement /code/placement
 
 CMD ["python", "-m", "placement.main", "--config", "./config.yaml"]

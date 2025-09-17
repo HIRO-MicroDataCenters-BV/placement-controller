@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir poetry \
 
 COPY ./app /code/app
 
-CMD ["python", "-m", "app.main", "--config", "./config.yaml"]
+CMD ["python", "-m", "placement.main", "--config", "./config.yaml"]

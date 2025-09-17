@@ -22,14 +22,12 @@ class PlacementFastAPI(FastAPI):
             },
             license_info={
                 "name": "MIT",
-                "url": "https://github.com/HIRO-MicroDataCenters-BV"
-                "/placement-controller/blob/main/LICENSE",
+                "url": "https://github.com/HIRO-MicroDataCenters-BV" "/placement-controller/blob/main/LICENSE",
             },
             routes=self.routes,
         )
         self.openapi_schema = openapi_schema
         return self.openapi_schema
-
 
 
 async def start_fastapi(port: int, applications: Applications) -> None:
@@ -47,6 +45,7 @@ def create_app(applications: Applications) -> PlacementFastAPI:
     app.state.applications = applications
 
     return app
+
 
 def create_api() -> PlacementFastAPI:
     app = PlacementFastAPI()
@@ -77,7 +76,9 @@ def create_api() -> PlacementFastAPI:
 
     return app
 
+
 app = create_api()
+
 
 def get_applications(app: FastAPI) -> Applications:
     return app.state.applications  # type:ignore

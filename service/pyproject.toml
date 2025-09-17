@@ -63,6 +63,7 @@ color = true
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
+# mypy_path = "/"
 pretty = true
 show_traceback = true
 color_output = true

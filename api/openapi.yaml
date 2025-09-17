@@ -1,0 +1,166 @@
+openapi: 3.1.0
+info:
+  title: Placement Controller
+  description: Baseline Placement Controller for Decentralized Control Plance
+  contact:
+    name: HIRO-MicroDataCenters
+    email: all-hiro@hiro-microdatacenters.nl
+  license:
+    name: MIT
+    url: https://github.com/HIRO-MicroDataCenters-BV/placement-controller/blob/main/LICENSE
+  version: 0.1.0
+paths:
+  /:
+    get:
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /applications/:
+    get:
+      summary: List Applications
+      operationId: list_applications_applications__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApplicationModel'
+                type: array
+                title: Response List Applications Applications  Get
+  /applications/{namespace}/{name}/placements:
+    put:
+      summary: Set Placements
+      operationId: set_placements_applications__namespace___name__placements_put
+      parameters:
+      - name: namespace
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Namespace
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              title: Zones
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationModel'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /applications/{namespace}/{name}/owner:
+    put:
+      summary: Set Owner
+      operationId: set_owner_applications__namespace___name__owner_put
+      parameters:
+      - name: namespace
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Namespace
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Name
+      - name: owner
+        in: query
+        required: true
+        schema:
+          type: string
+          title: Owner
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationModel'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ApplicationModel:
+      properties:
+        name:
+          type: string
+          title: Name
+        namespace:
+          type: string
+          title: Namespace
+        owner:
+          type: string
+          title: Owner
+        zones:
+          items:
+            type: string
+          type: array
+          title: Zones
+      type: object
+      required:
+      - name
+      - namespace
+      - owner
+      - zones
+      title: ApplicationModel
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

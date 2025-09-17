@@ -10,7 +10,7 @@ import tempfile
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
 
-CLIENT_DIR = os.path.join(PROJECT_ROOT, "client")
+CLIENT_DIR = os.path.join(PROJECT_ROOT, "packages/placement-client")
 TEMPLATES_DIR = os.path.join(CURRENT_DIR, "templates")
 CONFIG_PATH = os.path.join(CURRENT_DIR, "config.json")
 

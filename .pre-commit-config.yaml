@@ -38,22 +38,22 @@ repos:
       pass_filenames: false
       always_run: true
 
-# - repo: local
-#   hooks:
-#     - id: generate_client
-#       name: generate client
-#       entry: poetry --directory service run python ../tools/client_generator/generate.py --asyncio ../api/openapi.yaml
-#       language: system
-#       types: [python]
-#       pass_filenames: false
-#       always_run: true
+- repo: local
+  hooks:
+    - id: generate_client
+      name: generate client
+      entry: uv run python ./tools/client_generator/generate.py --asyncio ./packages/placement-api/openapi.yaml
+      language: system
+      types: [python]
+      pass_filenames: false
+      always_run: true
 
 - repo: local
   hooks:
     - id: mypy
       name: mypy
-      files: ^service/
-      entry: poetry --directory service run mypy
+      files: ^placement-controller/
+      entry: uv run mypy
       language: system
       types: [python]
 
@@ -61,8 +61,8 @@ repos:
   hooks:
     - id: isort
       name: isort
-      files: ^service/
-      entry: poetry --directory service run isort
+      files: ^placement-controller/
+      entry: uv run isort
       language: system
       types: [python]
 
@@ -70,8 +70,8 @@ repos:
   hooks:
     - id: flake8
       name: flake8
-      files: ^service/
-      entry: poetry --directory service run flake8 --config ./service/.flake8
+      files: ^placement-controller/
+      entry: uv run flake8 --config ./.flake8
       language: system
       types: [python]
 
@@ -79,7 +79,7 @@ repos:
   hooks:
     - id: black
       name: black
-      files: ^service/
-      entry: poetry --directory service run black
+      files: ^placement-controller/
+      entry: uv run black
       language: system
       types: [python]

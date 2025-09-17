@@ -1,6 +1,5 @@
-from typing import Any
-
 from http import HTTPStatus
+from typing import Any
 
 import httpx
 

@@ -627,3 +627,5 @@ MigrationBackup/
 .env
 .obsidian
 /env
+/etc/kind-kind-cluster1.yaml
+/etc/kind-kind-cluster2.yaml

@@ -101,8 +101,8 @@ make_docker_images_with_tags() {
 patch_versions_in_project_files() {
   DOCKER_IMAGE_NAME="$1"
 
-  PYPROJECT_PATH="${ROOT}/service/pyproject.toml"
-  CHART_PATH="${ROOT}/service/charts/${CHART_NAME}"
+  PYPROJECT_PATH="${ROOT}/pyproject.toml"
+  CHART_PATH="${ROOT}/charts/${CHART_NAME}"
 
   VERSION_APP=$(cat "${VERSION_APP_PATH}")
   DOCKER_IMAGE_TAG=$(rev "${VERSION_DOCKER_PATH}" | cut -d ',' -f 1 | rev)

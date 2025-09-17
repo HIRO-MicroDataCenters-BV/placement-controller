@@ -16,7 +16,7 @@ repos:
   rev: v6.0.0
   hooks:
   - id: trailing-whitespace
-    exclude: README.md
+    exclude: client/.*|.*\.md|README.md
   - id: end-of-file-fixer
   - id: check-yaml
     exclude: ./service/charts/
@@ -41,7 +41,7 @@ repos:
   hooks:
     - id: generate_client
       name: generate client
-      entry: poetry --directory service run python ../tools/client_generator/generate.py ../api/openapi.yaml
+      entry: poetry --directory service run python ../tools/client_generator/generate.py --asyncio ../api/openapi.yaml
       language: system
       types: [python]
       pass_filenames: false
@@ -51,6 +51,7 @@ repos:
   hooks:
     - id: mypy
       name: mypy
+      files: ^service/
       entry: poetry run mypy
       language: system
       types: [python]
@@ -59,6 +60,7 @@ repos:
   hooks:
     - id: isort
       name: isort
+      files: ^service/
       entry: poetry run isort
       language: system
       types: [python]
@@ -67,6 +69,7 @@ repos:
   hooks:
     - id: flake8
       name: flake8
+      files: ^service/
       entry: poetry run flake8
       language: system
       types: [python]
@@ -75,6 +78,7 @@ repos:
   hooks:
     - id: black
       name: black
+      files: ^service/
       entry: poetry run black
       language: system
       types: [python]

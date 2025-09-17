@@ -1,12 +1,12 @@
 import asyncio
 from unittest import TestCase
 
-from app.clients.k8s.fake_client import FakeClient
-from app.clients.k8s.settings import K8SSettings
-from app.context import Context
-from app.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
-from app.util.clock import Clock
-from app.util.mock_clock import MockClock
+from placement.clients.k8s.fake_client import FakeClient
+from placement.clients.k8s.settings import K8SSettings
+from placement.context import Context
+from placement.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
+from placement.util.clock import Clock
+from placement.util.mock_clock import MockClock
 
 
 class ContextTest(TestCase):

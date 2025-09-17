@@ -10,10 +10,10 @@ from kubernetes_asyncio.dynamic import DynamicClient
 from kubernetes_asyncio.watch import Watch
 from loguru import logger
 
-from app.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
-from app.clients.k8s.event import EventType, KubeEvent
-from app.clients.k8s.settings import K8SSettings
-from app.core.async_queue import AsyncQueue
+from placement.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
+from placement.clients.k8s.event import EventType, KubeEvent
+from placement.clients.k8s.settings import K8SSettings
+from placement.core.async_queue import AsyncQueue
 
 T = TypeVar("T")
 

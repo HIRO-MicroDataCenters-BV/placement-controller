@@ -3,8 +3,8 @@ from typing import Any, Dict, Optional, Tuple
 import asyncio
 from dataclasses import dataclass
 
-from app.clients.k8s.event import KubeEvent
-from app.core.async_queue import AsyncQueue
+from placement.clients.k8s.event import KubeEvent
+from placement.core.async_queue import AsyncQueue
 
 SubscriberId = int
 

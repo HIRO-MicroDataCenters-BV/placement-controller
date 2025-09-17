@@ -2,7 +2,7 @@ from typing import List
 
 from pydantic_settings import BaseSettings
 
-from app.clients.k8s.settings import K8SSettings
+from placement.clients.k8s.settings import K8SSettings
 
 
 class PrometheusSettings(BaseSettings):

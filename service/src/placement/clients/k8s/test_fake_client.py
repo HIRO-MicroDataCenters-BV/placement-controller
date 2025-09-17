@@ -3,9 +3,9 @@ from typing import Any, Dict
 import asyncio
 from unittest import TestCase
 
-from app.clients.k8s.client import GroupVersionKind, NamespacedName
-from app.clients.k8s.event import EventType, KubeEvent
-from app.clients.k8s.fake_client import FakeClient
+from placement.clients.k8s.client import GroupVersionKind, NamespacedName
+from placement.clients.k8s.event import EventType, KubeEvent
+from placement.clients.k8s.fake_client import FakeClient
 
 
 class FakeClientTest(TestCase):

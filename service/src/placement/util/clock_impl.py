@@ -1,6 +1,6 @@
 import time
 
-from app.util.clock import Clock
+from placement.util.clock import Clock
 
 
 class ClockImpl(Clock):

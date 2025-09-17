@@ -626,6 +626,6 @@ MigrationBackup/
 .dist
 .env
 .obsidian
-/env
-/etc/kind-kind-cluster1.yaml
-/etc/kind-kind-cluster2.yaml
+/service/env
+/service/etc/kind-kind-cluster1.yaml
+/service/etc/kind-kind-cluster2.yaml

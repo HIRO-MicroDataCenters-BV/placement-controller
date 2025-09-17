@@ -5,11 +5,11 @@ import asyncio
 from argparse import Namespace
 from io import StringIO
 
-from app.clients.k8s.client_impl import KubeClientImpl
-from app.context import Context
-from app.pydantic_yaml import from_yaml
-from app.settings import Settings
-from app.util.clock_impl import ClockImpl
+from placement.clients.k8s.client_impl import KubeClientImpl
+from placement.context import Context
+from placement.pydantic_yaml import from_yaml
+from placement.settings import Settings
+from placement.util.clock_impl import ClockImpl
 
 
 class ContextBuilder:

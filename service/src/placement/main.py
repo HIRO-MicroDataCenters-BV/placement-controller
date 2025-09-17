@@ -1,7 +1,7 @@
 import signal
 import sys
 
-from app.context_builder import ContextBuilder
+from placement.context_builder import ContextBuilder
 
 
 def main() -> None:

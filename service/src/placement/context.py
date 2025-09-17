@@ -5,11 +5,11 @@ import asyncio
 from loguru import logger
 from prometheus_async.aio.web import start_http_server
 
-from app.api.app import start_fastapi
-from app.clients.k8s.client import KubeClient
-from app.core.applications import Applications
-from app.settings import Settings
-from app.util.clock import Clock
+from placement.api.app import start_fastapi
+from placement.clients.k8s.client import KubeClient
+from placement.core.applications import Applications
+from placement.settings import Settings
+from placement.util.clock import Clock
 
 
 class Context:

@@ -88,4 +88,5 @@ jobs:
       uses: stefanprodan/helm-gh-pages@master
       with:
         token: ${{ github.token }}
+        charts_dir: "./service/charts/"
         target_dir: "./helm-charts/"

@@ -4,10 +4,10 @@ import asyncio
 
 from loguru import logger
 
-from app.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName
-from app.clients.k8s.event import EventType, KubeEvent
-from app.core.application import Application
-from app.settings import PlacementSettings
+from placement.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName
+from placement.clients.k8s.event import EventType, KubeEvent
+from placement.core.application import Application
+from placement.settings import PlacementSettings
 
 ApplicationFnMut = Callable[[Application], None]
 

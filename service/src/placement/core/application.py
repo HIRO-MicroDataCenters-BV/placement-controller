@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from app.clients.k8s.client import NamespacedName
+from placement.clients.k8s.client import NamespacedName
 
 
 class Application:

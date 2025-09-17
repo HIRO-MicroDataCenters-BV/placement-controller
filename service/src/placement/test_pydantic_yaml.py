@@ -1,9 +1,9 @@
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
-from app.clients.k8s.settings import K8SSettings
-from app.pydantic_yaml import from_yaml, to_yaml
-from app.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
+from placement.clients.k8s.settings import K8SSettings
+from placement.pydantic_yaml import from_yaml, to_yaml
+from placement.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
 
 
 class PyDanticYamlTest(TestCase):

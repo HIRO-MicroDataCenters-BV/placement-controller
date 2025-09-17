@@ -4,9 +4,9 @@ import asyncio
 import copy
 from dataclasses import dataclass
 
-from app.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
-from app.clients.k8s.event import EventType, KubeEvent
-from app.core.async_queue import AsyncQueue
+from placement.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
+from placement.clients.k8s.event import EventType, KubeEvent
+from placement.core.async_queue import AsyncQueue
 
 
 @dataclass

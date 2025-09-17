@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from app.context_builder import ContextBuilder
+from placement.context_builder import ContextBuilder
 
 
 class ContextBuilderTest(TestCase):

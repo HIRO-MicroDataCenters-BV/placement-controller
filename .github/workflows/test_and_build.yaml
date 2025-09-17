@@ -58,4 +58,4 @@ jobs:
       contents: write
       packages: write
     secrets: inherit
-    uses: ./.github/workflows/build_service.yaml
+    uses: ./.github/workflows/service.yaml

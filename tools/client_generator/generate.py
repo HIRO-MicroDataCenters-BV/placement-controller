@@ -63,8 +63,7 @@ def generate_openapi(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate python client")
     parser.add_argument("file", help="input OpenAPI specification file path or URL")
-    parser.add_argument("--asyncio", dest="asyncio", action="store_true",
-                        help="generate async code")
+    parser.add_argument("--asyncio", dest="asyncio", action="store_true", help="generate async code")
     args = parser.parse_args()
 
     file = str(args.file).strip()

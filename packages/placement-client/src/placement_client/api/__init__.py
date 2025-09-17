@@ -3,7 +3,7 @@
 if __import__("typing").TYPE_CHECKING:
     # import apis into api package
     from placement_controller_client.api.default_api import DefaultApi
-    
+
 else:
     from lazy_imports import LazyModule, as_package, load
 

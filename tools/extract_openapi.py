@@ -49,7 +49,7 @@ def main() -> None:
     if args.app_version is not None:
         app_version = args.app_version
     elif args.app_version_file is not None:
-        with open(args.app_version_file, 'r') as f:
+        with open(args.app_version_file, "r") as f:
             app_version = f.read().strip()
 
     if app_version is not None:

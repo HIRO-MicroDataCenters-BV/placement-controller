@@ -28,15 +28,15 @@ repos:
   hooks:
   - id: shellcheck
 
-# - repo: local
-#   hooks:
-#     - id: openapi
-#       name: openapi
-#       entry: poetry --directory service run python ../tools/extract_openapi.py placement.api.app:app --app-dir . --out ../api/openapi.yaml --app_version_file ../VERSION
-#       language: system
-#       types: [python]
-#       pass_filenames: false
-#       always_run: true
+- repo: local
+  hooks:
+    - id: openapi
+      name: openapi
+      entry: uv run python ./tools/extract_openapi.py placement_controller.api.app:app --app-dir ./src --out ./packages/placement-api/openapi.yaml --app_version_file ./VERSION
+      language: system
+      types: [python]
+      pass_filenames: false
+      always_run: true
 
 # - repo: local
 #   hooks:

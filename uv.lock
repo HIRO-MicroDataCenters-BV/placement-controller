@@ -357,6 +357,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/11/114d0a5f4dabbdcedc1125dee0888514c3c3b16d3e9facad87ed96fad97c/isort-6.0.1-py3-none-any.whl", hash = "sha256:2dc5d7f65c9678d94c88dfc29161a320eec67328bc97aad576874cb4be1e9615", size = 94186, upload-time = "2025-02-26T21:13:14.911Z" },
 ]
 
+[package.optional-dependencies]
+colors = [
+    { name = "colorama" },
+]
+
 [[package]]
 name = "jinja2"
 version = "3.1.6"
@@ -650,7 +655,7 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "flake8" },
-    { name = "isort" },
+    { name = "isort", extra = ["colors"] },
     { name = "mypy" },
     { name = "mypy-extensions" },
     { name = "openapi-python-client" },
@@ -686,6 +691,7 @@ dev = [
     { name = "black", specifier = "==25.1.0" },
     { name = "flake8", specifier = "==7.3.0" },
     { name = "isort", specifier = "==6.0.1" },
+    { name = "isort", extras = ["colors"], specifier = "==6.0.1" },
     { name = "mypy", specifier = "==1.18.1" },
     { name = "mypy-extensions", specifier = "==1.1.0" },
     { name = "openapi-python-client", specifier = "==0.26.1" },

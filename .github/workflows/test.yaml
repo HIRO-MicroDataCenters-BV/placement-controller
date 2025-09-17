@@ -1,4 +1,4 @@
-name: Test and build
+name: Test
 
 on:
   push:
@@ -15,10 +15,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest    
-    strategy:
-      matrix:
-        python-version: ["3.12"]
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -29,17 +26,20 @@ jobs:
         python-version-file: "pyproject.toml"
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@v5
       with:
-        # Install a specific version of uv.
         version: "0.8.17"
+        version-file: "pyproject.toml"
+
+    - name: Install the project
+      run: uv sync --locked --all-extras --dev
 
     - name: Run style checks
       run: |
-        uv tool run mypy .
-        uv tool run isort . --check --diff
-        uv tool run flake8 .
-        uv tool run black . --check --diff
+        uv run mypy ./src
+        uv run isort ./src --check --diff
+        uv run flake8 ./src
+        uv run black ./src --check --diff
 
     - name: Run tests
       run: uv run pytest
@@ -47,10 +47,3 @@ jobs:
   osv-scanner:
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.2.1
 
-  build:
-    needs: [test]
-    permissions:
-      contents: write
-      packages: write
-    secrets: inherit
-    uses: ./.github/workflows/service.yaml

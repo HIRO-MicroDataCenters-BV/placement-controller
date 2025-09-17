@@ -1,7 +1,14 @@
-name: Build Service
+name: Build
 
 on:
-  workflow_call:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
+    paths-ignore:
+      - 'releases/**'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -16,14 +23,6 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Install Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-
-    - name: Install poetry
-      run: pip install poetry
-
     - name: Install Helm
       uses: azure/setup-helm@v3
 
@@ -37,8 +36,8 @@ jobs:
 
     - name: Make versions
       run: |
-        chmod +x ../tools/version.sh
-        ../tools/version.sh "${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        chmod +x ./tools/version.sh
+        ./tools/version.sh "${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
         echo "APP_VERSION=$(cat "./VERSION")" >> $GITHUB_ENV
         echo "DOCKER_IMAGES=$(cat "./DOCKER_IMAGES")" >> $GITHUB_ENV
         echo "DOCKER_TAGS=$(cat "./VERSION_DOCKER")" >> $GITHUB_ENV
@@ -67,11 +66,6 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         platforms: linux/amd64, linux/arm64
 
-    - name: Install dependencies
-      run: |
-        poetry config virtualenvs.in-project true
-        poetry install --no-root --with dev
-
     - name: Configure Git
       run: |
         git config user.name "$GITHUB_ACTOR"
@@ -87,5 +81,5 @@ jobs:
       uses: stefanprodan/helm-gh-pages@master
       with:
         token: ${{ github.token }}
-        charts_dir: "./service/charts/"
+        charts_dir: "./charts/"
         target_dir: "./helm-charts/"

@@ -3,28 +3,28 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "placement-controller-client"
+name = "placement_controller_client"
 version = "0.1.0"
-description = "Client for DCP Placement Controller"
+description = "Client for Placement Controller"
 authors = ["HIRO-MicroDataCenters <all-hiro@hiro-microdatacenters.nl>"]
 license = "MIT"
 readme = "README.md"
 keywords = ["OpenAPI", "OpenAPI-Generator", "Placement Controller"]
-include = ["template_web_client/py.typed"]
+include = ["placement_controller_client/py.typed"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
 
-urllib3 = ">= 2.5.0"
-python-dateutil = "2.9.0.post0"
+urllib3 = ">= 1.25.3"
+python-dateutil = ">=2.8.2"
 pydantic = ">=2"
 typing-extensions = ">=4.7.1"
 
 [tool.poetry.dev-dependencies]
 tox = "^4.13.0"
-pytest = "8.4.2"
-flake8 = "7.3.0"
-types-python-dateutil = "2.9.0.20250822"
+pytest = ">=7.2.1"
+flake8 = ">=4.0.0"
+types-python-dateutil = ">=2.8.19.14"
 mypy = "1.4.1"
 
 [tool.pylint.'MESSAGES CONTROL']
@@ -32,7 +32,7 @@ extension-pkg-whitelist = "pydantic"
 
 [tool.mypy]
 files = [
-  "template_web_client",
+  "placement_controller_client",
   #"test",  # auto-generated tests
   "tests", # hand-written tests
 ]

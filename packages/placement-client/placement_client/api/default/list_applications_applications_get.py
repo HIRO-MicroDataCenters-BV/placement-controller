@@ -1,12 +1,13 @@
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Optional, Union
 
 import httpx
 
-from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.application_model import ApplicationModel
 from ...types import Response
+from ... import errors
+
+from ...models.application_model import ApplicationModel
 
 
 def _get_kwargs() -> dict[str, Any]:
@@ -19,8 +20,8 @@ def _get_kwargs() -> dict[str, Any]:
 
 
 def _parse_response(
-    *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> list["ApplicationModel"] | None:
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
+) -> Optional[list["ApplicationModel"]]:
     if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
@@ -38,7 +39,7 @@ def _parse_response(
 
 
 def _build_response(
-    *, client: AuthenticatedClient | Client, response: httpx.Response
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Response[list["ApplicationModel"]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
@@ -50,7 +51,7 @@ def _build_response(
 
 def sync_detailed(
     *,
-    client: AuthenticatedClient | Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Response[list["ApplicationModel"]]:
     """List Applications
 
@@ -73,8 +74,8 @@ def sync_detailed(
 
 def sync(
     *,
-    client: AuthenticatedClient | Client,
-) -> list["ApplicationModel"] | None:
+    client: Union[AuthenticatedClient, Client],
+) -> Optional[list["ApplicationModel"]]:
     """List Applications
 
     Raises:
@@ -92,7 +93,7 @@ def sync(
 
 async def asyncio_detailed(
     *,
-    client: AuthenticatedClient | Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Response[list["ApplicationModel"]]:
     """List Applications
 
@@ -113,8 +114,8 @@ async def asyncio_detailed(
 
 async def asyncio(
     *,
-    client: AuthenticatedClient | Client,
-) -> list["ApplicationModel"] | None:
+    client: Union[AuthenticatedClient, Client],
+) -> Optional[list["ApplicationModel"]]:
     """List Applications
 
     Raises:

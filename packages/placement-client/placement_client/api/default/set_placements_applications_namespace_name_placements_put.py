@@ -1,13 +1,14 @@
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Optional, Union
 
 import httpx
 
-from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...types import Response
+from ... import errors
+
 from ...models.application_model import ApplicationModel
 from ...models.http_validation_error import HTTPValidationError
-from ...types import Response
 
 
 def _get_kwargs(
@@ -20,7 +21,10 @@ def _get_kwargs(
 
     _kwargs: dict[str, Any] = {
         "method": "put",
-        "url": f"/applications/{namespace}/{name}/placements",
+        "url": "/applications/{namespace}/{name}/placements".format(
+            namespace=namespace,
+            name=name,
+        ),
     }
 
     _kwargs["json"] = body
@@ -32,8 +36,8 @@ def _get_kwargs(
 
 
 def _parse_response(
-    *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> ApplicationModel | HTTPValidationError | None:
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
+) -> Optional[Union[ApplicationModel, HTTPValidationError]]:
     if response.status_code == 200:
         response_200 = ApplicationModel.from_dict(response.json())
 
@@ -51,8 +55,8 @@ def _parse_response(
 
 
 def _build_response(
-    *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[ApplicationModel | HTTPValidationError]:
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
+) -> Response[Union[ApplicationModel, HTTPValidationError]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -65,9 +69,9 @@ def sync_detailed(
     namespace: str,
     name: str,
     *,
-    client: AuthenticatedClient | Client,
+    client: Union[AuthenticatedClient, Client],
     body: list[str],
-) -> Response[ApplicationModel | HTTPValidationError]:
+) -> Response[Union[ApplicationModel, HTTPValidationError]]:
     """Set Placements
 
     Args:
@@ -100,9 +104,9 @@ def sync(
     namespace: str,
     name: str,
     *,
-    client: AuthenticatedClient | Client,
+    client: Union[AuthenticatedClient, Client],
     body: list[str],
-) -> ApplicationModel | HTTPValidationError | None:
+) -> Optional[Union[ApplicationModel, HTTPValidationError]]:
     """Set Placements
 
     Args:
@@ -130,9 +134,9 @@ async def asyncio_detailed(
     namespace: str,
     name: str,
     *,
-    client: AuthenticatedClient | Client,
+    client: Union[AuthenticatedClient, Client],
     body: list[str],
-) -> Response[ApplicationModel | HTTPValidationError]:
+) -> Response[Union[ApplicationModel, HTTPValidationError]]:
     """Set Placements
 
     Args:
@@ -163,9 +167,9 @@ async def asyncio(
     namespace: str,
     name: str,
     *,
-    client: AuthenticatedClient | Client,
+    client: Union[AuthenticatedClient, Client],
     body: list[str],
-) -> ApplicationModel | HTTPValidationError | None:
+) -> Optional[Union[ApplicationModel, HTTPValidationError]]:
     """Set Placements
 
     Args:

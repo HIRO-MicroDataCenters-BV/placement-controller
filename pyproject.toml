@@ -24,7 +24,7 @@ placement-api = { workspace = true }
 placement-client = { workspace = true }
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/placement-api", "packages/placement-client"]
 exclude = ["packages/service"]
 
 [build-system]
@@ -45,7 +45,8 @@ dev-dependencies = [
     "types-python-dateutil == 2.9.0.20250822",
     "pytest == 8.4.2",
     "pytest-mock == 3.15.1",
-    "vcrpy == 7.0.0"
+    "vcrpy == 7.0.0",
+    "openapi-python-client == 0.26.1"
 ]
 
 [tool.isort]

@@ -38,15 +38,27 @@ repos:
       pass_filenames: false
       always_run: true
 
+# - repo: local
+#   hooks:
+#     - id: generate_client
+#       name: generate client
+#       entry: uv run python ./tools/client_generator/generate.py --asyncio ./packages/placement-api/openapi.yaml
+#       language: system
+#       types: [python]
+#       pass_filenames: false
+#       always_run: true
+
 - repo: local
   hooks:
     - id: generate_client
       name: generate client
-      entry: uv run python ./tools/client_generator/generate.py --asyncio ./packages/placement-api/openapi.yaml
+      entry: uv run python openapi-python-client generate --overwrite --path ./packages/placement-api/openapi.yaml --meta=uv --output-path ./packages/placement-client --config=./tools/config.yaml --custom-template-path=./tools/templates
       language: system
       types: [python]
       pass_filenames: false
       always_run: true
+
+
 
 - repo: local
   hooks:

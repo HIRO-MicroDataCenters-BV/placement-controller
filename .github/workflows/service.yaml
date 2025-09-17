@@ -1,4 +1,4 @@
-name: Build web
+name: Build Service
 
 on:
   workflow_call:
@@ -8,8 +8,11 @@ env:
   IMAGE_NAME: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) && 'hiro-microdatacenters-bv/placement-controller' || 'hiro-microdatacenters-bv/placement-controller-dev' }}
 
 jobs:
-  build_web:
+  build_server:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./service
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -37,8 +40,8 @@ jobs:
 
     - name: Make versions
       run: |
-        chmod +x ./tools/version.sh
-        ./tools/version.sh "${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        chmod +x ../tools/version.sh
+        ../tools/version.sh "${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
         echo "APP_VERSION=$(cat "./VERSION")" >> $GITHUB_ENV
         echo "DOCKER_IMAGES=$(cat "./DOCKER_IMAGES")" >> $GITHUB_ENV
         echo "DOCKER_TAGS=$(cat "./VERSION_DOCKER")" >> $GITHUB_ENV

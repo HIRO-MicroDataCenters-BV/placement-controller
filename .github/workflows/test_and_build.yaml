@@ -16,6 +16,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./service
+
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -51,4 +55,4 @@ jobs:
       contents: write
       packages: write
     secrets: inherit
-    uses: ./.github/workflows/build_web.yaml
+    uses: ./.github/workflows/build_service.yaml

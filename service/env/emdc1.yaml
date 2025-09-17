@@ -1,0 +1,30 @@
+replicaCount: 1
+
+image:
+  repository: "ghcr.io/hiro-microdatacenters-bv/placement-controller-dev"
+  tag: "test1"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+service:
+  type: LoadBalancer
+  port: 8000
+
+# Placement Controller for Decentralized Control Plane
+settings:
+
+  placement:
+
+    namespace: test
+
+    # all avilable zones
+    available_zones:
+     - "emdc1"
+     - "emdc2"
+
+    # current zone
+    current_zone: emdc1
+
+

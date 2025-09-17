@@ -1,11 +1,11 @@
 default_language_version:
-  python: python3.11
+  python: python3.12
 
 default_stages: [commit, push]
 
 repos:
 - repo: https://github.com/norwoodj/helm-docs
-  rev:  ""
+  rev:  "v1.14.2"
   hooks:
     - id: helm-docs
       args:
@@ -13,7 +13,7 @@ repos:
         - --chart-search-root=./charts
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v3.4.0
+  rev: v6.0.0
   hooks:
   - id: trailing-whitespace
     exclude: README.md
@@ -23,9 +23,29 @@ repos:
   - id: check-added-large-files
 
 - repo: https://github.com/koalaman/shellcheck-precommit
-  rev: v0.9.0
+  rev: v0.11.0
   hooks:
   - id: shellcheck
+
+- repo: local
+  hooks:
+    - id: openapi
+      name: openapi
+      entry: poetry --directory service run python ./tools/extract_openapi.py app.main:app --app-dir ./service --out ./api/openapi.yaml --app_version_file ./VERSION
+      language: system
+      types: [python]
+      pass_filenames: false
+      always_run: true
+
+- repo: local
+  hooks:
+    - id: generate_client
+      name: generate client
+      entry: poetry --directory service run python ./tools/client_generator/generate.py ./api/openapi.yaml
+      language: system
+      types: [python]
+      pass_filenames: false
+      always_run: true
 
 - repo: local
   hooks:

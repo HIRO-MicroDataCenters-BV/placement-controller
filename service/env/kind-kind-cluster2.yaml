@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: "ghcr.io/hiro-microdatacenters-bv/placement-controller-dev"
+  tag: "test1"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+# Placement Controller for Decentralized Control Plane
+settings:
+
+  placement:
+
+    namespace: test
+
+    # all avilable zones
+    available_zones:
+     - "kind-kind-cluster1"
+     - "kind-kind-cluster2"
+
+    # current zone
+    current_zone: kind-kind-cluster2
+
+

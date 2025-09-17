@@ -1,0 +1,18 @@
+k8s:
+  incluster: false
+  context: kind-kind-cluster1
+  timeout_seconds: 3600
+
+placement:
+  namespace: test
+  available_zones:
+    - kind-kind-cluster1
+    - kind-kind-cluster2
+
+  current_zone: "kind-kind-cluster1"
+
+api:
+  port: 8001
+
+prometheus:
+  endpoint_port: 8085

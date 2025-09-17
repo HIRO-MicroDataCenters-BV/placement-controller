@@ -3,15 +3,15 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "YourAI"
+name = "Placement Controller"
 version = "0.0.0"
-description = "Rudimentary placement controller for decentralized control plane."
+description = "Baseline placement controller for decentralized control plane."
 readme = "README.md"
 authors = ["HIRO-MicroDataCenters <all-hiro@hiro-microdatacenters.nl>"]
 license = "MIT"
 repository = "https://github.com/HIRO-MicroDataCenters-BV/placement-controller"
 homepage = "https://github.com/HIRO-MicroDataCenters-BV/placement-controller"
-packages = [{include = "*", from="app"}]
+packages = [{include = "*", from="src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11.4"

@@ -1,8 +1,9 @@
 """Contains some shared types for properties"""
 
+from typing import IO, BinaryIO, Generic, Literal, TypeVar, Union
+
 from collections.abc import Mapping, MutableMapping
 from http import HTTPStatus
-from typing import IO, BinaryIO, Generic, Literal, TypeVar, Union
 
 from attrs import define
 

@@ -18,6 +18,7 @@ repos:
   - id: trailing-whitespace
     exclude: client/.*|.*\.md|README.md
   - id: end-of-file-fixer
+    exclude: client/.*
   - id: check-yaml
     exclude: ./service/charts/
   - id: check-added-large-files

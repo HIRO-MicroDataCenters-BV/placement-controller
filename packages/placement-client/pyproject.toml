@@ -1,6 +1,6 @@
 [project]
 name = "placement_client"
-version = "1.0.0"
+version = "0.1.0"
 description = "A client library for accessing Placement Controller"
 authors = []
 requires-python = ">=3.12"

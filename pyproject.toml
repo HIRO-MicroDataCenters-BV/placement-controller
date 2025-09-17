@@ -3,20 +3,20 @@ name = "placement-controller"
 version = "0.1.0"
 requires-python = "==3.12.11"
 dependencies = [
-    "kubernetes == 32.0.0",
-    "jsonpath == 0.82.2",
-    "jsonpath-ng == 1.7.0",
-    "httpx == 0.28.1",
-    "pydantic-settings == 2.10.1",
-    "aiohttp == 3.12.15",
-    "loguru == 0.7.3",
-    "kubernetes_asyncio == 33.3.0",
-    "sortedcontainers == 2.4.0",
-    "prometheus-async == 25.1.0",
-    "fastapi == 0.116.2",
-    "uvicorn == 0.35.0",
-    "placement-api",
-    "placement-client",
+  "kubernetes == 32.0.0",
+  "jsonpath == 0.82.2",
+  "jsonpath-ng == 1.7.0",
+  "httpx == 0.28.1",
+  "pydantic-settings == 2.10.1",
+  "aiohttp == 3.12.15",
+  "loguru == 0.7.3",
+  "kubernetes_asyncio == 33.3.0",
+  "sortedcontainers == 2.4.0",
+  "prometheus-async == 25.1.0",
+  "fastapi == 0.116.2",
+  "uvicorn == 0.35.0",
+  "placement-api",
+  "placement-client",
 ]
 
 [tool.uv.sources]
@@ -34,20 +34,20 @@ build-backend = "uv_build"
 
 [tool.uv]
 dev-dependencies = [
-    "black == 25.1.0",
-    "flake8 == 7.3.0",
-    "isort == 6.0.1",
-    "isort[colors] == 6.0.1",
-    "mypy == 1.18.1",
-    "mypy-extensions == 1.1.0",
-    "pyyaml == 6.0.2",
-    "types-pyyaml == 6.0.12.20250915",
-    "pre-commit == 4.3.0",
-    "types-python-dateutil == 2.9.0.20250822",
-    "pytest == 8.4.2",
-    "pytest-mock == 3.15.1",
-    "vcrpy == 7.0.0",
-    "openapi-python-client == 0.26.1"
+  "black == 25.1.0",
+  "flake8 == 7.3.0",
+  "isort == 6.0.1",
+  "isort[colors] == 6.0.1",
+  "mypy == 1.18.1",
+  "mypy-extensions == 1.1.0",
+  "pyyaml == 6.0.2",
+  "types-pyyaml == 6.0.12.20250915",
+  "pre-commit == 4.3.0",
+  "types-python-dateutil == 2.9.0.20250822",
+  "pytest == 8.4.2",
+  "pytest-mock == 3.15.1",
+  "vcrpy == 7.0.0",
+  "openapi-python-client == 0.26.1"
 ]
 
 [tool.isort]

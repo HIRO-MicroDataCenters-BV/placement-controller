@@ -1,5 +1,5 @@
 # Python client
-API version: 0.1.0
+API version: 1.0.0
 
 ## Requirements
 
@@ -83,22 +83,22 @@ Please follow the [installation procedure](#installation--usage) and then run th
 
 ```python
 
-import placement_controller_client
-from placement_controller_client.rest import ApiException
+import placement_client
+from placement_client.rest import ApiException
 from pprint import pprint
 
 # Defining the host is optional and defaults to http://localhost
 # See configuration.py for a list of all supported configuration parameters.
-configuration = placement_controller_client.Configuration(
+configuration = placement_client.Configuration(
     host = "http://localhost"
 )
 
 
 
 # Enter a context with an instance of the API client
-async with placement_controller_client.ApiClient(configuration) as api_client:
+async with placement_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = placement_controller_client.DefaultApi(api_client)
+    api_instance = placement_client.DefaultApi(api_client)
 
     try:
         # List Applications

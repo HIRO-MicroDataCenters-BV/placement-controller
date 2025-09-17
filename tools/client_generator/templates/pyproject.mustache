@@ -1,42 +1,40 @@
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry]
+[project]
 name = "{{{packageName}}}"
 version = "{{{appVersion}}}"
 description = "Client for {{{appName}}}"
-authors = ["{{infoName}}{{^infoName}}OpenAPI Generator Community{{/infoName}} <{{infoEmail}}{{^infoEmail}}team@openapitools.org{{/infoEmail}}>"]
+# authors = ["{{infoName}}{{^infoName}}OpenAPI Generator Community{{/infoName}} <{{infoEmail}}{{^infoEmail}}team@openapitools.org{{/infoEmail}}>"]
 license = "{{{licenseInfo}}}{{^licenseInfo}}NoLicense{{/licenseInfo}}"
 readme = "README.md"
 keywords = ["OpenAPI", "OpenAPI-Generator", "{{{appName}}}"]
 include = ["{{packageName}}/py.typed"]
+dependencies = [
+  "urllib3 == 1.26.20",
+  "python-dateutil >=2.8.2",
+  {{#asyncio}}
+  "aiohttp >= 3.8.4",
+  "aiohttp-retry >= 2.8.3",
+  {{/asyncio}}
+  {{#tornado}}
+  "tornado >=4.2",
+  {{/tornado}}
+  {{#hasHttpSignatureMethods}}
+  "pem >= 19.3.0",
+  "pycryptodome >= 3.9.0",
+  {{/hasHttpSignatureMethods}}
+  "pydantic >= 2",
+  "typing-extensions == 4.12.0"
+]
+dev-dependencies = [
+  "tox == 4.13.0",
+  "pytest >= 8.4.2",
+  "flake8 >= 7.3.0",
+  "types-python-dateutil >=2.8.19.14",
+  "mypy == 1.4.1"
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-
-urllib3 = ">= 1.25.3"
-python-dateutil = ">=2.8.2"
-{{#asyncio}}
-aiohttp = ">= 3.8.4"
-aiohttp-retry = ">= 2.8.3"
-{{/asyncio}}
-{{#tornado}}
-tornado = ">=4.2,<5"
-{{/tornado}}
-{{#hasHttpSignatureMethods}}
-pem = ">= 19.3.0"
-pycryptodome = ">= 3.9.0"
-{{/hasHttpSignatureMethods}}
-pydantic = ">=2"
-typing-extensions = ">=4.7.1"
-
-[tool.poetry.dev-dependencies]
-tox = "^4.13.0"
-pytest = ">=7.2.1"
-flake8 = ">=4.0.0"
-types-python-dateutil = ">=2.8.19.14"
-mypy = "1.4.1"
+[build-system]
+requires = ["uv_build>=0.8.17,<0.9.0"]
+build-backend = "uv_build"
 
 [tool.pylint.'MESSAGES CONTROL']
 extension-pkg-whitelist = "pydantic"

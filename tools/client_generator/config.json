@@ -1,3 +1,4 @@
 {
-  "packageName": "placement_client"
+  "packageName": "placement_client",
+  "packageDir": "src/"
 }

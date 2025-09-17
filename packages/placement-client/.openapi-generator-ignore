@@ -14,6 +14,12 @@ docs/*
 git_push.sh
 test/*
 .gitignore
+requirements.txt
+test-requirements.txt
+setup.cfg
+setup.py
+tox.ini
+
 
 # You can match any string of characters against a directory, file or extension with a single asterisk (*):
 #foo/*/qux

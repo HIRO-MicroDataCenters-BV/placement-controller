@@ -62,6 +62,6 @@ class MetricValue(BaseModel):
 class BidResponseModel(BaseModel):
     id: str
     status: BidStatus
-    reason: Optional[str]
-    msg: Optional[str]
+    reason: Optional[str] = None
+    msg: Optional[str] = None
     metrics: List[MetricValue]

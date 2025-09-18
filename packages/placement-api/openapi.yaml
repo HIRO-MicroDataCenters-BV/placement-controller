@@ -218,8 +218,6 @@ components:
       required:
       - id
       - status
-      - reason
-      - msg
       - metrics
       title: BidResponseModel
     BidStatus:

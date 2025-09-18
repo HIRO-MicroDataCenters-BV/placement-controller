@@ -6,8 +6,8 @@ from attrs import field as _attrs_field
 
 
 if TYPE_CHECKING:
-    from ..models.workload_status import WorkloadStatus
     from ..models.pod_info import PodInfo
+    from ..models.workload_status import WorkloadStatus
 
 
 T = TypeVar("T", bound="ApplicationReport")
@@ -17,18 +17,24 @@ T = TypeVar("T", bound="ApplicationReport")
 class ApplicationReport:
     """
     Attributes:
-        pods (PodInfo):
-        workloads (WorkloadStatus):
+        pods (list['PodInfo']):
+        workloads (list['WorkloadStatus']):
     """
 
-    pods: "PodInfo"
-    workloads: "WorkloadStatus"
+    pods: list["PodInfo"]
+    workloads: list["WorkloadStatus"]
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        pods = self.pods.to_dict()
+        pods = []
+        for pods_item_data in self.pods:
+            pods_item = pods_item_data.to_dict()
+            pods.append(pods_item)
 
-        workloads = self.workloads.to_dict()
+        workloads = []
+        for workloads_item_data in self.workloads:
+            workloads_item = workloads_item_data.to_dict()
+            workloads.append(workloads_item)
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -43,13 +49,23 @@ class ApplicationReport:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.workload_status import WorkloadStatus
         from ..models.pod_info import PodInfo
+        from ..models.workload_status import WorkloadStatus
 
         d = dict(src_dict)
-        pods = PodInfo.from_dict(d.pop("pods"))
+        pods = []
+        _pods = d.pop("pods")
+        for pods_item_data in _pods:
+            pods_item = PodInfo.from_dict(pods_item_data)
 
-        workloads = WorkloadStatus.from_dict(d.pop("workloads"))
+            pods.append(pods_item)
+
+        workloads = []
+        _workloads = d.pop("workloads")
+        for workloads_item_data in _workloads:
+            workloads_item = WorkloadStatus.from_dict(workloads_item_data)
+
+            workloads.append(workloads_item)
 
         application_report = cls(
             pods=pods,

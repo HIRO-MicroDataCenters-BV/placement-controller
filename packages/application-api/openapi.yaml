@@ -43,9 +43,15 @@ components:
         - workloads
       properties:
         pods:
-          $ref: '#/components/schemas/PodInfo'
+          items:
+            $ref: '#/components/schemas/PodInfo'
+          type: array
+          title: PodInfo
         workloads:
-          $ref: '#/components/schemas/WorkloadStatus'
+          items:
+            $ref: '#/components/schemas/WorkloadStatus'
+          type: array
+          title: WorkloadStatus
     WorkloadStatus:
       type: object
       required:
@@ -72,27 +78,19 @@ components:
           title: Ready
         desired:
           type: integer
+          format: int32
           title: Desired
         available:
           type: integer
+          format: int32
           title: Available
         unavailable:
           type: integer
+          format: int32
           title: Unavailable
         message:
           type: string
           title: Message
-
-# type WorkloadStatus struct {
-# 	Kind        string `json:"kind"`      // e.g., Deployment
-# 	Name        string `json:"name"`      // workload name
-# 	Namespace   string `json:"namespace"` // ns
-# 	Ready       bool   `json:"ready"`     // summarized status
-# 	Desired     int32  `json:"desired"`
-# 	Available   int32  `json:"available"`
-# 	Unavailable int32  `json:"unavailable"`
-# 	Message     string `json:"message"` // issue summary
-# }
 
     PodInfo:
       type: object
@@ -111,6 +109,7 @@ components:
           title: Status
         restarts:
           type: integer
+          format: int32
           title: Restarts
         events:
           type: array
@@ -122,14 +121,6 @@ components:
           title: Logs
           items:
             $ref: '#/components/schemas/LogInfo'
-
-# type PodInfo struct {
-# 	Name     string     `json:"name"`
-# 	Status   string     `json:"status"`
-# 	Restarts int32      `json:"restarts"`
-# 	Events   []PodEvent `json:"events"`
-# 	Logs     []LogInfo  `json:"logs"`
-# }
 
     PodEvent:
       type: object
@@ -148,11 +139,6 @@ components:
           type: string
           title: Timestamp
 
-# type PodEvent struct {
-# 	Reason    string `json:"reason"`
-# 	Message   string `json:"message"`
-# 	Timestamp string `json:"timestamp"`
-# }
     LogInfo:
       type: object
       required:
@@ -165,8 +151,3 @@ components:
         log:
           type: string
           title: Log
-
-# type LogInfo struct {
-# 	Container string `json:"container"`
-# 	Log       string `json:"log"`
-# }

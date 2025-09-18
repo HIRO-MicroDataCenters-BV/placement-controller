@@ -16,9 +16,9 @@ repos:
   rev: v6.0.0
   hooks:
   - id: trailing-whitespace
-    exclude: packages/placement_client/.*|.*\.md|README.md
+    exclude: packages/placement-client/.*|.*\.md|README.md
   - id: end-of-file-fixer
-    exclude: packages/placement_client/.*
+    exclude: packages/placement-client/.*
   - id: check-yaml
     exclude: ./charts
   - id: check-added-large-files
@@ -32,21 +32,21 @@ repos:
   hooks:
     - id: openapi
       name: openapi
+      files: ^src/placement_controller/api/
       entry: uv run python ./tools/extract_openapi.py placement_controller.api.app:app --app-dir ./src --out ./packages/placement-api/openapi.yaml --app_version_file ./VERSION
       language: system
       types: [python]
       pass_filenames: false
-      always_run: true
 
 - repo: local
   hooks:
     - id: generate_client
       name: generate client
+      files: packages/placement-api/openapi.yaml
       entry: openapi-python-client generate --overwrite --path ./packages/placement-api/openapi.yaml --meta=uv --output-path ./packages/placement-client --config=./tools/openapi-python-client.yaml --custom-template-path=./tools/templates
       language: system
       types: [python]
       pass_filenames: false
-      always_run: true
 
 - repo: local
   hooks:

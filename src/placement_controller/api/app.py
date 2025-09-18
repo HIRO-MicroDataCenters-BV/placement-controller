@@ -51,15 +51,17 @@ def create_app(applications: Applications) -> PlacementFastAPI:
 def create_api() -> PlacementFastAPI:
     app = PlacementFastAPI()
 
-    @app.get("/")
+    @app.get(path="/", operation_id="status", description="Get Application Status")
     async def root():
         return {"application": "Placement Controller", "status": "OK"}
 
-    @app.get("/applications/", response_model=List[ApplicationModel])
+    @app.get(path="/applications/", response_model=List[ApplicationModel], operation_id="list_applications")
     def list_applications(apps: Applications = Depends(lambda: get_applications(app))) -> List[ApplicationModel]:
         return [ApplicationModel.from_object(app) for app in apps.list()]
 
-    @app.put("/applications/{namespace}/{name}/placements", response_model=ApplicationModel)
+    @app.put(
+        "/applications/{namespace}/{name}/placements", response_model=ApplicationModel, operation_id="set_placements"
+    )
     async def set_placements(
         namespace: str, name: str, zones: List[str], apps: Applications = Depends(lambda: get_applications(app))
     ) -> ApplicationModel:
@@ -67,7 +69,7 @@ def create_api() -> PlacementFastAPI:
         application = await apps.set_placement(namespaced_name, zones)
         return ApplicationModel.from_object(application)
 
-    @app.put("/applications/{namespace}/{name}/owner", response_model=ApplicationModel)
+    @app.put("/applications/{namespace}/{name}/owner", response_model=ApplicationModel, operation_id="set_owner")
     async def set_owner(
         namespace: str, name: str, owner: str, apps: Applications = Depends(lambda: get_applications(app))
     ) -> ApplicationModel:

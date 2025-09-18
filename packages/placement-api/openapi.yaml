@@ -13,7 +13,8 @@ paths:
   /:
     get:
       summary: Root
-      operationId: root__get
+      description: Get Application Status
+      operationId: status
       responses:
         '200':
           description: Successful Response
@@ -23,7 +24,7 @@ paths:
   /applications/:
     get:
       summary: List Applications
-      operationId: list_applications_applications__get
+      operationId: list_applications
       responses:
         '200':
           description: Successful Response
@@ -33,11 +34,11 @@ paths:
                 items:
                   $ref: '#/components/schemas/ApplicationModel'
                 type: array
-                title: Response List Applications Applications  Get
+                title: Response List Applications
   /applications/{namespace}/{name}/placements:
     put:
       summary: Set Placements
-      operationId: set_placements_applications__namespace___name__placements_put
+      operationId: set_placements
       parameters:
       - name: namespace
         in: path
@@ -76,7 +77,7 @@ paths:
   /applications/{namespace}/{name}/owner:
     put:
       summary: Set Owner
-      operationId: set_owner_applications__namespace___name__owner_put
+      operationId: set_owner
       parameters:
       - name: namespace
         in: path

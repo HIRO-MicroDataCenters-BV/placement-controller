@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 from fastapi.openapi.utils import get_openapi
 from uvicorn import Config, Server
 
-from placement_controller.api.model import ApplicationModel
+from placement_controller.api.model import ApplicationModel, BidRequestModel, BidResponseModel, BidStatus
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.applications import Applications
 
@@ -51,15 +51,17 @@ def create_app(applications: Applications) -> PlacementFastAPI:
 def create_api() -> PlacementFastAPI:
     app = PlacementFastAPI()
 
-    @app.get("/")
+    @app.get(path="/", operation_id="status", description="Get Application Status")
     async def root():
         return {"application": "Placement Controller", "status": "OK"}
 
-    @app.get("/applications/", response_model=List[ApplicationModel])
+    @app.get(path="/applications/", response_model=List[ApplicationModel], operation_id="list_applications")
     def list_applications(apps: Applications = Depends(lambda: get_applications(app))) -> List[ApplicationModel]:
         return [ApplicationModel.from_object(app) for app in apps.list()]
 
-    @app.put("/applications/{namespace}/{name}/placements", response_model=ApplicationModel)
+    @app.put(
+        "/applications/{namespace}/{name}/placements", response_model=ApplicationModel, operation_id="set_placements"
+    )
     async def set_placements(
         namespace: str, name: str, zones: List[str], apps: Applications = Depends(lambda: get_applications(app))
     ) -> ApplicationModel:
@@ -67,13 +69,19 @@ def create_api() -> PlacementFastAPI:
         application = await apps.set_placement(namespaced_name, zones)
         return ApplicationModel.from_object(application)
 
-    @app.put("/applications/{namespace}/{name}/owner", response_model=ApplicationModel)
+    @app.put("/applications/{namespace}/{name}/owner", response_model=ApplicationModel, operation_id="set_owner")
     async def set_owner(
         namespace: str, name: str, owner: str, apps: Applications = Depends(lambda: get_applications(app))
     ) -> ApplicationModel:
         namespaced_name = NamespacedName(name=name, namespace=namespace)
         application = await apps.set_owner(namespaced_name, owner)
         return ApplicationModel.from_object(application)
+
+    @app.put("/bids/", response_model=BidResponseModel, operation_id="application_bid")
+    async def application_bid(
+        bid: BidRequestModel, apps: Applications = Depends(lambda: get_applications(app))
+    ) -> BidResponseModel:
+        return BidResponseModel(id="none", status=BidStatus.accepted, metrics=[])
 
     return app
 

@@ -1,0 +1,4 @@
+[project]
+name = "application-api"
+version = "0.1.0"
+dependencies = []

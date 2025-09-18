@@ -1,8 +1,0 @@
-{
-  "packageName": "placement_client",
-  "packageDir": "src/",
-  "additionalProperties": {
-    "packageName": "placement_client",
-    "packageDir": "project/src"
-  }
-}

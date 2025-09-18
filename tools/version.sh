@@ -102,6 +102,8 @@ patch_versions_in_project_files() {
   DOCKER_IMAGE_NAME="$1"
 
   PYPROJECT_PATH="${ROOT}/pyproject.toml"
+  PYPROJECT_API_PATH="${ROOT}/packages/placement-api/pyproject.toml"
+  PYPROJECT_CLIENT_PATH="${ROOT}/packages/placement-client/pyproject.toml"
   CHART_PATH="${ROOT}/charts/${CHART_NAME}"
 
   VERSION_APP=$(cat "${VERSION_APP_PATH}")
@@ -109,6 +111,8 @@ patch_versions_in_project_files() {
   VERSION_CHART=$(cat "${VERSION_CHART_PATH}")
 
   sed -i "s#version = \"0.0.0\"#version = \"$VERSION_APP\"#" "${PYPROJECT_PATH}"
+  sed -i "s#version = \"0.0.0\"#version = \"$VERSION_APP\"#" "${PYPROJECT_API_PATH}"
+  sed -i "s#version = \"0.0.0\"#version = \"$VERSION_APP\"#" "${PYPROJECT_CLIENT_PATH}"
 
   sed -i "s#repository: \"\"#repository: \"$DOCKER_IMAGE_NAME\"#" "${CHART_PATH}/values.yaml"
   sed -i "s#tag: \"\"#tag: \"$DOCKER_IMAGE_TAG\"#" "${CHART_PATH}/values.yaml"

@@ -118,7 +118,7 @@ poetry run pre-commit install
 
 4. Launch the project:
 ```bash
-python -m app.main --config ./etc/config.yaml
+python -m placement.main --config ./etc/config.yaml
 ```
 
 5. Running tests:
@@ -214,17 +214,10 @@ The Helm chart version changed automatically when a new release is created. The 
 [GitHub Actions](https://docs.github.com/en/actions) triggers testing, builds, and application publishing for each release.  
 
 
-You can set up automatic testing in GitHub Actions for different versions of Python. To do this, specify the versions set in the `.github/workflows/test_and_build.yaml` file. For example:
-```yaml
-strategy:
-  matrix:
-    python-version: ["3.10", "3.11", "3.12"]
-```
-
 The process of building and publishing differs for web services and libraries.
 
-### Web service
-The default build and publish process is configured for a web application (`.github\workflows\build_web.yaml`).
+### Service
+The default build and publish process is configured for a web application (`.github\workflows\service.yaml`).
 During this process, a Docker image is built, a Helm chart is created, an `openapi.yaml` is generated, and the web service is deployed to a Kubernetes cluster.
 
 ## Act

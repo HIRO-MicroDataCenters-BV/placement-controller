@@ -1,18 +1,17 @@
 k8s:
-  incluster: false
-  context: kind-kind-cluster1
-  timeout_seconds: 360
+  incluster: true
+  timeout_seconds: 3600
 
 placement:
   namespace: test
   available_zones:
-    - emdc1
-    - kind-kind-cluster1
+    - zone1
+    - zone2
 
-  current_zone: "kind-kind-cluster1"
+  current_zone: "zone1"
 
 api:
-  port: 8000
+  port: 8001
 
 prometheus:
-  endpoint_port: 8080
+  endpoint_port: 8085

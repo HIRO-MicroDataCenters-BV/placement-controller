@@ -8,7 +8,7 @@ info:
   license:
     name: MIT
     url: https://github.com/HIRO-MicroDataCenters-BV/placement-controller/blob/main/LICENSE
-  version: 1.0.0
+  version: 0.1.0
 paths:
   /:
     get:
@@ -110,6 +110,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /bids/:
+    put:
+      summary: Application Bid
+      operationId: application_bid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BidRequestModel'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BidResponseModel'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     ApplicationModel:
@@ -135,6 +158,76 @@ components:
       - owner
       - zones
       title: ApplicationModel
+    BidCriteria:
+      type: string
+      enum:
+      - cpu
+      - gpu
+      - ram
+      - ephemeral-storage
+      - pvc-storage
+      title: BidCriteria
+    BidRequestModel:
+      properties:
+        id:
+          type: string
+          title: Id
+        spec:
+          type: string
+          title: Spec
+        bidCriteria:
+          items:
+            $ref: '#/components/schemas/BidCriteria'
+          type: array
+          title: Bidcriteria
+        metrics:
+          items:
+            $ref: '#/components/schemas/Metric'
+          type: array
+          title: Metrics
+      type: object
+      required:
+      - id
+      - spec
+      - bidCriteria
+      - metrics
+      title: BidRequestModel
+    BidResponseModel:
+      properties:
+        id:
+          type: string
+          title: Id
+        status:
+          $ref: '#/components/schemas/BidStatus'
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        msg:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msg
+        metrics:
+          items:
+            $ref: '#/components/schemas/MetricValue'
+          type: array
+          title: Metrics
+      type: object
+      required:
+      - id
+      - status
+      - reason
+      - msg
+      - metrics
+      title: BidResponseModel
+    BidStatus:
+      type: string
+      enum:
+      - accepted
+      - rejected
+      title: BidStatus
     HTTPValidationError:
       properties:
         detail:
@@ -144,6 +237,35 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    Metric:
+      type: string
+      enum:
+      - cost
+      - energy
+      title: Metric
+    MetricUnit:
+      type: string
+      enum:
+      - core
+      - byte
+      - watt
+      - eur
+      title: MetricUnit
+    MetricValue:
+      properties:
+        id:
+          $ref: '#/components/schemas/Metric'
+        value:
+          type: string
+          title: Value
+        unit:
+          $ref: '#/components/schemas/MetricUnit'
+      type: object
+      required:
+      - id
+      - value
+      - unit
+      title: MetricValue
     ValidationError:
       properties:
         loc:

@@ -6,8 +6,8 @@ from attrs import field as _attrs_field
 
 
 if TYPE_CHECKING:
-    from ..models.pod_info import PodInfo
     from ..models.workload_status import WorkloadStatus
+    from ..models.pod_info import PodInfo
 
 
 T = TypeVar("T", bound="ApplicationReport")
@@ -49,8 +49,8 @@ class ApplicationReport:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.pod_info import PodInfo
         from ..models.workload_status import WorkloadStatus
+        from ..models.pod_info import PodInfo
 
         d = dict(src_dict)
         pods = []

@@ -1,3 +1,8 @@
+from placement_controller.clients.k8s.client import KubeClient
+
+
 class ObjectCache:
-    def __init__(self):
-        pass
+    client: KubeClient
+
+    def __init__(self, client: KubeClient):
+        self.client = client

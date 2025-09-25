@@ -9,8 +9,8 @@ from typing import Union
 
 if TYPE_CHECKING:
     from ..models.pod_resources import PodResources
-    from ..models.pvc_resources import PVCResources
     from ..models.resource_id import ResourceId
+    from ..models.pvc_resources import PVCResources
 
 
 T = TypeVar("T", bound="ApplicationSpec")
@@ -57,8 +57,8 @@ class ApplicationSpec:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.pod_resources import PodResources
-        from ..models.pvc_resources import PVCResources
         from ..models.resource_id import ResourceId
+        from ..models.pvc_resources import PVCResources
 
         d = dict(src_dict)
         id = ResourceId.from_dict(d.pop("id"))

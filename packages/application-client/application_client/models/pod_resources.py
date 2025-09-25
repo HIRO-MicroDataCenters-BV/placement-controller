@@ -6,9 +6,9 @@ from attrs import field as _attrs_field
 
 
 if TYPE_CHECKING:
-    from ..models.resource_id import ResourceId
-    from ..models.pod_resources_limits import PodResourcesLimits
     from ..models.pod_resources_requests import PodResourcesRequests
+    from ..models.pod_resources_limits import PodResourcesLimits
+    from ..models.resource_id import ResourceId
 
 
 T = TypeVar("T", bound="PodResources")
@@ -54,9 +54,9 @@ class PodResources:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.resource_id import ResourceId
-        from ..models.pod_resources_limits import PodResourcesLimits
         from ..models.pod_resources_requests import PodResourcesRequests
+        from ..models.pod_resources_limits import PodResourcesLimits
+        from ..models.resource_id import ResourceId
 
         d = dict(src_dict)
         id = ResourceId.from_dict(d.pop("id"))

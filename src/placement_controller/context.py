@@ -9,6 +9,7 @@ from placement_controller.api.app import start_fastapi
 from placement_controller.clients.k8s.client import KubeClient
 from placement_controller.core.applications import Applications
 from placement_controller.resources.resource_managment import ResourceManagement
+from placement_controller.resources.resource_tracking import ResourceTrackingImpl
 from placement_controller.settings import Settings
 from placement_controller.util.clock import Clock
 
@@ -26,7 +27,8 @@ class Context:
         self.loop = loop
         self.tasks = []
         self.applications = Applications(client, self.terminated, settings.placement)
-        self.resource_management = ResourceManagement(client)
+        resource_tracking = ResourceTrackingImpl(client)
+        self.resource_management = ResourceManagement(client, resource_tracking)
 
     def start(self) -> None:
         if self.terminated.is_set():

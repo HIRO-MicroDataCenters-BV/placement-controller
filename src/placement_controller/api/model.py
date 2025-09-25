@@ -65,3 +65,9 @@ class BidResponseModel(BaseModel):
     reason: Optional[str] = None
     msg: Optional[str] = None
     metrics: List[MetricValue]
+
+
+class ErrorResponse(BaseModel):
+    status: int
+    code: str
+    msg: Optional[str] = None

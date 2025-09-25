@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 from fastapi.openapi.utils import get_openapi
 from uvicorn import Config, Server
 
-from placement_controller.api.model import ApplicationModel, BidRequestModel, BidResponseModel, BidStatus
+from placement_controller.api.model import ApplicationModel, BidRequestModel, BidResponseModel, BidStatus, ErrorResponse
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.applications import Applications
 
@@ -77,7 +77,12 @@ def create_api() -> PlacementFastAPI:
         application = await apps.set_owner(namespaced_name, owner)
         return ApplicationModel.from_object(application)
 
-    @app.put("/bids/", response_model=BidResponseModel, operation_id="application_bid")
+    @app.put(
+        "/bids/",
+        response_model=BidResponseModel,
+        operation_id="application_bid",
+        responses={500: {"model": ErrorResponse}},
+    )
     async def application_bid(
         bid: BidRequestModel, apps: Applications = Depends(lambda: get_applications(app))
     ) -> BidResponseModel:

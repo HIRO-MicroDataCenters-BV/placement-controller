@@ -8,6 +8,7 @@ from prometheus_async.aio.web import start_http_server
 from placement_controller.api.app import start_fastapi
 from placement_controller.clients.k8s.client import KubeClient
 from placement_controller.core.applications import Applications
+from placement_controller.resources.resource_managment import ResourceManagement
 from placement_controller.settings import Settings
 from placement_controller.util.clock import Clock
 
@@ -25,6 +26,7 @@ class Context:
         self.loop = loop
         self.tasks = []
         self.applications = Applications(client, self.terminated, settings.placement)
+        self.resource_management = ResourceManagement(client)
 
     def start(self) -> None:
         if self.terminated.is_set():
@@ -34,7 +36,9 @@ class Context:
 
     async def run_tasks(self) -> None:
         self.tasks.append(self.loop.create_task(self.applications.run()))
-        self.tasks.append(self.loop.create_task(start_fastapi(self.settings.api.port, self.applications)))
+        self.tasks.append(
+            self.loop.create_task(start_fastapi(self.settings.api.port, self.applications, self.resource_management))
+        )
         self.prometheus_server = await start_http_server(port=self.settings.prometheus.endpoint_port)
 
     def stop(self) -> None:

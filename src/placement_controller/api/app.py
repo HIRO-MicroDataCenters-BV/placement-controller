@@ -7,6 +7,7 @@ from uvicorn import Config, Server
 from placement_controller.api.model import ApplicationModel, BidRequestModel, BidResponseModel, BidStatus, ErrorResponse
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.applications import Applications
+from placement_controller.resources.resource_managment import ResourceManagement
 
 
 class PlacementFastAPI(FastAPI):
@@ -31,8 +32,8 @@ class PlacementFastAPI(FastAPI):
         return self.openapi_schema
 
 
-async def start_fastapi(port: int, applications: Applications) -> None:
-    app = create_app(applications)
+async def start_fastapi(port: int, applications: Applications, resource_management: ResourceManagement) -> None:
+    app = create_app(applications, resource_management)
     config = Config(app=app, host="0.0.0.0", port=port, loop="asyncio")
     server = Server(config)
 
@@ -40,10 +41,11 @@ async def start_fastapi(port: int, applications: Applications) -> None:
     await server.serve()
 
 
-def create_app(applications: Applications) -> PlacementFastAPI:
+def create_app(applications: Applications, resource_management: ResourceManagement) -> PlacementFastAPI:
     app = create_api()
 
     app.state.applications = applications
+    app.state.resource_management = resource_management
 
     return app
 
@@ -96,3 +98,7 @@ app = create_api()
 
 def get_applications(app: FastAPI) -> Applications:
     return app.state.applications  # type:ignore
+
+
+def get_resource_management(app: FastAPI) -> ResourceManagement:
+    return app.state.resource_management  # type:ignore

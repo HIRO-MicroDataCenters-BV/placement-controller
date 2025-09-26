@@ -12,7 +12,7 @@ from placement_controller.core.async_queue import AsyncQueue
 @dataclass
 class Subscription:
     gvk: GroupVersionKind
-    namespace: str
+    namespace: Optional[str]
     queue: AsyncQueue[KubeEvent]
 
 
@@ -37,7 +37,7 @@ class FakeClient(KubeClient):
         self, gvk: GroupVersionKind, namespace: Optional[str], version_since: int, is_terminated: asyncio.Event
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         queue = AsyncQueue[KubeEvent]()
-        subscription = Subscription(gvk=gvk, queue=queue, namespace=namespace or "default")
+        subscription = Subscription(gvk=gvk, queue=queue, namespace=namespace)
         self.subscriber_ids += 1
         self.subscriptions[self.subscriber_ids] = subscription
         return self.subscriber_ids, queue
@@ -123,5 +123,5 @@ class FakeClient(KubeClient):
         self.events.append(event)
         for _, subscription in self.subscriptions.items():
             namespace = event.object["metadata"]["namespace"]
-            if subscription.namespace == namespace:
+            if subscription.namespace == namespace or subscription.namespace is None:
                 subscription.queue.put_nowait(event)

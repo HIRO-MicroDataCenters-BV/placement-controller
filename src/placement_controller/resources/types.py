@@ -10,7 +10,7 @@ class NodeInfo:
 
 class ResourceTracking:
 
-    async def start(self) -> None:
+    def start(self) -> None:
         raise NotImplementedError
 
     def list_nodes(self) -> List[NodeInfo]:

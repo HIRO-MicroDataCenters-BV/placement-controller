@@ -17,7 +17,6 @@ class TestResource(BaseResource):
 
 
 class ObjectPoolTest(TestCase):
-    runner: asyncio.Runner
     client: FakeClient
     pool: ObjectPool[TestResource]
     task: asyncio.Task[None]

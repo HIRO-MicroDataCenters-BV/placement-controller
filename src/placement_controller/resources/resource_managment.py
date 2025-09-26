@@ -13,4 +13,6 @@ class ResourceManagement:
 
     def application_bid(self, bid: BidRequestModel) -> BidResponseModel:
 
+        # nodes = self.resource_tracking.list_nodes()
+
         return BidResponseModel(id=bid.id, status=BidStatus.rejected, reason=None, msg=None, metrics=[])

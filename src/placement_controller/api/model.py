@@ -37,7 +37,7 @@ class Metric(str, Enum):
 class BidRequestModel(BaseModel):
     id: str
     spec: str
-    bidCriteria: List[BidCriteria]
+    bid_criteria: List[BidCriteria]
     metrics: List[Metric]
 
 

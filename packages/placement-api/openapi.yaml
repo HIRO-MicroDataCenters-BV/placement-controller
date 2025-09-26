@@ -181,11 +181,11 @@ components:
         spec:
           type: string
           title: Spec
-        bidCriteria:
+        bid_criteria:
           items:
             $ref: '#/components/schemas/BidCriteria'
           type: array
-          title: Bidcriteria
+          title: Bid Criteria
         metrics:
           items:
             $ref: '#/components/schemas/Metric'
@@ -195,7 +195,7 @@ components:
       required:
       - id
       - spec
-      - bidCriteria
+      - bid_criteria
       - metrics
       title: BidRequestModel
     BidResponseModel:

@@ -11,7 +11,10 @@ class PlacementTest(TestCase):
 
     def setUp(self) -> None:
         self.placement = GreedyPlacement(
-            [], ApplicationSpec(id=ResourceId(name="test", namespace="test"), resources=[])
+            nodes=[],
+            spec=ApplicationSpec(id=ResourceId(name="test", namespace="test"), resources=[]),
+            bidCriteria=[],
+            metrics=[],
         )
 
     def test_placement(self):

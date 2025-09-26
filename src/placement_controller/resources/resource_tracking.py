@@ -25,4 +25,11 @@ class ResourceTrackingImpl(ResourceTracking):
         self.pod_task = asyncio.create_task(self.pod_pool.start())
 
     def list_nodes(self) -> List[NodeInfo]:
-        return []
+        nodes = {node.get_name(): NodeInfo.from_node(node) for node in self.node_pool.get_objects()}
+        for pod in self.pod_pool.get_objects():
+            node_name = pod.get_node_name()
+            if node_name:
+                node_info = nodes.get(node_name)
+                if node_info:
+                    node_info.add(pod)
+        return list(nodes.values())

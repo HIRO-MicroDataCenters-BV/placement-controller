@@ -22,6 +22,10 @@ class ResourceTestFixture:
                                 "cpu": "100m",
                                 "memory": "100Mi",
                             },
+                            "limits": {
+                                "cpu": "200m",
+                                "memory": "200Mi",
+                            },
                         },
                     }
                 ],

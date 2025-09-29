@@ -18,6 +18,7 @@ class ObjectPool(Generic[T]):
     is_terminated: asyncio.Event
     pool: Dict[NamespacedName, T]
     cls: type[T]
+    active: bool
 
     def __init__(self, cls: Type[T], client: KubeClient, gvk: GroupVersionKind, is_terminated: asyncio.Event):
         self.cls = cls
@@ -25,9 +26,12 @@ class ObjectPool(Generic[T]):
         self.gvk = gvk
         self.is_terminated = is_terminated
         self.pool = dict()
+        self.active = False
 
     async def start(self) -> None:
         subscriber_id, queue = self.client.watch(self.gvk, None, 0, self.is_terminated)
+        self.active = True
+
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:
@@ -49,3 +53,6 @@ class ObjectPool(Generic[T]):
 
     def get_objects(self) -> List[T]:
         return list(self.pool.values())
+
+    def is_subscription_active(self) -> bool:
+        return self.active

@@ -20,9 +20,11 @@ class ResourceTrackingImpl(ResourceTracking):
         self.node_pool = ObjectPool[Node](Node, client, GroupVersionKind("", "v1", "Node"), is_terminated)
         self.pod_pool = ObjectPool[Pod](Pod, client, GroupVersionKind("", "v1", "Pod"), is_terminated)
 
-    def start(self) -> None:
-        self.node_task = asyncio.create_task(self.node_pool.start())
-        self.pod_task = asyncio.create_task(self.pod_pool.start())
+    async def start(self) -> None:
+        await asyncio.gather(self.node_pool.start(), self.pod_pool.start())
+
+    def is_subscription_active(self) -> bool:
+        return all([self.node_pool.is_subscription_active(), self.pod_pool.is_subscription_active()])
 
     def list_nodes(self) -> List[NodeInfo]:
         nodes = {node.get_name(): NodeInfo.from_node(node) for node in self.node_pool.get_objects()}

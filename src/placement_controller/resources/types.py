@@ -16,6 +16,7 @@ class NodeInfo:
 
     @staticmethod
     def from_node(node: Node) -> "NodeInfo":
+        print("node object ", node.object)
         return NodeInfo(name=node.get_name(), allocatable=node.get_allocatable())
 
     def add(self, pod: Pod) -> None:
@@ -42,8 +43,11 @@ class NodeInfo:
 
 class ResourceTracking:
 
-    def start(self) -> None:
+    async def start(self) -> None:
         raise NotImplementedError
 
     def list_nodes(self) -> List[NodeInfo]:
+        raise NotImplementedError
+
+    def is_subscription_active(self) -> bool:
         raise NotImplementedError

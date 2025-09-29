@@ -122,6 +122,10 @@ class FakeClient(KubeClient):
     def send_event(self, event: KubeEvent) -> None:
         self.events.append(event)
         for _, subscription in self.subscriptions.items():
-            namespace = event.object["metadata"]["namespace"]
-            if subscription.namespace == namespace or subscription.namespace is None:
+            namespace = event.object["metadata"].get("namespace") or "default"
+            gvk = GroupVersionKind("", event.object["apiVersion"], event.object["kind"])
+            is_gvk_match = gvk == subscription.gvk
+            is_namespace_match = subscription.namespace == namespace or subscription.namespace is None
+            if is_namespace_match and is_gvk_match:
+                print("send event ", event)
                 subscription.queue.put_nowait(event)

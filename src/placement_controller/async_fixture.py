@@ -23,5 +23,5 @@ class AsyncTestFixture(TestCase):
         while start + datetime.timedelta(seconds=seconds) > datetime.datetime.now():
             if conditionFunc():
                 return
-            asyncio.run(asyncio.sleep(0.1))
+            self.loop.run_until_complete(asyncio.sleep(0.1))
         raise AssertionError("time is up.")

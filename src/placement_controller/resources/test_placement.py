@@ -13,9 +13,11 @@ class PlacementTest(TestCase):
         self.placement = GreedyPlacement(
             nodes=[],
             spec=ApplicationSpec(id=ResourceId(name="test", namespace="test"), resources=[]),
-            bidCriteria=[],
-            metrics=[],
+            bid_criteria=set(),
         )
 
-    def test_placement(self):
-        self.placement.try_bind()
+    def test_placement_empty(self):
+        result = self.placement.try_place()
+
+        self.assertTrue(result.is_success)
+        self.assertEqual(result.msg_log, None)

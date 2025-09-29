@@ -23,10 +23,10 @@ class ApplicationModel(BaseModel):
 
 class BidCriteria(str, Enum):
     cpu = "cpu"
-    gpu = "gpu"
-    ram = "ram"
+    memory = "memory"
+    gpu = "nvidia.com/gpu"
     ephemeralStorage = "ephemeral-storage"
-    pvcStorage = "pvc-storage"
+    pvcStorage = "storage"
 
 
 class Metric(str, Enum):
@@ -37,7 +37,7 @@ class Metric(str, Enum):
 class BidRequestModel(BaseModel):
     id: str
     spec: str
-    bid_criteria: Set[BidCriteria]
+    bid_criteria: List[BidCriteria]
     metrics: Set[Metric]
 
 

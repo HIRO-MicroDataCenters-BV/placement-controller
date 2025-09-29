@@ -4,9 +4,9 @@ from enum import Enum
 class BidCriteria(str, Enum):
     CPU = "cpu"
     EPHEMERAL_STORAGE = "ephemeral-storage"
-    GPU = "gpu"
-    PVC_STORAGE = "pvc-storage"
-    RAM = "ram"
+    MEMORY = "memory"
+    NVIDIA_COMGPU = "nvidia.com/gpu"
+    STORAGE = "storage"
 
     def __str__(self) -> str:
         return str(self.value)

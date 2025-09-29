@@ -29,3 +29,6 @@ class NodeInfoTest(TestCase, ResourceTestFixture):
             {"cpu": Decimal("9.900"), "ephemeral-storage": Decimal("134950129664"), "memory": Decimal("8113176576")},
             node_info.get_free_resources(),
         )
+
+
+# TODO sort nodes

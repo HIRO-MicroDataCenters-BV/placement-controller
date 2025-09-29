@@ -27,4 +27,4 @@ class ResourceManagement:
         result = placement.try_place()
         status = BidStatus.accepted if result.is_success() else BidStatus.rejected
 
-        return BidResponseModel(id=bid.id, status=status, reason=result.reason, msg=result.msg_log, metrics=[])
+        return BidResponseModel(id=bid.id, status=status, reason=result.reason, msg=result.trace.get_data(), metrics=[])

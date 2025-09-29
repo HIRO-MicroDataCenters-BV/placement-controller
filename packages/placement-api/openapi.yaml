@@ -168,10 +168,10 @@ components:
       type: string
       enum:
       - cpu
-      - gpu
-      - ram
+      - memory
+      - nvidia.com/gpu
       - ephemeral-storage
-      - pvc-storage
+      - storage
       title: BidCriteria
     BidRequestModel:
       properties:
@@ -185,7 +185,6 @@ components:
           items:
             $ref: '#/components/schemas/BidCriteria'
           type: array
-          uniqueItems: true
           title: Bid Criteria
         metrics:
           items:

@@ -185,11 +185,13 @@ components:
           items:
             $ref: '#/components/schemas/BidCriteria'
           type: array
+          uniqueItems: true
           title: Bid Criteria
         metrics:
           items:
             $ref: '#/components/schemas/Metric'
           type: array
+          uniqueItems: true
           title: Metrics
       type: object
       required:

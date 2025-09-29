@@ -13,3 +13,6 @@ class BaseResource:
         name = self.object["metadata"]["name"]
         namespace = self.object["metadata"].get("namespace") or "default"
         return NamespacedName(name, namespace)
+
+    def get_labels(self) -> Dict[str, str]:
+        return self.object["metadata"].get("labels", {})  # type: ignore

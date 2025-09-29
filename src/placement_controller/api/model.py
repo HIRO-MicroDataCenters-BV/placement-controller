@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from enum import Enum
 
@@ -37,8 +37,8 @@ class Metric(str, Enum):
 class BidRequestModel(BaseModel):
     id: str
     spec: str
-    bid_criteria: List[BidCriteria]
-    metrics: List[Metric]
+    bid_criteria: Set[BidCriteria]
+    metrics: Set[Metric]
 
 
 class BidStatus(str, Enum):

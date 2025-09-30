@@ -68,5 +68,4 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
         )
 
     def to_json_str(self, spec: ApplicationSpec) -> str:
-        spec_json = json.dumps(spec.to_dict())
-        return json.dumps(spec_json)
+        return json.dumps(spec.to_dict())

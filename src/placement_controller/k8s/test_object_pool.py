@@ -10,7 +10,7 @@ from placement_controller.k8s.object_pool import ObjectPool
 from placement_controller.resource_fixture import ResourceTestFixture
 
 
-class TestResource(BaseResource):
+class FakeResource(BaseResource):
 
     def __init__(self, object: Dict[str, Any]):
         super().__init__(object)
@@ -18,7 +18,7 @@ class TestResource(BaseResource):
 
 class ObjectPoolTest(AsyncTestFixture, ResourceTestFixture):
     client: FakeClient
-    pool: ObjectPool[TestResource]
+    pool: ObjectPool[FakeResource]
     task: asyncio.Task[None]
     gvk: GroupVersionKind
 
@@ -26,7 +26,7 @@ class ObjectPoolTest(AsyncTestFixture, ResourceTestFixture):
         super().setUp()
         self.gvk = GroupVersionKind("", "v1", "Pod")
         self.client = FakeClient()
-        self.pool = ObjectPool[TestResource](TestResource, self.client, self.gvk, self.terminated)
+        self.pool = ObjectPool[FakeResource](FakeResource, self.client, self.gvk, self.terminated)
         self.task = self.loop.create_task(self.pool.start())
 
     def tearDown(self) -> None:
@@ -49,7 +49,7 @@ class ObjectPoolTest(AsyncTestFixture, ResourceTestFixture):
         self.loop.run_until_complete(self.client.patch(self.gvk, object))
 
         def test_property() -> bool:
-            obj: TestResource = self.pool.get_objects()[0]
+            obj: FakeResource = self.pool.get_objects()[0]
             return obj.object["spec"].get("scheduler") == "set"  # type: ignore
 
         self.wait_for_condition(2, test_property)

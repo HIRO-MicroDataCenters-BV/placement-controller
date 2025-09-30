@@ -39,7 +39,7 @@ class Context:
         self.loop.run_until_complete(self.run_tasks())
 
     async def run_tasks(self) -> None:
-        self.resource_tracking.start()
+        self.tasks.append(self.loop.create_task(self.resource_tracking.start()))
         self.tasks.append(self.loop.create_task(self.applications.run()))
         self.tasks.append(
             self.loop.create_task(start_fastapi(self.settings.api.port, self.applications, self.resource_management))

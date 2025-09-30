@@ -123,9 +123,15 @@ class FakeClient(KubeClient):
         self.events.append(event)
         for _, subscription in self.subscriptions.items():
             namespace = event.object["metadata"].get("namespace") or "default"
-            gvk = GroupVersionKind("", event.object["apiVersion"], event.object["kind"])
+            groupVersion = event.object["apiVersion"]
+            tokens = groupVersion.split("/")
+            if len(tokens) != 2:
+                group = ""
+                version = groupVersion
+            else:
+                group, version = tokens[0], tokens[1]
+            gvk = GroupVersionKind(group, version, event.object["kind"])
             is_gvk_match = gvk == subscription.gvk
             is_namespace_match = subscription.namespace == namespace or subscription.namespace is None
             if is_namespace_match and is_gvk_match:
-                print("send event ", event)
                 subscription.queue.put_nowait(event)

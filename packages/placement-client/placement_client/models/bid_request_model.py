@@ -49,7 +49,7 @@ class BidRequestModel:
             {
                 "id": id,
                 "spec": spec,
-                "bidCriteria": bid_criteria,
+                "bid_criteria": bid_criteria,
                 "metrics": metrics,
             }
         )
@@ -64,7 +64,7 @@ class BidRequestModel:
         spec = d.pop("spec")
 
         bid_criteria = []
-        _bid_criteria = d.pop("bidCriteria")
+        _bid_criteria = d.pop("bid_criteria")
         for bid_criteria_item_data in _bid_criteria:
             bid_criteria_item = BidCriteria(bid_criteria_item_data)
 

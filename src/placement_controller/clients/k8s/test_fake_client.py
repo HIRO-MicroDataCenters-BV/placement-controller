@@ -1,24 +1,27 @@
 from typing import Any, Dict
 
 import asyncio
-from unittest import TestCase
 
+from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import GroupVersionKind, NamespacedName
 from placement_controller.clients.k8s.event import EventType, KubeEvent
 from placement_controller.clients.k8s.fake_client import FakeClient
 
 
-class FakeClientTest(TestCase):
-    runner: asyncio.Runner
+class FakeClientTest(AsyncTestFixture):
     client: FakeClient
     gvk: GroupVersionKind
     name: NamespacedName
 
     def setUp(self) -> None:
-        self.loop = asyncio.get_event_loop()
+        super().setUp()
+
         self.client = FakeClient()
         self.gvk = GroupVersionKind(group="dcp.hiro.io", version="v1", kind="AnyApplication")
         self.name = NamespacedName(name="nginx-app", namespace="test")
+
+    def tearDown(self) -> None:
+        super().tearDown()
 
     def test_get(self):
         object = self.loop.run_until_complete(self.client.get(self.gvk, self.name))

@@ -1,6 +1,4 @@
-import asyncio
-from unittest import TestCase
-
+from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.clients.k8s.settings import K8SSettings
 from placement_controller.context import Context
@@ -9,19 +7,23 @@ from placement_controller.util.clock import Clock
 from placement_controller.util.mock_clock import MockClock
 
 
-class ContextTest(TestCase):
+class ContextTest(AsyncTestFixture):
     clock: Clock
     k8s_client: FakeClient
 
     def setUp(self) -> None:
+        super().setUp()
         self.clock = MockClock()
         self.k8s_client = FakeClient()
         self.settings = self.make_settings()
-        self.context = Context(self.clock, self.k8s_client, self.settings, asyncio.get_event_loop())
+        self.context = Context(self.clock, self.k8s_client, self.settings, self.loop)
+
+    def tearDown(self) -> None:
+        super().tearDown()
 
     def test_end_to_end_minimal(self) -> None:
         self.context.start()
-
+        self.wait_for_condition(2, lambda: self.context.resource_tracking.is_subscription_active())
         self.context.stop()
 
     def make_settings(self) -> Settings:

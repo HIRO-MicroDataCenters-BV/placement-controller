@@ -127,6 +127,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BidResponseModel'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: Validation Error
           content:
@@ -162,10 +168,10 @@ components:
       type: string
       enum:
       - cpu
-      - gpu
-      - ram
+      - memory
+      - nvidia.com/gpu
       - ephemeral-storage
-      - pvc-storage
+      - storage
       title: BidCriteria
     BidRequestModel:
       properties:
@@ -175,21 +181,22 @@ components:
         spec:
           type: string
           title: Spec
-        bidCriteria:
+        bid_criteria:
           items:
             $ref: '#/components/schemas/BidCriteria'
           type: array
-          title: Bidcriteria
+          title: Bid Criteria
         metrics:
           items:
             $ref: '#/components/schemas/Metric'
           type: array
+          uniqueItems: true
           title: Metrics
       type: object
       required:
       - id
       - spec
-      - bidCriteria
+      - bid_criteria
       - metrics
       title: BidRequestModel
     BidResponseModel:
@@ -226,6 +233,24 @@ components:
       - accepted
       - rejected
       title: BidStatus
+    ErrorResponse:
+      properties:
+        status:
+          type: integer
+          title: Status
+        code:
+          type: string
+          title: Code
+        msg:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msg
+      type: object
+      required:
+      - status
+      - code
+      title: ErrorResponse
     HTTPValidationError:
       properties:
         detail:

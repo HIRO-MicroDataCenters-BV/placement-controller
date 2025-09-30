@@ -9,6 +9,7 @@ from ... import errors
 
 from ...models.bid_request_model import BidRequestModel
 from ...models.bid_response_model import BidResponseModel
+from ...models.error_response import ErrorResponse
 from ...models.http_validation_error import HTTPValidationError
 
 
@@ -33,7 +34,7 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[BidResponseModel, HTTPValidationError]]:
+) -> Optional[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]:
     if response.status_code == 200:
         response_200 = BidResponseModel.from_dict(response.json())
 
@@ -44,6 +45,11 @@ def _parse_response(
 
         return response_422
 
+    if response.status_code == 500:
+        response_500 = ErrorResponse.from_dict(response.json())
+
+        return response_500
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -52,7 +58,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[BidResponseModel, HTTPValidationError]]:
+) -> Response[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -65,7 +71,7 @@ def sync_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     body: BidRequestModel,
-) -> Response[Union[BidResponseModel, HTTPValidationError]]:
+) -> Response[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]:
     """Application Bid
 
     Args:
@@ -76,7 +82,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[BidResponseModel, HTTPValidationError]]
+        Response[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]
     """
 
     kwargs = _get_kwargs(
@@ -94,7 +100,7 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     body: BidRequestModel,
-) -> Optional[Union[BidResponseModel, HTTPValidationError]]:
+) -> Optional[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]:
     """Application Bid
 
     Args:
@@ -105,7 +111,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[BidResponseModel, HTTPValidationError]
+        Union[BidResponseModel, ErrorResponse, HTTPValidationError]
     """
 
     return sync_detailed(
@@ -118,7 +124,7 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     body: BidRequestModel,
-) -> Response[Union[BidResponseModel, HTTPValidationError]]:
+) -> Response[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]:
     """Application Bid
 
     Args:
@@ -129,7 +135,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[BidResponseModel, HTTPValidationError]]
+        Response[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]
     """
 
     kwargs = _get_kwargs(
@@ -145,7 +151,7 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     body: BidRequestModel,
-) -> Optional[Union[BidResponseModel, HTTPValidationError]]:
+) -> Optional[Union[BidResponseModel, ErrorResponse, HTTPValidationError]]:
     """Application Bid
 
     Args:
@@ -156,7 +162,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[BidResponseModel, HTTPValidationError]
+        Union[BidResponseModel, ErrorResponse, HTTPValidationError]
     """
 
     return (

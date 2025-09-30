@@ -4,12 +4,11 @@ from typing import Any, TypeVar, TYPE_CHECKING
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..types import UNSET, Unset
-
-from typing import Union
 
 if TYPE_CHECKING:
+    from ..models.pvc_resources_requests import PVCResourcesRequests
     from ..models.resource_id import ResourceId
+    from ..models.pvc_resources_limits import PVCResourcesLimits
 
 
 T = TypeVar("T", bound="PVCResources")
@@ -22,13 +21,15 @@ class PVCResources:
         id (ResourceId):
         replica (int):
         storage_class (str):
-        size (Union[Unset, str]):
+        requests (PVCResourcesRequests):
+        limits (PVCResourcesLimits):
     """
 
     id: "ResourceId"
     replica: int
     storage_class: str
-    size: Union[Unset, str] = UNSET
+    requests: "PVCResourcesRequests"
+    limits: "PVCResourcesLimits"
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -38,7 +39,9 @@ class PVCResources:
 
         storage_class = self.storage_class
 
-        size = self.size
+        requests = self.requests.to_dict()
+
+        limits = self.limits.to_dict()
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -47,16 +50,18 @@ class PVCResources:
                 "id": id,
                 "replica": replica,
                 "storage-class": storage_class,
+                "requests": requests,
+                "limits": limits,
             }
         )
-        if size is not UNSET:
-            field_dict["size"] = size
 
         return field_dict
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.pvc_resources_requests import PVCResourcesRequests
         from ..models.resource_id import ResourceId
+        from ..models.pvc_resources_limits import PVCResourcesLimits
 
         d = dict(src_dict)
         id = ResourceId.from_dict(d.pop("id"))
@@ -65,13 +70,16 @@ class PVCResources:
 
         storage_class = d.pop("storage-class")
 
-        size = d.pop("size", UNSET)
+        requests = PVCResourcesRequests.from_dict(d.pop("requests"))
+
+        limits = PVCResourcesLimits.from_dict(d.pop("limits"))
 
         pvc_resources = cls(
             id=id,
             replica=replica,
             storage_class=storage_class,
-            size=size,
+            requests=requests,
+            limits=limits,
         )
 
         pvc_resources.additional_properties = d

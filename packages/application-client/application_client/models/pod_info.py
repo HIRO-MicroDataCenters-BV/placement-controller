@@ -6,8 +6,8 @@ from attrs import field as _attrs_field
 
 
 if TYPE_CHECKING:
-    from ..models.log_info import LogInfo
     from ..models.pod_event import PodEvent
+    from ..models.log_info import LogInfo
 
 
 T = TypeVar("T", bound="PodInfo")
@@ -64,8 +64,8 @@ class PodInfo:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.log_info import LogInfo
         from ..models.pod_event import PodEvent
+        from ..models.log_info import LogInfo
 
         d = dict(src_dict)
         name = d.pop("name")

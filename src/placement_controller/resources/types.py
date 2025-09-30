@@ -15,7 +15,7 @@ class NodeInfo:
     allocatable: Dict[str, Decimal] = field(default_factory=dict)
     requests: Dict[str, Decimal] = field(default_factory=dict)
     limits: Dict[str, Decimal] = field(default_factory=dict)
-    free_resources: Optional[Dict[str, Decimal]] = field(default_factory=dict)
+    free_resources: Optional[Dict[str, Decimal]] = None
 
     @staticmethod
     def from_node(node: Node) -> "NodeInfo":
@@ -65,7 +65,7 @@ class NodeInfo:
     ) -> bool:
         free_resources = self.get_free_resources()
         for criterio in criteria:
-            free = free_resources.get(criterio, Decimal(0))
+            free = free_resources.get(str(criterio), Decimal(0))
             consume = requests.get(criterio, limits.get(criterio, Decimal(0)))
             if free - consume < 0:
                 log.log(f"Node {self.name} placement rejected. Not enough {criterio}.")

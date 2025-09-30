@@ -1,6 +1,6 @@
 from typing import List, Optional, Set
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -21,7 +21,7 @@ class ApplicationModel(BaseModel):
         return ApplicationModel(name=name.name, namespace=name.namespace, zones=zones, owner=owner)
 
 
-class BidCriteria(str, Enum):
+class BidCriteria(StrEnum):
     cpu = "cpu"
     memory = "memory"
     gpu = "nvidia.com/gpu"
@@ -29,7 +29,7 @@ class BidCriteria(str, Enum):
     pvcStorage = "storage"
 
 
-class Metric(str, Enum):
+class Metric(StrEnum):
     cost = "cost"
     energy = "energy"
 
@@ -41,12 +41,12 @@ class BidRequestModel(BaseModel):
     metrics: Set[Metric]
 
 
-class BidStatus(str, Enum):
+class BidStatus(StrEnum):
     accepted = "accepted"
     rejected = "rejected"
 
 
-class MetricUnit(str, Enum):
+class MetricUnit(StrEnum):
     core = "core"
     byte = "byte"
     watt = "watt"

@@ -20,11 +20,17 @@ class ResourceManagement:
 
     def application_bid(self, bid: BidRequestModel) -> BidResponseModel:
         nodes = self.resource_tracking.list_nodes()
-        app_spec: Dict[str, Any] = json.loads(bid.spec)
+        app_spec: Dict[str, Any] = json.loads(json.loads(bid.spec))
         spec = ApplicationSpec.from_dict(app_spec)
         placement = GreedyPlacement(nodes, spec, bid.bid_criteria)
 
         result = placement.try_place()
         status = BidStatus.accepted if result.is_success() else BidStatus.rejected
 
-        return BidResponseModel(id=bid.id, status=status, reason=result.reason, msg=result.trace.get_data(), metrics=[])
+        return BidResponseModel(
+            id=bid.id,
+            status=status,
+            reason=result.reason,
+            msg=result.trace.get_data(),
+            metrics=[],
+        )

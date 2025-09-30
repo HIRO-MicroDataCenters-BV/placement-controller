@@ -14,7 +14,6 @@ from placement_controller.resources.types import NodeInfo
 
 
 class PlacementTest(TestCase, ResourceTestFixture):
-    GIGA: int = 1024 * 1024 * 1024
     placement: GreedyPlacement
     node1: NodeInfo
     node2: NodeInfo

@@ -2,7 +2,6 @@ import asyncio
 from decimal import Decimal
 
 from placement_controller.async_fixture import AsyncTestFixture
-from placement_controller.clients.k8s.client import GroupVersionKind
 from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
@@ -14,14 +13,11 @@ class ResourceTrackingImplTest(AsyncTestFixture, ResourceTestFixture):
     tracking: ResourceTracking
     terminated: asyncio.Event
     loop: asyncio.AbstractEventLoop
-    node_gvk: GroupVersionKind
-    pod_gvk: GroupVersionKind
 
     def setUp(self) -> None:
         super().setUp()
         self.client = FakeClient()
-        self.pod_gvk = GroupVersionKind("", "v1", "Pod")
-        self.node_gvk = GroupVersionKind("", "v1", "Node")
+
         self.tracking = ResourceTrackingImpl(self.client, self.terminated)
         self.task = self.loop.create_task(self.tracking.start())
         self.wait_for_condition(2, lambda: self.tracking.is_subscription_active())

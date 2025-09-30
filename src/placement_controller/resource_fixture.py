@@ -1,7 +1,18 @@
 from typing import Any, Dict
 
+from application_client.models.pod_resources import PodResources
+from application_client.models.pod_resources_limits import PodResourcesLimits
+from application_client.models.pod_resources_requests import PodResourcesRequests
+from application_client.models.resource_id import ResourceId
+
+from placement_controller.clients.k8s.client import GroupVersionKind
+
 
 class ResourceTestFixture:
+    pod_gvk: GroupVersionKind = GroupVersionKind("", "v1", "Pod")
+    node_gvk: GroupVersionKind = GroupVersionKind("", "v1", "Node")
+
+    GIGA: int = 1024 * 1024 * 1024
 
     def simple_pod(self) -> Dict[str, Any]:
         return {
@@ -68,3 +79,34 @@ class ResourceTestFixture:
                 "allocatable": allocatable,
             },
         }
+
+    def make_pod(self, name: str, requests: Dict[str, Any], limits: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": name,
+                "namespace": "test",
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name": "nginx",
+                        "image": "nginx:1.14.2",
+                        "ports": [{"containerPort": 80}],
+                        "resources": {
+                            "requests": requests,
+                            "limits": limits,
+                        },
+                    }
+                ],
+            },
+        }
+
+    def make_pod_spec(self, name: str, replica: int, requests: Dict[str, Any], limits: Dict[str, Any]) -> PodResources:
+        return PodResources(
+            id=ResourceId(name=name, namespace="test"),
+            replica=replica,
+            requests=PodResourcesRequests.from_dict(requests),
+            limits=PodResourcesLimits.from_dict(limits),
+        )

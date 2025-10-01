@@ -5,8 +5,9 @@ import asyncio
 from placement_controller.clients.k8s.client import GroupVersionKind, KubeClient
 from placement_controller.k8s.object_pool import ObjectPool
 from placement_controller.resources.node import Node
+from placement_controller.resources.node_info import NodeInfo
 from placement_controller.resources.pod import Pod
-from placement_controller.resources.types import NodeInfo, ResourceTracking
+from placement_controller.resources.types import ResourceTracking
 
 
 class ResourceTrackingImpl(ResourceTracking):

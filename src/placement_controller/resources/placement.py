@@ -10,8 +10,8 @@ from application_client.models.resource_id import ResourceId
 from kubernetes.utils.quantity import parse_quantity
 
 from placement_controller.api.model import BidCriteria
+from placement_controller.resources.node_info import NodeInfo, node_info_comparator
 from placement_controller.resources.trace_log import TraceLog
-from placement_controller.resources.types import NodeInfo, node_info_comparator
 
 PodName = str
 NodeName = str

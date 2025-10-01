@@ -4,8 +4,9 @@ from decimal import Decimal
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.resources.node_info import NodeInfo
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
-from placement_controller.resources.types import NodeInfo, ResourceTracking
+from placement_controller.resources.types import ResourceTracking
 
 
 class ResourceTrackingImplTest(AsyncTestFixture, ResourceTestFixture):

@@ -1,9 +1,11 @@
+from decimal import Decimal
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
+from placement_controller.api.model import Metric
 from placement_controller.clients.k8s.settings import K8SSettings
 from placement_controller.pydantic_yaml import from_yaml, to_yaml
-from placement_controller.resources.resource_metrics import EstimateMethod, MetricPerUnit, MetricSettings
+from placement_controller.resources.resource_metrics import EstimateMethod, MetricDefinition, MetricSettings
 from placement_controller.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
 
 
@@ -16,7 +18,12 @@ class PyDanticYamlTest(TestCase):
             prometheus=PrometheusSettings(endpoint_port=8080),
             metrics=MetricSettings(
                 static_metrics=[
-                    MetricPerUnit(metric="cost", value_per_unit={"cpu": 1.0}, method=EstimateMethod.WEIGHTED_AVERAGE)
+                    MetricDefinition(
+                        metric=Metric.cost,
+                        value_per_unit={"cpu": Decimal(1.0)},
+                        weight={"cpu": Decimal(0.1)},
+                        method=EstimateMethod.WEIGHTED_AVERAGE,
+                    )
                 ]
             ),
         )

@@ -1,5 +1,6 @@
 from typing import List, Optional, Set
 
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import BaseModel
@@ -63,7 +64,7 @@ class BidStatus(StrEnum):
 
 class MetricValue(BaseModel):
     id: Metric
-    value: str
+    value: Decimal
     unit: MetricUnit
 
 

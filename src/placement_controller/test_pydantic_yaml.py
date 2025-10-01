@@ -20,8 +20,8 @@ class PyDanticYamlTest(TestCase):
                 static_metrics=[
                     MetricDefinition(
                         metric=Metric.cost,
-                        value_per_unit={"cpu": Decimal(1.0)},
-                        weight={"cpu": Decimal(0.1)},
+                        value_per_unit={"cpu": Decimal("1.0")},
+                        weight={"cpu": Decimal("0.1")},
                         method=EstimateMethod.WEIGHTED_AVERAGE,
                     )
                 ]

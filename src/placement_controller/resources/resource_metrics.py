@@ -8,6 +8,7 @@ from application_client.models.application_spec import ApplicationSpec
 from application_client.models.pod_resources import PodResources
 from application_client.models.pvc_resources import PVCResources
 from kubernetes.utils.quantity import parse_quantity
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 from placement_controller.api.model import Metric, MetricValue
@@ -27,6 +28,10 @@ class MetricDefinition(BaseSettings):
     value_per_unit: Dict[str, Decimal]
     weight: Dict[str, Decimal]
     method: EstimateMethod
+
+    @field_validator("value_per_unit", "weight", mode="before")
+    def convert_decimal(cls, v):
+        return {k: Decimal(str(val)) for k, val in v.items()}
 
 
 class MetricSettings(BaseSettings):

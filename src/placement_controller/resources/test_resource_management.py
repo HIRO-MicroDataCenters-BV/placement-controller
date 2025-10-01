@@ -6,11 +6,19 @@ from asyncio import Task
 from application_client.models.application_spec import ApplicationSpec
 from application_client.models.resource_id import ResourceId
 
-from placement_controller.api.model import BidCriteria, BidRequestModel, BidResponseModel, BidStatus, Metric
+from placement_controller.api.model import (
+    BidCriteria,
+    BidRequestModel,
+    BidResponseModel,
+    BidStatus,
+    Metric,
+    MetricValue,
+)
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.resource_managment import ResourceManagement
+from placement_controller.resources.resource_metrics import MetricSettings, ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
 from placement_controller.resources.types import ResourceTracking
 
@@ -31,7 +39,9 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
         self.task = self.loop.create_task(self.tracking.start())
         self.wait_for_condition(2, lambda: self.tracking.is_subscription_active())
 
-        self.resource_management = ResourceManagement(self.client, self.tracking)
+        resource_metrics = ResourceMetricsImpl(config=MetricSettings(static_metrics=[]))
+
+        self.resource_management = ResourceManagement(self.client, self.tracking, resource_metrics)
 
         self.node1 = self.make_node("node1", 2, 32 * self.GIGA, 512 * self.GIGA, 0)
         self.node2 = self.make_node("node2", 4, 16 * self.GIGA, 512 * self.GIGA, 1)
@@ -63,7 +73,7 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
                 msg="Instance 0 of pod test/pod1 is assigned to node node1.\n"
                 + "-- result --"
                 + "\n - pod test/pod1 is bound to nodes: node1",
-                metrics=[],
+                metrics=[MetricValue(id=Metric.cost, value="0.0", unit=Metric.cost.unit())],
             ),
         )
 

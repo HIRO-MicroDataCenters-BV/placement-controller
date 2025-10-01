@@ -10,8 +10,8 @@ from placement_controller.api.model import Metric, MetricUnit, MetricValue
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.resource_metrics import (
     EstimateMethod,
-    MetricOptions,
     MetricPerUnit,
+    MetricSettings,
     ResourceMetricsImpl,
 )
 
@@ -24,7 +24,7 @@ class ResourceMetricsTest(TestCase, ResourceTestFixture):
     pod3: PodResources
 
     def setUp(self) -> None:
-        options = MetricOptions(
+        config = MetricSettings(
             static_metrics=[
                 MetricPerUnit(
                     metric=Metric.cost,
@@ -37,7 +37,7 @@ class ResourceMetricsTest(TestCase, ResourceTestFixture):
                 )
             ]
         )
-        self.resource_metrics = ResourceMetricsImpl(options)
+        self.resource_metrics = ResourceMetricsImpl(config)
 
         self.pod1 = PodResources(
             id=ResourceId(name="pod1", namespace="test"),

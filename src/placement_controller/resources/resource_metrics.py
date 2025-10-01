@@ -19,14 +19,14 @@ class MetricPerUnit(BaseSettings):
     method: EstimateMethod
 
 
-class MetricOptions(BaseSettings):
+class MetricSettings(BaseSettings):
     static_metrics: List[MetricPerUnit]
 
 
 class ResourceMetricsImpl(ResourceMetrics):
-    config: MetricOptions
+    config: MetricSettings
 
-    def __init__(self, config: MetricOptions):
+    def __init__(self, config: MetricSettings):
         self.config = config
 
     def estimate(self, spec: ApplicationSpec, metrics: List[Metric]) -> List[MetricValue]:

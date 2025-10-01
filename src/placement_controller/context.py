@@ -9,6 +9,7 @@ from placement_controller.api.app import start_fastapi
 from placement_controller.clients.k8s.client import KubeClient
 from placement_controller.core.applications import Applications
 from placement_controller.resources.resource_managment import ResourceManagement
+from placement_controller.resources.resource_metrics import ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
 from placement_controller.resources.types import ResourceTracking
 from placement_controller.settings import Settings
@@ -28,9 +29,10 @@ class Context:
         self.terminated = asyncio.Event()
         self.loop = loop
         self.tasks = []
+        self.resource_metrics = ResourceMetricsImpl(config=self.settings.metrics)
         self.applications = Applications(client, self.terminated, settings.placement)
         self.resource_tracking = ResourceTrackingImpl(client, self.terminated)
-        self.resource_management = ResourceManagement(client, self.resource_tracking)
+        self.resource_management = ResourceManagement(client, self.resource_tracking, self.resource_metrics)
 
     def start(self) -> None:
         if self.terminated.is_set():

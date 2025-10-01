@@ -2,6 +2,7 @@ from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.clients.k8s.settings import K8SSettings
 from placement_controller.context import Context
+from placement_controller.resources.resource_metrics import EstimateMethod, MetricPerUnit, MetricSettings
 from placement_controller.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
 from placement_controller.util.clock import Clock
 from placement_controller.util.mock_clock import MockClock
@@ -32,5 +33,10 @@ class ContextTest(AsyncTestFixture):
             api=ApiSettings(port=8000),
             placement=PlacementSettings(namespace="test", current_zone="zone1", available_zones=["zone1", "zone2"]),
             prometheus=PrometheusSettings(endpoint_port=8080),
+            metrics=MetricSettings(
+                static_metrics=[
+                    MetricPerUnit(metric="cost", value_per_unit={"cpu": 1.0}, method=EstimateMethod.WEIGHTED_AVERAGE)
+                ]
+            ),
         )
         return settings

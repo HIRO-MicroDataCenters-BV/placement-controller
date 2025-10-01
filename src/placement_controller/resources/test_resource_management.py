@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 import json
 from asyncio import Task
+from decimal import Decimal
 
 from application_client.models.application_spec import ApplicationSpec
 from application_client.models.resource_id import ResourceId
@@ -73,7 +74,7 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
                 msg="Instance 0 of pod test/pod1 is assigned to node node1.\n"
                 + "-- result --"
                 + "\n - pod test/pod1 is bound to nodes: node1",
-                metrics=[MetricValue(id=Metric.cost, value="0.0", unit=Metric.cost.unit())],
+                metrics=[MetricValue(id=Metric.cost, value=Decimal(0.0), unit=Metric.cost.unit())],
             ),
         )
 

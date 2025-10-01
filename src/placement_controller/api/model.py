@@ -1,5 +1,6 @@
 from typing import List, Optional, Set
 
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import BaseModel
@@ -29,9 +30,24 @@ class BidCriteria(StrEnum):
     pvcStorage = "storage"
 
 
+class MetricUnit(StrEnum):
+    core = "core"
+    byte = "byte"
+    watt = "watt"
+    eur = "eur"
+
+
 class Metric(StrEnum):
     cost = "cost"
     energy = "energy"
+
+    def unit(self) -> MetricUnit:
+        if self == Metric.cost:
+            return MetricUnit.eur
+        elif self == Metric.energy:
+            return MetricUnit.watt
+        else:
+            raise Exception(f"We don't know the unit for metric {self}")
 
 
 class BidRequestModel(BaseModel):
@@ -46,16 +62,9 @@ class BidStatus(StrEnum):
     rejected = "rejected"
 
 
-class MetricUnit(StrEnum):
-    core = "core"
-    byte = "byte"
-    watt = "watt"
-    eur = "eur"
-
-
 class MetricValue(BaseModel):
     id: Metric
-    value: str
+    value: Decimal
     unit: MetricUnit
 
 

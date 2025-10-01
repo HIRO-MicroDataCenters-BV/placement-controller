@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import dataclass
 
 from kubernetes_asyncio import config
-from kubernetes_asyncio.client import ApiClient, CustomObjectsApi
+from kubernetes_asyncio.client import ApiClient, CoreV1Api, CustomObjectsApi
 from kubernetes_asyncio.client.configuration import Configuration
 from kubernetes_asyncio.dynamic import DynamicClient
 from kubernetes_asyncio.watch import Watch
@@ -83,19 +83,64 @@ class KubeClientImpl(KubeClient):
         timeout_seconds: int,
         queue: AsyncQueue[KubeEvent],
     ) -> None:
-        api = CustomObjectsApi(api_client)
         w = Watch()
+        plural = kind_to_plural(gvk.kind)
+        if namespace:
+            if plural == "pods":
+                api = CoreV1Api(api_client)
+
+                def api_func(**kwargs):
+                    return api.list_namespaced_pod(namespace=namespace, **kwargs)
+
+            elif plural == "nodes":
+                api = CoreV1Api(api_client)
+
+                def api_func(**kwargs):
+                    return api.list_node(**kwargs)
+
+            else:
+                api = CustomObjectsApi(api_client)
+
+                def api_func(**kwargs):
+                    return api.list_namespaced_custom_object(
+                        group=gvk.group,
+                        version=gvk.version,
+                        namespace=namespace,
+                        plural=plural,
+                        **kwargs,
+                    )
+
+        else:
+            if plural == "pods":
+                api = CoreV1Api(api_client)
+
+                def api_func(**kwargs):
+                    return api.list_pod_for_all_namespaces(**kwargs)
+
+            elif plural == "nodes":
+                api = CoreV1Api(api_client)
+
+                def api_func(**kwargs):
+                    return api.list_node(**kwargs)
+
+            else:
+                api = CustomObjectsApi(api_client)
+
+                def api_func(**kwargs):
+                    return api.list_custom_object_for_all_namespaces(
+                        group=gvk.group,
+                        version=gvk.version,
+                        resource_plural=plural,
+                        **kwargs,
+                    )
+
         async for watch_event in w.stream(
-            lambda **kwargs: api.list_namespaced_custom_object(
-                group=gvk.group,
-                version=gvk.version,
-                namespace=namespace,
-                plural="anyapplications",
-                **kwargs,
-            ),
+            api_func,
             resource_version=str(version_since),
             timeout_seconds=timeout_seconds,
         ):
+            if "type" not in watch_event:
+                raise Exception(f"unexpected event {watch_event}, for watch {str(gvk)}")
             logger.info("incoming event ", watch_event["type"])
             try:
                 type = watch_event["type"]
@@ -186,3 +231,12 @@ class KubeClientImpl(KubeClient):
                 config.load_incluster_config(client_configuration=self.configuration)
             else:
                 await config.load_kube_config(client_configuration=self.configuration, context=self.settings.context)
+
+
+def kind_to_plural(kind: str) -> str:
+    kind_lower = kind.lower()
+    if kind_lower.endswith("s"):
+        return kind_lower + "es"
+    if kind_lower.endswith("y"):
+        return kind_lower[:-1] + "ies"
+    return kind_lower + "s"

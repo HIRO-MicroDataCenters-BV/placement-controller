@@ -83,7 +83,7 @@ def create_api() -> PlacementFastAPI:
         "/bids/",
         response_model=BidResponseModel,
         operation_id="application_bid",
-        responses={500: {"model": ErrorResponse}},
+        responses={500: {"model": ErrorResponse}, 200: {"model": BidResponseModel}},
     )
     async def application_bid(
         bid: BidRequestModel, resource_management: ResourceManagement = Depends(lambda: get_resource_management(app))

@@ -3,6 +3,7 @@ from typing import List
 from pydantic_settings import BaseSettings
 
 from placement_controller.clients.k8s.settings import K8SSettings
+from placement_controller.resources.resource_metrics import MetricSettings
 
 
 class PrometheusSettings(BaseSettings):
@@ -24,3 +25,4 @@ class Settings(BaseSettings):
     api: ApiSettings
     placement: PlacementSettings
     prometheus: PrometheusSettings
+    metrics: MetricSettings

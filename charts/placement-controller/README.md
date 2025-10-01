@@ -43,6 +43,18 @@ Placement controller for decentralized control plane.
 | settings.k8s.context | string | `nil` | kube context |
 | settings.k8s.incluster | bool | `true` | in cluster or out service cluster execution |
 | settings.k8s.timeout_seconds | int | `360` | event listener timeout |
+| settings.metrics.static_metrics[0].method | string | `"weighted_average"` |  |
+| settings.metrics.static_metrics[0].metric | string | `"cost"` |  |
+| settings.metrics.static_metrics[0].value_per_unit.cpu | float | `1` |  |
+| settings.metrics.static_metrics[0].value_per_unit.ephemeral-storage | float | `1e-9` |  |
+| settings.metrics.static_metrics[0].value_per_unit.gpu | float | `3` |  |
+| settings.metrics.static_metrics[0].value_per_unit.memory | float | `3e-9` |  |
+| settings.metrics.static_metrics[0].value_per_unit.storage | float | `1e-9` |  |
+| settings.metrics.static_metrics[0].weight.cpu | float | `1` |  |
+| settings.metrics.static_metrics[0].weight.ephemeral-storage | float | `1` |  |
+| settings.metrics.static_metrics[0].weight.gpu | float | `1` |  |
+| settings.metrics.static_metrics[0].weight.memory | float | `1` |  |
+| settings.metrics.static_metrics[0].weight.storage | float | `1` |  |
 | settings.placement.available_zones | list | `[]` |  |
 | settings.placement.current_zone | string | `nil` |  |
 | settings.placement.namespace | string | `"default"` |  |

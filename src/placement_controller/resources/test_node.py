@@ -3,8 +3,8 @@ from unittest import TestCase
 
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.node import Node
+from placement_controller.resources.node_info import NodeInfo
 from placement_controller.resources.pod import Pod
-from placement_controller.resources.types import NodeInfo
 
 
 class NodeInfoTest(TestCase, ResourceTestFixture):

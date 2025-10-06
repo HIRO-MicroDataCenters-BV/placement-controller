@@ -6,16 +6,15 @@ from placement_controller.jobs.types import Action, ActionResult
 
 
 class NextStateResult:
-    actions: List[Action]
+    actions: List[Action[ActionResult]]
 
 
 class FSM:
-    application: AnyApplication
 
-    def __init__(self, application: AnyApplication):
-        self.application = application
+    def __init__(self):
+        pass
 
-    def next_state(self, context: SchedulingContext) -> NextStateResult:
+    def next_state(self, context: SchedulingContext, application: AnyApplication) -> NextStateResult:
         return NextStateResult()
 
     def on_action_result(self, result: ActionResult) -> NextStateResult:

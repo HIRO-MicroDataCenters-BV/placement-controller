@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from placement_controller.clients.k8s.client import NamespacedName
 
 
-class Application:
+class AnyApplication:
     object: Dict[str, Any]
 
     def __init__(self, object: Dict[str, Any]):

@@ -5,7 +5,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-from placement_controller.core.application import Application
+from placement_controller.core.application import AnyApplication
 
 
 class ApplicationModel(BaseModel):
@@ -15,7 +15,7 @@ class ApplicationModel(BaseModel):
     zones: List[str]
 
     @staticmethod
-    def from_object(application: Application) -> "ApplicationModel":
+    def from_object(application: AnyApplication) -> "ApplicationModel":
         name = application.get_namespaced_name()
         zones = application.get_placement_zones()
         owner = application.get_owner_zone() or ""

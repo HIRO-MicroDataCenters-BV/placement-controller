@@ -6,17 +6,17 @@ from loguru import logger
 
 from placement_controller.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName
 from placement_controller.clients.k8s.event import EventType, KubeEvent
-from placement_controller.core.application import Application
+from placement_controller.core.application import AnyApplication
 from placement_controller.settings import PlacementSettings
 
-ApplicationFnMut = Callable[[Application], None]
+ApplicationFnMut = Callable[[AnyApplication], None]
 
 
 class Applications:
     client: KubeClient
     settings: PlacementSettings
     is_terminated: asyncio.Event
-    applications: Dict[NamespacedName, Application]
+    applications: Dict[NamespacedName, AnyApplication]
     gvk: GroupVersionKind
 
     def __init__(self, client: KubeClient, is_terminated: asyncio.Event, settings: PlacementSettings):
@@ -41,19 +41,19 @@ class Applications:
 
     async def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
-            application = Application(event.object)
+            application = AnyApplication(event.object)
             self.applications[application.get_namespaced_name()] = application
             await self.set_default_placement(application)
         elif event.event == EventType.DELETED:
-            application = Application(event.object)
+            application = AnyApplication(event.object)
             del self.applications[application.get_namespaced_name()]
         else:
             raise NotImplementedError(f"Unknown event type {event.event}")
 
-    def list(self) -> List[Application]:
+    def list(self) -> List[AnyApplication]:
         return list(self.applications.values())
 
-    async def set_default_placement(self, application: Application) -> None:
+    async def set_default_placement(self, application: AnyApplication) -> None:
         if application.get_owner_zone() == self.settings.current_zone:
             if application.get_global_state() == "Placement":
                 spec = application.get_spec()
@@ -67,21 +67,21 @@ class Applications:
                         await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
                         logger.info(f"{name} setting placement zones {zones}")
 
-    async def set_placement(self, name: NamespacedName, zones: List[str]) -> Application:
+    async def set_placement(self, name: NamespacedName, zones: List[str]) -> AnyApplication:
         return await self.patch_status(name, lambda app: app.set_placement_zones(zones))
 
-    async def set_owner(self, name: NamespacedName, owner: str) -> Application:
+    async def set_owner(self, name: NamespacedName, owner: str) -> AnyApplication:
         return await self.patch_status(name, lambda app: app.set_owner_zone(owner))
 
-    async def patch_status(self, name: NamespacedName, update_function: ApplicationFnMut) -> Application:
+    async def patch_status(self, name: NamespacedName, update_function: ApplicationFnMut) -> AnyApplication:
         object = await self.client.get(self.gvk, name)
         if not object:
             raise Exception("object not found")
 
-        application = Application(object)
+        application = AnyApplication(object)
         update_function(application)
 
         updated = await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
         if not updated:
             raise Exception("updated object is not available")
-        return Application(updated)
+        return AnyApplication(updated)

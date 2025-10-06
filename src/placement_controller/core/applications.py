@@ -7,6 +7,10 @@ from loguru import logger
 from placement_controller.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName
 from placement_controller.clients.k8s.event import EventType, KubeEvent
 from placement_controller.core.application import AnyApplication
+from placement_controller.core.async_queue import AsyncQueue
+from placement_controller.core.scheduling_queue import SchedulingQueue
+from placement_controller.jobs.executor import JobExecutor
+from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.settings import PlacementSettings
 
 ApplicationFnMut = Callable[[AnyApplication], None]
@@ -19,6 +23,10 @@ class Applications:
     applications: Dict[NamespacedName, AnyApplication]
     gvk: GroupVersionKind
 
+    scheduling_queue: SchedulingQueue
+    actions: AsyncQueue[Action]
+    results: AsyncQueue[ActionResult]
+
     def __init__(self, client: KubeClient, is_terminated: asyncio.Event, settings: PlacementSettings):
         self.client = client
         self.settings = settings
@@ -26,9 +34,17 @@ class Applications:
         self.applications = {}
         self.gvk = GroupVersionKind(group="dcp.hiro.io", version="v1", kind="AnyApplication")
 
+        self.actions = AsyncQueue[Action]()
+        self.results = AsyncQueue[ActionResult]()
+        self.scheduling_queue = SchedulingQueue()
+        self.executor = JobExecutor(self.actions, self.results)
+
         logger.info(f"owner zone '{settings.current_zone}'")
 
     async def run(self) -> None:
+        await asyncio.gather(self.run_kube_watch(), self.run_result_listener())
+
+    async def run_kube_watch(self) -> None:
         subscriber_id, queue = self.client.watch(self.gvk, self.settings.namespace, 0, self.is_terminated)
         while not self.is_terminated.is_set():
             event = await queue.get()
@@ -38,6 +54,15 @@ class Applications:
             except Exception as e:
                 logger.error(f"error while handling event {e}")
         self.client.stop_watch(subscriber_id)
+
+    async def run_result_listener(self) -> None:
+        while not self.is_terminated.is_set():
+            action_result = await self.results.get()
+            try:
+                logger.info(f"action result {action_result}")
+                self.handle_result(action_result)
+            except Exception as e:
+                logger.error(f"error while handling result {e}")
 
     async def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
@@ -49,6 +74,11 @@ class Applications:
             del self.applications[application.get_namespaced_name()]
         else:
             raise NotImplementedError(f"Unknown event type {event.event}")
+
+    def handle_result(self, result: ActionResult) -> None:
+        action = self.scheduling_queue.on_action_result(result)
+        if action is not None:
+            self.actions.put_nowait(action)
 
     def list(self) -> List[AnyApplication]:
         return list(self.applications.values())

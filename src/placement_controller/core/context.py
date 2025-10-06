@@ -5,4 +5,4 @@ class SchedulingContext:
     state: SchedulingState
 
     def __init__(self):
-        pass
+        self.state = SchedulingState.NEW

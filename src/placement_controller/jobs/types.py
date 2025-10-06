@@ -1,17 +1,40 @@
-class ActionResult:
-    pass
+from typing import Generic, TypeVar
 
+from placement_controller.clients.k8s.client import NamespacedName
 
 ActionId = str
 
 DEFAULT_TIMEOUT_SECONDS = 10
 
 
-class Action:
+class ActionResult:
+    name: NamespacedName
     action_id: ActionId
 
-    def __init__(self, action_id: ActionId):
+    def __init__(self, name: NamespacedName, action_id: ActionId):
+        self.name = name
         self.action_id = action_id
+
+    def get_application_name(self) -> NamespacedName:
+        return self.name
+
+    def get_id(self) -> ActionId:
+        return self.action_id
+
+
+T = TypeVar("T", bound="ActionResult")
+
+
+class Action(Generic[T]):
+    action_id: ActionId
+    name: NamespacedName
+
+    def __init__(self, name: NamespacedName, action_id: ActionId):
+        self.action_id = action_id
+        self.name = name
+
+    def get_application_name(self) -> NamespacedName:
+        return self.name
 
     def get_id(self) -> ActionId:
         return self.action_id
@@ -19,5 +42,5 @@ class Action:
     def get_timeout_seconds(self) -> int:
         return DEFAULT_TIMEOUT_SECONDS
 
-    async def run(self) -> ActionResult:
+    async def run(self) -> T:
         raise NotImplementedError()

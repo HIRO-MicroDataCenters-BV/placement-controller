@@ -24,7 +24,7 @@ class Applications:
     gvk: GroupVersionKind
 
     scheduling_queue: SchedulingQueue
-    actions: AsyncQueue[Action]
+    actions: AsyncQueue[Action[ActionResult]]
     results: AsyncQueue[ActionResult]
 
     def __init__(self, client: KubeClient, is_terminated: asyncio.Event, settings: PlacementSettings):
@@ -34,15 +34,19 @@ class Applications:
         self.applications = {}
         self.gvk = GroupVersionKind(group="dcp.hiro.io", version="v1", kind="AnyApplication")
 
-        self.actions = AsyncQueue[Action]()
+        self.actions = AsyncQueue[Action[ActionResult]]()
         self.results = AsyncQueue[ActionResult]()
         self.scheduling_queue = SchedulingQueue()
-        self.executor = JobExecutor(self.actions, self.results)
+        self.executor = JobExecutor(self.actions, self.results, self.is_terminated)
 
         logger.info(f"owner zone '{settings.current_zone}'")
 
     async def run(self) -> None:
-        await asyncio.gather(self.run_kube_watch(), self.run_result_listener())
+        await asyncio.gather(
+            self.run_kube_watch(),
+            self.run_result_listener(),
+            self.executor.run(),
+        )
 
     async def run_kube_watch(self) -> None:
         subscriber_id, queue = self.client.watch(self.gvk, self.settings.namespace, 0, self.is_terminated)

@@ -29,7 +29,7 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
             resources=[self.make_pod_spec("pod1", 1, {"cpu": "2", "memory": "200Mi"}, {})],
         )
 
-        self.server = FakeApplicationController(host="127.0.0.1", port=18081)
+        self.server = FakeApplicationController(host="127.0.0.1")
         self.server.mock_response(self.spec)
         self.server.start()
 

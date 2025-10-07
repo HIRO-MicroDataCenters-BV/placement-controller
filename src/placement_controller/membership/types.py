@@ -9,7 +9,7 @@ from placement_controller.clients.k8s.resource import BaseResource
 ZoneId = str
 
 
-@dataclass
+@dataclass(frozen=True)
 class PlacementZone:
     id: ZoneId
 

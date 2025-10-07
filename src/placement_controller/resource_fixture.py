@@ -110,3 +110,35 @@ class ResourceTestFixture:
             requests=PodResourcesRequests.from_dict(requests),
             limits=PodResourcesLimits.from_dict(limits),
         )
+
+    def mesh_peer(self, zone_id: str) -> Dict[str, Any]:
+        return {
+            "apiVersion": "dcp.hiro.io/v1",
+            "kind": "MeshPeer",
+            "metadata": {
+                "name": zone_id,
+                "namespace": "test",
+            },
+            "spec": {
+                "identity": {
+                    "endpoints": [],
+                    "publicKey": "hex",
+                }
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2025-10-01T12:43:49Z",
+                        "status": "True",
+                        "type": "Ready",
+                    }
+                ],
+                "instance": {
+                    "start_time": "2025-10-01T12:43:49Z",
+                    "start_timestamp": 1759322629932,
+                    "zone": zone_id,
+                },
+                "status": "Ready",
+                "updateTime": "2025-10-01T12:43:49Z",
+            },
+        }

@@ -2,18 +2,17 @@ from typing import Optional
 
 import asyncio
 
-from placement_controller.clients.k8s.client import GroupVersionKind, KubeClient
+from placement_controller.clients.k8s.client import KubeClient
 from placement_controller.clients.k8s.event import KubeEvent
 from placement_controller.k8s.object_pool import ObjectPool
 from placement_controller.membership.types import Membership, MeshPeer, PeerStatus, PlacementZone
 
 
 class MembershipWatcher(ObjectPool[MeshPeer]):
-    MESHPEER_GVK: GroupVersionKind = MeshPeer.GVK
     membership: Optional[Membership]
 
     def __init__(self, client: KubeClient, is_terminated: asyncio.Event):
-        super().__init__(MeshPeer, client, MembershipWatcher.MESHPEER_GVK, is_terminated)
+        super().__init__(MeshPeer, client, MeshPeer.GVK, is_terminated)
         self.membership = None
 
     async def handle_event(self, event: KubeEvent) -> None:

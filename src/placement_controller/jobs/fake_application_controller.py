@@ -13,9 +13,7 @@ class FakeApplicationController(FakeServer):
     mocked_spec: Union[models.ApplicationSpec, models.ErrorResponse]
     status: int
 
-    def __init__(self, host: str, port: int):
-        self.base_url = f"http://{host}:{port}"
-
+    def __init__(self, host: str):
         app = FastAPI()
         self.mocked_spec = models.ErrorResponse(status=500, code="INTERNAL_ERROR", message="mocked spec is not set")
         self.status = 500
@@ -28,7 +26,7 @@ class FakeApplicationController(FakeServer):
         ) -> Response:
             return Response(content=json.dumps(server.mocked_spec.to_dict()), status_code=server.status)
 
-        super().__init__(host, port, app)
+        super().__init__(host, app)
 
     def mock_response(self, spec: Union[models.ApplicationSpec, models.ErrorResponse]) -> None:
         self.mocked_spec = spec

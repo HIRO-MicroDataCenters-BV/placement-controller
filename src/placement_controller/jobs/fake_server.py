@@ -11,11 +11,12 @@ class FakeServer:
     port: int
     server_thread: threading.Thread
     server: uvicorn.Server
+    ports: int = 38001
 
     app: FastAPI
 
-    def __init__(self, host: str, port: int, app: FastAPI):
-        self.port = port
+    def __init__(self, host: str, app: FastAPI):
+        self.port = FakeServer.next_port()
         self.host = host
         self.base_url = f"http://{self.host}:{self.port}"
         self.app = app
@@ -27,6 +28,12 @@ class FakeServer:
         config = uvicorn.Config(self.app, host=self.host, port=self.port, log_level="error")
         self.server = uvicorn.Server(config)
         self.server_thread = threading.Thread(target=lambda: asyncio.run(self.server.serve()), daemon=True)
+
+    @staticmethod
+    def next_port() -> int:
+        new_port = FakeServer.ports
+        FakeServer.ports += 1
+        return new_port
 
     def start(self) -> None:
         self.server_thread.start()

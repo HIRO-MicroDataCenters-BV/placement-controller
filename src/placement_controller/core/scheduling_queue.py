@@ -16,6 +16,7 @@ class SchedulingQueue:
         self.contexts = dict()
 
     def on_membership_update(self, membership: Membership) -> Optional[Action[ActionResult]]:
+
         return None
 
     def on_application_update(self, application: AnyApplication) -> Optional[Action[ActionResult]]:

@@ -1,9 +1,11 @@
 from typing import Any, Dict, List, Optional
 
-from placement_controller.clients.k8s.client import NamespacedName
+from placement_controller.clients.k8s.client import GroupVersionKind, NamespacedName
 
 
 class AnyApplication:
+    GVK: GroupVersionKind = GroupVersionKind("dcp.hiro.io", "v1", "AnyApplication")
+
     object: Dict[str, Any]
 
     def __init__(self, object: Dict[str, Any]):

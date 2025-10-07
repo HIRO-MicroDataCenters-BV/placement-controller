@@ -4,13 +4,14 @@ import asyncio
 
 from loguru import logger
 
-from placement_controller.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName
+from placement_controller.clients.k8s.client import KubeClient, NamespacedName
 from placement_controller.clients.k8s.event import EventType, KubeEvent
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.async_queue import AsyncQueue
 from placement_controller.core.scheduling_queue import SchedulingQueue
 from placement_controller.jobs.executor import JobExecutor
 from placement_controller.jobs.types import Action, ActionResult
+from placement_controller.membership.watcher import MembershipWatcher
 from placement_controller.settings import PlacementSettings
 
 ApplicationFnMut = Callable[[AnyApplication], None]
@@ -21,7 +22,7 @@ class Applications:
     settings: PlacementSettings
     is_terminated: asyncio.Event
     applications: Dict[NamespacedName, AnyApplication]
-    gvk: GroupVersionKind
+    membership_watcher: MembershipWatcher
 
     scheduling_queue: SchedulingQueue
     actions: AsyncQueue[Action[ActionResult]]
@@ -32,11 +33,11 @@ class Applications:
         self.settings = settings
         self.is_terminated = is_terminated
         self.applications = {}
-        self.gvk = GroupVersionKind(group="dcp.hiro.io", version="v1", kind="AnyApplication")
 
         self.actions = AsyncQueue[Action[ActionResult]]()
         self.results = AsyncQueue[ActionResult]()
         self.scheduling_queue = SchedulingQueue()
+        self.membership_watcher = MembershipWatcher(client, self.is_terminated)
         self.executor = JobExecutor(self.actions, self.results, self.is_terminated)
 
         logger.info(f"owner zone '{settings.current_zone}'")
@@ -46,10 +47,11 @@ class Applications:
             self.run_kube_watch(),
             self.run_result_listener(),
             self.executor.run(),
+            self.membership_watcher.start(),
         )
 
     async def run_kube_watch(self) -> None:
-        subscriber_id, queue = self.client.watch(self.gvk, self.settings.namespace, 0, self.is_terminated)
+        subscriber_id, queue = self.client.watch(AnyApplication.GVK, self.settings.namespace, 0, self.is_terminated)
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:
@@ -58,15 +60,6 @@ class Applications:
             except Exception as e:
                 logger.error(f"error while handling event {e}")
         self.client.stop_watch(subscriber_id)
-
-    async def run_result_listener(self) -> None:
-        while not self.is_terminated.is_set():
-            action_result = await self.results.get()
-            try:
-                logger.info(f"action result {action_result}")
-                self.handle_result(action_result)
-            except Exception as e:
-                logger.error(f"error while handling result {e}")
 
     async def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
@@ -78,6 +71,15 @@ class Applications:
             del self.applications[application.get_namespaced_name()]
         else:
             raise NotImplementedError(f"Unknown event type {event.event}")
+
+    async def run_result_listener(self) -> None:
+        while not self.is_terminated.is_set():
+            action_result = await self.results.get()
+            try:
+                logger.info(f"action result {action_result}")
+                self.handle_result(action_result)
+            except Exception as e:
+                logger.error(f"error while handling result {e}")
 
     def handle_result(self, result: ActionResult) -> None:
         action = self.scheduling_queue.on_action_result(result)
@@ -98,7 +100,7 @@ class Applications:
                         zones = [self.settings.current_zone]
                         name = application.get_namespaced_name()
                         application.set_placement_zones(zones)
-                        await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
+                        await self.client.patch_status(AnyApplication.GVK, name, application.get_status_or_fail())
                         logger.info(f"{name} setting placement zones {zones}")
 
     async def set_placement(self, name: NamespacedName, zones: List[str]) -> AnyApplication:
@@ -108,14 +110,14 @@ class Applications:
         return await self.patch_status(name, lambda app: app.set_owner_zone(owner))
 
     async def patch_status(self, name: NamespacedName, update_function: ApplicationFnMut) -> AnyApplication:
-        object = await self.client.get(self.gvk, name)
+        object = await self.client.get(AnyApplication.GVK, name)
         if not object:
             raise Exception("object not found")
 
         application = AnyApplication(object)
         update_function(application)
 
-        updated = await self.client.patch_status(self.gvk, name, application.get_status_or_fail())
+        updated = await self.client.patch_status(AnyApplication.GVK, name, application.get_status_or_fail())
         if not updated:
             raise Exception("updated object is not available")
         return AnyApplication(updated)

@@ -222,7 +222,7 @@ class KubeClientImpl(KubeClient):
         event_type: str,
         timestamp: int,
     ) -> Optional[Dict[str, Any]]:
-        event = client.V1Event(
+        event = client.CoreV1Event(
             metadata=client.V1ObjectMeta(name=f"{name.name}-{uid}", namespace=name.namespace),
             involved_object=client.V1ObjectReference(
                 api_version=f"{gvk.group}/{gvk.version}",
@@ -238,6 +238,7 @@ class KubeClientImpl(KubeClient):
             reporting_controller="placement-controller",
             reporting_instance="placement-controller",  # TODO pod_id
         )
+        event = KubeClient.new_event(gvk, name, uid, reason, message, event_type, timestamp)
         events_api = client.EventsV1Api()
 
         async def emit_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:

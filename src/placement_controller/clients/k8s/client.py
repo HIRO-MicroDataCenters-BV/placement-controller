@@ -3,6 +3,8 @@ from typing import Any, Dict, Optional, Tuple
 import asyncio
 from dataclasses import dataclass
 
+from kubernetes_asyncio import client
+
 from placement_controller.clients.k8s.event import KubeEvent
 from placement_controller.core.async_queue import AsyncQueue
 
@@ -50,3 +52,42 @@ class KubeClient:
 
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
         raise NotImplementedError
+
+    async def emit_event(
+        self,
+        gvk: GroupVersionKind,
+        name: NamespacedName,
+        uid: str,
+        reason: str,
+        message: str,
+        event_type: str,
+        timestamp: int,
+    ) -> Optional[Dict[str, Any]]:
+        raise NotImplementedError
+
+    @staticmethod
+    def new_event(
+        gvk: GroupVersionKind,
+        name: NamespacedName,
+        uid: str,
+        reason: str,
+        message: str,
+        event_type: str,
+        timestamp: int,
+    ) -> client.CoreV1Event:
+        return client.CoreV1Event(
+            metadata=client.V1ObjectMeta(name=f"{name.name}-{uid}", namespace=name.namespace),
+            involved_object=client.V1ObjectReference(
+                api_version=f"{gvk.group}/{gvk.version}",
+                kind=gvk.kind,
+                name=name.name,
+                namespace=name.namespace,
+                uid=uid,
+            ),
+            reason=reason,
+            message=message,
+            type=event_type,  # "Normal",  # or "Warning"
+            event_time=timestamp,
+            reporting_controller="placement-controller",
+            reporting_instance="placement-controller",  # TODO pod_id
+        )

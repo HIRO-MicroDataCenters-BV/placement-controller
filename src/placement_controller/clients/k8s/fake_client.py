@@ -135,3 +135,17 @@ class FakeClient(KubeClient):
             is_namespace_match = subscription.namespace == namespace or subscription.namespace is None
             if is_namespace_match and is_gvk_match:
                 subscription.queue.put_nowait(event)
+
+    async def emit_event(
+        self,
+        gvk: GroupVersionKind,
+        name: NamespacedName,
+        uid: str,
+        reason: str,
+        message: str,
+        event_type: str,
+        timestamp: int,
+    ) -> Optional[Dict[str, Any]]:
+        event = KubeClient.new_event(gvk, name, uid, reason, message, event_type, timestamp)
+        event_gvk = GroupVersionKind("", "v1", event.kind)
+        return await self.patch(event_gvk, event.to_dict())

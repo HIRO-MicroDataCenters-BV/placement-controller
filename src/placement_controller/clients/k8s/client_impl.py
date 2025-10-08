@@ -3,7 +3,7 @@ from typing import Any, Callable, Coroutine, Dict, Optional, Tuple, TypeVar, ove
 import asyncio
 from dataclasses import dataclass
 
-from kubernetes_asyncio import config
+from kubernetes_asyncio import client, config
 from kubernetes_asyncio.client import ApiClient, CoreV1Api, CustomObjectsApi
 from kubernetes_asyncio.client.configuration import Configuration
 from kubernetes_asyncio.dynamic import DynamicClient
@@ -211,6 +211,43 @@ class KubeClientImpl(KubeClient):
             return result_dict
 
         return await self.execute(delete_internal)
+
+    async def emit_event(
+        self,
+        gvk: GroupVersionKind,
+        name: NamespacedName,
+        uid: str,
+        reason: str,
+        message: str,
+        event_type: str,
+        timestamp: int,
+    ) -> Optional[Dict[str, Any]]:
+        event = client.V1Event(
+            metadata=client.V1ObjectMeta(name=f"{name.name}-{uid}", namespace=name.namespace),
+            involved_object=client.V1ObjectReference(
+                api_version=f"{gvk.group}/{gvk.version}",
+                kind=gvk.kind,
+                name=name.name,
+                namespace=name.namespace,
+                uid=uid,
+            ),
+            reason=reason,
+            message=message,
+            type=event_type,  # "Normal",  # or "Warning"
+            event_time=timestamp,
+            reporting_controller="placement-controller",
+            reporting_instance="placement-controller",  # TODO pod_id
+        )
+        events_api = client.EventsV1Api()
+
+        async def emit_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
+            result = await events_api.create_namespaced_event(name.namespace, event)
+            result_dict: Dict[str, Any] = result.to_dict()
+            if result_dict.get("status") == "Failure" and result_dict.get("code") == 404:
+                return None
+            return result_dict
+
+        return await self.execute(emit_internal)
 
     async def execute(
         self, func: Callable[[DynamicClient | ApiClient], Coroutine[Any, Any, T]], is_dynamic_client: bool = True

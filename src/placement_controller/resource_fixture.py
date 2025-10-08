@@ -143,7 +143,7 @@ class ResourceTestFixture:
             },
         }
 
-    def make_anyapp(self, name: str, zones: str) -> Dict[str, Any]:
+    def make_anyapp(self, name: str, zones: int) -> Dict[str, Any]:
         return {
             "apiVersion": "dcp.hiro.io/v1",
             "kind": "AnyApplication",

@@ -7,7 +7,9 @@ from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.jobs.fake_application_controller import FakeApplicationController
 from placement_controller.jobs.get_spec_action import GetSpecAction
+from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.zone.types import ZoneApiFactory
 
 
 class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
@@ -34,7 +36,8 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
         self.server.start()
 
         self.client = Client(base_url=self.server.get_base_url())
-        self.action = GetSpecAction(self.client, self.name, "test")
+        self.context = ExecutorContext(application_controller_client=self.client, zone_api_factory=ZoneApiFactory())
+        self.action = GetSpecAction(self.name, "test")
         self.wait_for_condition(2, lambda: self.server.is_available())
 
     def tearDown(self) -> None:
@@ -42,5 +45,5 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
         self.server.stop()
 
     def test_get_app_spec(self) -> None:
-        result = self.loop.run_until_complete(self.action.run())
+        result = self.loop.run_until_complete(self.action.run(self.context))
         self.assertEqual(result.response, self.spec)

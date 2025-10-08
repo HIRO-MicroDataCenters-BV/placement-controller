@@ -2,6 +2,7 @@ import asyncio
 import json
 from decimal import Decimal
 
+from application_client.client import Client
 from application_client.models import ApplicationSpec, ResourceId
 from placement_client import models
 
@@ -18,6 +19,7 @@ from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.jobs.bid_action import BidAction
 from placement_controller.jobs.fake_placement_server import FakePlacementController
+from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
@@ -63,6 +65,9 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
         )
 
         self.api_factory = ZoneApiFactoryImpl()
+        self.context = ExecutorContext(
+            zone_api_factory=self.api_factory, application_controller_client=Client(base_url="")
+        )
 
         self.server1 = FakePlacementController(host="127.0.0.1")
         self.server1.mock_response(self.response1)
@@ -75,7 +80,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
         self.api_factory.add_static_zone("zone1", self.server1.get_base_url())
         self.api_factory.add_static_zone("zone2", self.server2.get_base_url())
 
-        self.action = BidAction({"zone1", "zone2"}, self.api_factory, self.request, self.name)
+        self.action = BidAction({"zone1", "zone2"}, self.request, self.name)
         self.wait_for_condition(2, lambda: self.server1.is_available() and self.server2.is_available())
 
     def tearDown(self) -> None:
@@ -84,7 +89,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
         self.server2.stop()
 
     def test_bid_request(self) -> None:
-        result = self.loop.run_until_complete(self.action.run())
+        result = self.loop.run_until_complete(self.action.run(self.context))
 
         self.assertEqual(
             result.response,

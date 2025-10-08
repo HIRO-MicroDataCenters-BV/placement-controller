@@ -17,8 +17,7 @@ from placement_controller.api.model import (
     MetricValue,
 )
 from placement_controller.clients.k8s.client import NamespacedName
-from placement_controller.jobs.types import Action, ActionId, ActionResult
-from placement_controller.zone.types import ZoneApiFactory
+from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
 
 BidResponseOrError = Union[BidResponseModel, ErrorResponse]
 ZoneId = str
@@ -31,20 +30,21 @@ class BidActionResult(ActionResult):
         super().__init__(name, action_id)
         self.response = response
 
+    def is_success(self) -> bool:
+        return any([not isinstance(ok_or_error, ErrorResponse) for ok_or_error in self.response.values()])
+
 
 class BidAction(Action[BidActionResult]):
     zones: Set[str]
-    api_factory: ZoneApiFactory
     request: BidRequestModel
 
-    def __init__(self, zones: Set[str], api_factory: ZoneApiFactory, request: BidRequestModel, name: NamespacedName):
+    def __init__(self, zones: Set[str], request: BidRequestModel, name: NamespacedName):
         super().__init__(name, request.id)
         self.request = request
-        self.api_factory = api_factory
         self.zones = zones
 
-    async def run(self) -> BidActionResult:
-        zone_to_client = [(zone, self.api_factory.create(zone)) for zone in self.zones]
+    async def run(self, context: ExecutorContext) -> BidActionResult:
+        zone_to_client = [(zone, context.zone_api_factory.create(zone)) for zone in self.zones]
         queries = [self.query_one(client) for (_, client) in zone_to_client]
 
         responses = await asyncio.gather(*queries)

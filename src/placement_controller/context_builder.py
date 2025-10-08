@@ -5,11 +5,15 @@ import asyncio
 from argparse import Namespace
 from io import StringIO
 
+from application_client.client import Client
+
 from placement_controller.clients.k8s.client_impl import KubeClientImpl
 from placement_controller.context import Context
+from placement_controller.jobs.types import ExecutorContext
 from placement_controller.pydantic_yaml import from_yaml
 from placement_controller.settings import Settings
 from placement_controller.util.clock_impl import ClockImpl
+from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
 
 class ContextBuilder:
@@ -56,5 +60,10 @@ class ContextBuilder:
         loop = asyncio.get_event_loop()
         client = KubeClientImpl(self.settings.k8s, loop)
 
-        context = Context(clock, client, self.settings, loop)
+        # TODO base_url
+        executor_context = ExecutorContext(
+            application_controller_client=Client(base_url="TODO"), zone_api_factory=ZoneApiFactoryImpl()
+        )
+
+        context = Context(clock, executor_context, client, self.settings, loop)
         return context

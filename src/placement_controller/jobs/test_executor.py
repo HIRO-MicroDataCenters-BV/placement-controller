@@ -4,7 +4,7 @@ from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.async_queue import AsyncQueue
 from placement_controller.jobs.executor import JobExecutor
-from placement_controller.jobs.types import Action, ActionId, ActionResult
+from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
 
 
 class FakeActionResult(ActionResult):
@@ -22,7 +22,7 @@ class FakeAction(Action[FakeActionResult]):
         super().__init__(name, action_id)
         self.result = result
 
-    async def run(self) -> FakeActionResult:
+    async def run(self, context: ExecutorContext) -> FakeActionResult:
         return FakeActionResult(self.result, self.name, self.action_id)
 
 
@@ -32,6 +32,7 @@ class JobExecutorTest(AsyncTestFixture):
     results: AsyncQueue[FakeActionResult]
 
     executor: JobExecutor
+    executor_context: ExecutorContext
     terminated: asyncio.Event
     loop: asyncio.AbstractEventLoop
 
@@ -42,7 +43,13 @@ class JobExecutorTest(AsyncTestFixture):
         self.actions = AsyncQueue[Action[FakeActionResult]]()
         self.results = AsyncQueue[FakeActionResult]()
         self.name = NamespacedName(name="test", namespace="testns")
-        self.executor = JobExecutor(self.actions, self.results, self.terminated)  # type: ignore
+
+        self.executor_context = ExecutorContext(
+            application_controller_client=None,  # type: ignore
+            zone_api_factory=None,  # type: ignore
+        )
+        self.executor = JobExecutor(self.executor_context, self.actions, self.results, self.terminated)  # type: ignore
+
         self.task = self.loop.create_task(self.executor.run())
 
     def tearDown(self) -> None:

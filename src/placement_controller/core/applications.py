@@ -10,7 +10,7 @@ from placement_controller.core.application import AnyApplication
 from placement_controller.core.async_queue import AsyncQueue
 from placement_controller.core.scheduling_queue import SchedulingQueue
 from placement_controller.jobs.executor import JobExecutor
-from placement_controller.jobs.types import Action, ActionResult
+from placement_controller.jobs.types import Action, ActionResult, ExecutorContext
 from placement_controller.membership.types import Membership
 from placement_controller.membership.watcher import MembershipWatcher
 from placement_controller.settings import PlacementSettings
@@ -26,15 +26,24 @@ class Applications:
     is_terminated: asyncio.Event
     applications: Dict[NamespacedName, AnyApplication]
     membership_watcher: MembershipWatcher
+    tick_interval_seconds: float
 
     scheduling_queue: SchedulingQueue
     actions: AsyncQueue[Action[ActionResult]]
     results: AsyncQueue[ActionResult]
 
-    def __init__(self, clock: Clock, client: KubeClient, is_terminated: asyncio.Event, settings: PlacementSettings):
+    def __init__(
+        self,
+        clock: Clock,
+        executor_context: ExecutorContext,
+        client: KubeClient,
+        is_terminated: asyncio.Event,
+        settings: PlacementSettings,
+    ):
         self.clock = clock
         self.client = client
         self.settings = settings
+        self.tick_interval_seconds = 1.0
         self.is_terminated = is_terminated
         self.applications = {}
 
@@ -42,7 +51,7 @@ class Applications:
         self.results = AsyncQueue[ActionResult]()
         self.scheduling_queue = SchedulingQueue(clock)
         self.membership_watcher = MembershipWatcher(client, self.is_terminated, self.on_membership_change)
-        self.executor = JobExecutor(self.actions, self.results, self.is_terminated)
+        self.executor = JobExecutor(executor_context, self.actions, self.results, self.is_terminated)
 
         logger.info(f"owner zone '{settings.current_zone}'")
 
@@ -52,6 +61,7 @@ class Applications:
             self.run_result_listener(),
             self.executor.run(),
             self.membership_watcher.start(),
+            self.ticker(),
         )
 
     async def run_kube_watch(self) -> None:
@@ -96,6 +106,13 @@ class Applications:
         actions = self.scheduling_queue.on_membership_update(membership, self.clock.now_seconds())
         for action in actions:
             self.actions.put_nowait(action)
+
+    async def ticker(self) -> None:
+        while not self.is_terminated.is_set():
+            actions = self.scheduling_queue.on_tick(self.clock.now_seconds())
+            for action in actions:
+                self.actions.put_nowait(action)
+            await asyncio.sleep(self.tick_interval_seconds)
 
     def list(self) -> List[AnyApplication]:
         return list(self.applications.values())

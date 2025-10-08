@@ -7,7 +7,7 @@ from loguru import logger
 
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.async_queue import AsyncQueue
-from placement_controller.jobs.types import Action, ActionResult
+from placement_controller.jobs.types import Action, ActionResult, ExecutorContext
 
 
 @dataclass
@@ -17,14 +17,15 @@ class InProgressAction:
 
 
 # TODO multiple in progress actions
-# TODO job context to keep client and api client factory
 class JobExecutor:
     incoming: AsyncQueue[Action[ActionResult]]
     outgoing: AsyncQueue[ActionResult]
     in_progress: Dict[NamespacedName, InProgressAction]
+    context: ExecutorContext
 
     def __init__(
         self,
+        executor_context: ExecutorContext,
         incoming: AsyncQueue[Action[ActionResult]],
         outgoing: AsyncQueue[ActionResult],
         is_terminated: asyncio.Event,
@@ -33,6 +34,7 @@ class JobExecutor:
         self.outgoing = outgoing
         self.in_progress = dict()
         self.is_terminated = is_terminated
+        self.context = executor_context
 
     async def run(self) -> None:
         while not self.is_terminated.is_set():
@@ -51,5 +53,5 @@ class JobExecutor:
         inprogress_action.task = task
 
     async def run_action(self, action: Action[ActionResult]) -> None:
-        result = await action.run()
+        result = await action.run(self.context)
         self.outgoing.put_nowait(result)

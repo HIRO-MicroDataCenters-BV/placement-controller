@@ -8,6 +8,7 @@ from prometheus_async.aio.web import start_http_server
 from placement_controller.api.app import start_fastapi
 from placement_controller.clients.k8s.client import KubeClient
 from placement_controller.core.applications import Applications
+from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resources.resource_managment import ResourceManagement
 from placement_controller.resources.resource_metrics import ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
@@ -24,13 +25,20 @@ class Context:
     applications: Applications
     resource_tracking: ResourceTracking
 
-    def __init__(self, clock: Clock, client: KubeClient, settings: Settings, loop: asyncio.AbstractEventLoop):
+    def __init__(
+        self,
+        clock: Clock,
+        executor_context: ExecutorContext,
+        client: KubeClient,
+        settings: Settings,
+        loop: asyncio.AbstractEventLoop,
+    ):
         self.settings = settings
         self.terminated = asyncio.Event()
         self.loop = loop
         self.tasks = []
         self.resource_metrics = ResourceMetricsImpl(config=self.settings.metrics)
-        self.applications = Applications(clock, client, self.terminated, settings.placement)
+        self.applications = Applications(clock, executor_context, client, self.terminated, settings.placement)
         self.resource_tracking = ResourceTrackingImpl(client, self.terminated)
         self.resource_management = ResourceManagement(client, self.resource_tracking, self.resource_metrics)
 

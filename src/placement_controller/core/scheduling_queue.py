@@ -30,13 +30,24 @@ class SchedulingQueue:
         self.zones = set()
         self.clock = clock
 
+    def on_tick(self, timestamp: int) -> List[Action[ActionResult]]:
+        actions = []
+        for name in self.contexts.keys():
+            context = self.contexts[name]
+            next_state = FSM(context, timestamp).on_tick()
+            if next_state.context:
+                self.contexts[name] = next_state.context
+            if next_state.actions:
+                actions.extend(next_state.actions)
+        return actions
+
     def on_membership_update(self, membership: Membership, timestamp: int) -> List[Action[ActionResult]]:
         self.zones = membership.zones
 
         actions = []
         for name in self.contexts.keys():
             context = self.contexts[name]
-            next_state = FSM().on_membership_change(context, self.zones)
+            next_state = FSM(context, timestamp).on_membership_change(self.zones)
             if next_state.context:
                 self.contexts[name] = next_state.context
             if next_state.actions:
@@ -46,7 +57,7 @@ class SchedulingQueue:
 
     def on_application_update(self, application: AnyApplication, timestamp: int) -> List[Action[ActionResult]]:
         context = self.get_context(application.get_namespaced_name(), timestamp)
-        next_state = FSM().next_state(context, application)
+        next_state = FSM(context, timestamp).next_state(application)
         if next_state.context:
             self.contexts[application.get_namespaced_name()] = next_state.context
         return next_state.actions
@@ -58,7 +69,7 @@ class SchedulingQueue:
 
     def on_action_result(self, result: ActionResult, timestamp: int) -> List[Action[ActionResult]]:
         context = self.get_context(result.get_application_name(), timestamp)
-        next_state = FSM().on_action_result(context, result)
+        next_state = FSM(context, timestamp).on_action_result(result)
         if next_state.context:
             self.contexts[result.get_application_name()] = next_state.context
         return next_state.actions

@@ -2,11 +2,10 @@ from typing import Union
 
 from application_client import models
 from application_client.api.default import get_application_spec
-from application_client.client import Client
 
 from placement_controller.api.model import ErrorResponse
 from placement_controller.clients.k8s.client import NamespacedName
-from placement_controller.jobs.types import Action, ActionId, ActionResult
+from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
 
 
 class GetSpecResult(ActionResult):
@@ -18,17 +17,18 @@ class GetSpecResult(ActionResult):
         super().__init__(name, action_id)
         self.response = response
 
+    def is_success(self) -> bool:
+        return not isinstance(self.response, ErrorResponse)
+
 
 class GetSpecAction(Action[GetSpecResult]):
-    client: Client
 
-    def __init__(self, client: Client, name: NamespacedName, action_id: ActionId):
+    def __init__(self, name: NamespacedName, action_id: ActionId):
         super().__init__(name, action_id)
-        self.client = client
 
-    async def run(self) -> GetSpecResult:
+    async def run(self, ctx: ExecutorContext) -> GetSpecResult:
         api_response = await get_application_spec.asyncio(
-            namespace=self.name.namespace, name=self.name.name, client=self.client
+            namespace=self.name.namespace, name=self.name.name, client=ctx.application_controller_client
         )
         if not api_response:
             response = ErrorResponse(status=500, code="INTERNAL_ERROR", msg="Received empty response")

@@ -16,6 +16,8 @@ class InProgressAction:
     task: Optional[asyncio.Task[None]] = None
 
 
+# TODO multiple in progress actions
+# TODO job context to keep client and api client factory
 class JobExecutor:
     incoming: AsyncQueue[Action[ActionResult]]
     outgoing: AsyncQueue[ActionResult]

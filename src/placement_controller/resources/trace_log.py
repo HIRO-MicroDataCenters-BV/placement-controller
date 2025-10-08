@@ -1,6 +1,7 @@
 from typing import List
 
 
+# TODO dataclass
 class TraceLog:
     data: List[str]
 

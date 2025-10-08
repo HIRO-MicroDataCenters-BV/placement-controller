@@ -13,6 +13,7 @@ from placement_controller.membership.types import Membership, PlacementZone
 
 @dataclass
 class ApplicationState:
+    seq_nr: int
     state: SchedulingState
     running_jobs: List[str]
     history: List["ApplicationState"]

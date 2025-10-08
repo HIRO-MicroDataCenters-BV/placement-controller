@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from application_client.models.pod_resources import PodResources
 from application_client.models.pod_resources_limits import PodResourcesLimits
@@ -141,4 +141,45 @@ class ResourceTestFixture:
                 "status": "Ready",
                 "updateTime": "2025-10-01T12:43:49Z",
             },
+        }
+
+    def make_anyapp(self, name: str, zones: str) -> Dict[str, Any]:
+        return {
+            "apiVersion": "dcp.hiro.io/v1",
+            "kind": "AnyApplication",
+            "metadata": {
+                "name": name,
+                "namespace": "test",
+            },
+            "spec": {
+                "application": {
+                    "helm": {
+                        "chart": "nginx-ingress",
+                        "namespace": "nginx",
+                        "repository": "https://helm.nginx.com/stable",
+                        "version": "2.0.1",
+                    }
+                },
+                "placement-strategy": {"strategy": "Local"},
+                "recover-strategy": {"max-retries": 3, "tolerance": 1},
+                "zones": zones,
+            },
+        }
+
+    def make_anyapp_status(self, state: str, owner: str, placements: List[str]) -> Dict[str, Any]:
+        return {
+            "status": {
+                "state": state,
+                "owner": owner,
+                "placements": [{"node-affinity": None, "zone": placement} for placement in placements],
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2025-06-04T09:40:41Z",
+                        "status": "status",
+                        "type": "conditionType",
+                        "zoneId": "zone1",
+                        "zoneVersion": "1",
+                    }
+                ],
+            }
         }

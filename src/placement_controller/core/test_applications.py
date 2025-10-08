@@ -28,5 +28,5 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         super().tearDown()
         self.task.cancel()
 
-    def test_applications(self) -> None:
+    def test_ordinary_placement_flow(self) -> None:
         pass

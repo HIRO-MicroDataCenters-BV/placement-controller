@@ -9,6 +9,7 @@ from placement_controller.core.fsm import FSM
 from placement_controller.core.types import SchedulingState
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import Membership, PlacementZone
+from placement_controller.util.clock import Clock
 
 
 @dataclass
@@ -20,14 +21,16 @@ class ApplicationState:
 
 
 class SchedulingQueue:
+    clock: Clock
     contexts: Dict[NamespacedName, SchedulingContext]
     zones: Set[PlacementZone]
 
-    def __init__(self):
+    def __init__(self, clock: Clock):
         self.contexts = dict()
         self.zones = set()
+        self.clock = clock
 
-    def on_membership_update(self, membership: Membership) -> List[Action[ActionResult]]:
+    def on_membership_update(self, membership: Membership, timestamp: int) -> List[Action[ActionResult]]:
         self.zones = membership.zones
 
         actions = []
@@ -41,30 +44,30 @@ class SchedulingQueue:
 
         return actions
 
-    def on_application_update(self, application: AnyApplication) -> List[Action[ActionResult]]:
-        context = self.get_context(application.get_namespaced_name())
+    def on_application_update(self, application: AnyApplication, timestamp: int) -> List[Action[ActionResult]]:
+        context = self.get_context(application.get_namespaced_name(), timestamp)
         next_state = FSM().next_state(context, application)
         if next_state.context:
             self.contexts[application.get_namespaced_name()] = next_state.context
         return next_state.actions
 
-    def on_application_delete(self, application: AnyApplication) -> List[Action[ActionResult]]:
+    def on_application_delete(self, application: AnyApplication, timestamp: int) -> List[Action[ActionResult]]:
         name = application.get_namespaced_name()
         del self.contexts[name]
         return []
 
-    def on_action_result(self, result: ActionResult) -> List[Action[ActionResult]]:
-        context = self.get_context(result.get_application_name())
+    def on_action_result(self, result: ActionResult, timestamp: int) -> List[Action[ActionResult]]:
+        context = self.get_context(result.get_application_name(), timestamp)
         next_state = FSM().on_action_result(context, result)
         if next_state.context:
             self.contexts[result.get_application_name()] = next_state.context
         return next_state.actions
 
-    def get_context(self, name: NamespacedName) -> SchedulingContext:
+    def get_context(self, name: NamespacedName, timestamp: int) -> SchedulingContext:
         if name not in self.contexts:
-            self.contexts[name] = SchedulingContext(SchedulingState.NEW)
+            self.contexts[name] = SchedulingContext.new(timestamp)
 
         return self.contexts[name]
 
     def get_scheduling_states(self) -> List[ApplicationState]:
-        raise NotImplementedError
+        return []

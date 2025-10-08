@@ -11,13 +11,16 @@ from placement_controller.core.async_queue import AsyncQueue
 from placement_controller.core.scheduling_queue import SchedulingQueue
 from placement_controller.jobs.executor import JobExecutor
 from placement_controller.jobs.types import Action, ActionResult
+from placement_controller.membership.types import Membership
 from placement_controller.membership.watcher import MembershipWatcher
 from placement_controller.settings import PlacementSettings
+from placement_controller.util.clock import Clock
 
 ApplicationFnMut = Callable[[AnyApplication], None]
 
 
 class Applications:
+    clock: Clock
     client: KubeClient
     settings: PlacementSettings
     is_terminated: asyncio.Event
@@ -28,7 +31,8 @@ class Applications:
     actions: AsyncQueue[Action[ActionResult]]
     results: AsyncQueue[ActionResult]
 
-    def __init__(self, client: KubeClient, is_terminated: asyncio.Event, settings: PlacementSettings):
+    def __init__(self, clock: Clock, client: KubeClient, is_terminated: asyncio.Event, settings: PlacementSettings):
+        self.clock = clock
         self.client = client
         self.settings = settings
         self.is_terminated = is_terminated
@@ -36,8 +40,8 @@ class Applications:
 
         self.actions = AsyncQueue[Action[ActionResult]]()
         self.results = AsyncQueue[ActionResult]()
-        self.scheduling_queue = SchedulingQueue()
-        self.membership_watcher = MembershipWatcher(client, self.is_terminated)
+        self.scheduling_queue = SchedulingQueue(clock)
+        self.membership_watcher = MembershipWatcher(client, self.is_terminated, self.on_membership_change)
         self.executor = JobExecutor(self.actions, self.results, self.is_terminated)
 
         logger.info(f"owner zone '{settings.current_zone}'")
@@ -66,9 +70,11 @@ class Applications:
             application = AnyApplication(event.object)
             self.applications[application.get_namespaced_name()] = application
             await self.set_default_placement(application)
+            self.scheduling_queue.on_application_update(application, self.clock.now_seconds())
         elif event.event == EventType.DELETED:
             application = AnyApplication(event.object)
             del self.applications[application.get_namespaced_name()]
+            self.scheduling_queue.on_application_delete(application, self.clock.now_seconds())
         else:
             raise NotImplementedError(f"Unknown event type {event.event}")
 
@@ -82,8 +88,13 @@ class Applications:
                 logger.error(f"error while handling result {e}")
 
     def handle_result(self, result: ActionResult) -> None:
-        action = self.scheduling_queue.on_action_result(result)
-        if action is not None:
+        actions = self.scheduling_queue.on_action_result(result, self.clock.now_seconds())
+        for action in actions:
+            self.actions.put_nowait(action)
+
+    def on_membership_change(self, membership: Membership) -> None:
+        actions = self.scheduling_queue.on_membership_update(membership, self.clock.now_seconds())
+        for action in actions:
             self.actions.put_nowait(action)
 
     def list(self) -> List[AnyApplication]:

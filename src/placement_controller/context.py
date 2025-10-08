@@ -30,7 +30,7 @@ class Context:
         self.loop = loop
         self.tasks = []
         self.resource_metrics = ResourceMetricsImpl(config=self.settings.metrics)
-        self.applications = Applications(client, self.terminated, settings.placement)
+        self.applications = Applications(clock, client, self.terminated, settings.placement)
         self.resource_tracking = ResourceTrackingImpl(client, self.terminated)
         self.resource_management = ResourceManagement(client, self.resource_tracking, self.resource_metrics)
 

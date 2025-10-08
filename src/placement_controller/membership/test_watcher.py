@@ -18,7 +18,7 @@ class MembershipWatcherTest(AsyncTestFixture, ResourceTestFixture):
         super().setUp()
         self.gvk = MeshPeer.GVK
         self.client = FakeClient()
-        self.watcher = MembershipWatcher(self.client, self.terminated)
+        self.watcher = MembershipWatcher(self.client, self.terminated, None)
         self.task = self.loop.create_task(self.watcher.start())
 
     def tearDown(self) -> None:

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Callable, Optional
 
 import asyncio
 
@@ -10,16 +10,25 @@ from placement_controller.membership.types import Membership, MeshPeer, PeerStat
 
 class MembershipWatcher(ObjectPool[MeshPeer]):
     membership: Optional[Membership]
+    on_membership_change: Optional[Callable[[Membership], None]]
 
-    def __init__(self, client: KubeClient, is_terminated: asyncio.Event):
+    def __init__(
+        self,
+        client: KubeClient,
+        is_terminated: asyncio.Event,
+        on_membership_change: Optional[Callable[[Membership], None]],
+    ):
         super().__init__(MeshPeer, client, MeshPeer.GVK, is_terminated)
         self.membership = None
+        self.on_membership_change = on_membership_change
 
     async def handle_event(self, event: KubeEvent) -> None:
         await super().handle_event(event)
         new_membership = self.get_membership()
         if new_membership != self.membership:
             self.membership = new_membership
+            if self.on_membership_change:
+                self.on_membership_change(self.membership)
 
     def get_membership(self) -> Membership:
         zones = set()

@@ -1,6 +1,18 @@
 from typing import Any, Dict, List, Optional
 
+from enum import StrEnum
+
 from placement_controller.clients.k8s.client import GroupVersionKind, NamespacedName
+
+
+class GlobalState(StrEnum):
+    UnknownGlobalState = "Unknown"
+    NewGlobalState = "New"
+    PlacementGlobalState = "Placement"
+    OperationalGlobalState = "Operational"
+    RelocationGlobalState = "Relocation"
+    FailureGlobalState = "Failure"
+    OwnershipTransferGlobalState = "OwnershipTransfer"
 
 
 class AnyApplication:
@@ -52,10 +64,11 @@ class AnyApplication:
         placements = ownership.get("placements") or []
         return [placement["zone"] for placement in placements]
 
-    def get_global_state(self) -> Optional[str]:
+    def get_global_state(self) -> Optional[GlobalState]:
         status = self.object.get("status") or {}
         ownership = status.get("ownership") or {}
-        return ownership.get("state")
+        state = ownership.get("state")
+        return GlobalState(state) if state else None
 
     def set_owner_zone(self, owner: str) -> None:
         status: Optional[Dict[str, Any]] = self.object.get("status")

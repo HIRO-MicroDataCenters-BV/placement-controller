@@ -5,8 +5,8 @@ from placement_controller.core.context import SchedulingContext
 from placement_controller.core.next_state_result import NextStateResult
 from placement_controller.core.types import SchedulingState
 from placement_controller.jobs.bid_action import BidActionResult
-from placement_controller.jobs.get_spec_action import GetSpecResult
-from placement_controller.jobs.types import ActionResult
+from placement_controller.jobs.get_spec_action import GetSpecAction, GetSpecResult
+from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import PlacementZone
 
 
@@ -32,11 +32,14 @@ class FSM:
 
     def on_placement(self, application: AnyApplication) -> NextStateResult:
         if self.ctx.state == SchedulingState.NEW and self.ctx.inprogress_actions_count() == 0:
+            action: Action[ActionResult] = GetSpecAction(
+                application.get_namespaced_name(), "action id todo"
+            )  # type: ignore
             next_context = self.ctx.to_next(
                 SchedulingState.FETCH_APPLICATION_SPEC, self.timestamp, "Application spec fetched successfully"
-            )
-            # action = decision action
-            return NextStateResult(actions=[], context=next_context)
+            ).with_action(action)
+
+            return NextStateResult(actions=[action], context=next_context)
 
         return NextStateResult()
 

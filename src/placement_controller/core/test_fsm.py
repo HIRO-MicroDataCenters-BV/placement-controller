@@ -16,10 +16,10 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         self.name = NamespacedName(name="test", namespace="testns")
         self.application = AnyApplication(self.make_anyapp("nginx", 1))
 
-    def test_new_application(self) -> None:
-        context = SchedulingContext.new(1)
+    def test_ordinary_placement(self) -> None:
+        context = SchedulingContext.new(1, [])
 
         result = FSM(context, 1).next_state(self.application)
-
         self.assertEqual(result.actions, [])
+
         # self.assertEqual(result.context.state, SchedulingState.NEW)

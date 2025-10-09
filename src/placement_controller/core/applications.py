@@ -4,6 +4,7 @@ import asyncio
 
 from loguru import logger
 
+from placement_controller.api.model import ApplicationState
 from placement_controller.clients.k8s.client import KubeClient, NamespacedName
 from placement_controller.clients.k8s.event import EventType, KubeEvent
 from placement_controller.core.application import AnyApplication
@@ -113,6 +114,9 @@ class Applications:
 
     def list(self) -> List[AnyApplication]:
         return list(self.applications.values())
+
+    def list_scheduling_state(self) -> List[ApplicationState]:
+        return self.scheduling_queue.get_scheduling_states()
 
     async def set_default_placement(self, application: AnyApplication) -> None:
         if application.get_owner_zone() == self.settings.current_zone:

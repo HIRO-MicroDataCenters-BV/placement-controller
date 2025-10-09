@@ -22,6 +22,7 @@ class SchedulingContext:
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
     application: Optional[AnyApplication] = field(default=None)
     application_spec: Optional[models.ApplicationSpec] = field(default=None)
+    previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
     def new(timestamp: int, placement_zones: List[PlacementZone]) -> "SchedulingContext":
@@ -54,6 +55,7 @@ class SchedulingContext:
             inprogress_actions=self.inprogress_actions,
             application=application,
             application_spec=self.application_spec,
+            previous=self,
         )
 
     def with_action(self, action: Action[ActionResult]) -> "SchedulingContext":

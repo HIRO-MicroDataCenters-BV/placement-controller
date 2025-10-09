@@ -84,3 +84,16 @@ class ErrorResponse(BaseModel):
     status: int
     code: str
     msg: Optional[str] = None
+
+
+class SchedulingEntry(BaseModel):
+    seq_nr: int
+    state: str
+    msg: Optional[str]
+    running_jobs: List[str]
+
+
+class ApplicationState(BaseModel):
+    name: str
+    namespace: str
+    history: List[SchedulingEntry]

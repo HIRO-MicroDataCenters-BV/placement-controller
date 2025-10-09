@@ -1,23 +1,13 @@
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
-from dataclasses import dataclass
-
+from placement_controller.api.model import ApplicationState, SchedulingEntry
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.context import SchedulingContext
 from placement_controller.core.fsm import FSM
-from placement_controller.core.types import SchedulingState
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import Membership, PlacementZone
 from placement_controller.util.clock import Clock
-
-
-@dataclass
-class ApplicationState:
-    seq_nr: int
-    state: SchedulingState
-    running_jobs: List[str]
-    history: List["ApplicationState"]
 
 
 class SchedulingQueue:
@@ -76,9 +66,29 @@ class SchedulingQueue:
 
     def get_context(self, name: NamespacedName, timestamp: int) -> SchedulingContext:
         if name not in self.contexts:
-            self.contexts[name] = SchedulingContext.new(timestamp)
+            self.contexts[name] = SchedulingContext.new(timestamp, list(self.zones))
 
         return self.contexts[name]
 
     def get_scheduling_states(self) -> List[ApplicationState]:
-        return []
+        results = []
+        for name, context in self.contexts.items():
+            history = []
+            ctx: Optional[SchedulingContext] = context
+            while ctx:
+                entry = SchedulingEntry(
+                    seq_nr=ctx.seq_nr,
+                    state=str(ctx.state),
+                    msg=ctx.msg,
+                    running_jobs=[str(type(action)) for action in ctx.inprogress_actions.values()],
+                )
+                history.append(entry)
+                ctx = ctx.previous
+
+            app_state = ApplicationState(
+                name=name.name,
+                namespace=name.namespace,
+                history=history,
+            )
+            results.append(app_state)
+        return results

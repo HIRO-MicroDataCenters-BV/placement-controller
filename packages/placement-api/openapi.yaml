@@ -35,6 +35,20 @@ paths:
                   $ref: '#/components/schemas/ApplicationModel'
                 type: array
                 title: Response List Applications
+  /applications/scheduling-state/:
+    get:
+      summary: List Scheduling State
+      operationId: list_scheduling_state
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApplicationState'
+                type: array
+                title: Response List Scheduling State
   /applications/{namespace}/{name}/placements:
     put:
       summary: Set Placements
@@ -164,6 +178,25 @@ components:
       - owner
       - zones
       title: ApplicationModel
+    ApplicationState:
+      properties:
+        name:
+          type: string
+          title: Name
+        namespace:
+          type: string
+          title: Namespace
+        history:
+          items:
+            $ref: '#/components/schemas/SchedulingEntry'
+          type: array
+          title: History
+      type: object
+      required:
+      - name
+      - namespace
+      - history
+      title: ApplicationState
     BidCriteria:
       type: string
       enum:
@@ -289,6 +322,31 @@ components:
       - value
       - unit
       title: MetricValue
+    SchedulingEntry:
+      properties:
+        seq_nr:
+          type: integer
+          title: Seq Nr
+        state:
+          type: string
+          title: State
+        msg:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msg
+        running_jobs:
+          items:
+            type: string
+          type: array
+          title: Running Jobs
+      type: object
+      required:
+      - seq_nr
+      - state
+      - msg
+      - running_jobs
+      title: SchedulingEntry
     ValidationError:
       properties:
         loc:

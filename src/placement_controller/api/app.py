@@ -4,7 +4,13 @@ from fastapi import Depends, FastAPI
 from fastapi.openapi.utils import get_openapi
 from uvicorn import Config, Server
 
-from placement_controller.api.model import ApplicationModel, BidRequestModel, BidResponseModel, ErrorResponse
+from placement_controller.api.model import (
+    ApplicationModel,
+    ApplicationState,
+    BidRequestModel,
+    BidResponseModel,
+    ErrorResponse,
+)
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.applications import Applications
 from placement_controller.resources.resource_managment import ResourceManagement
@@ -60,6 +66,14 @@ def create_api() -> PlacementFastAPI:
     @app.get(path="/applications/", response_model=List[ApplicationModel], operation_id="list_applications")
     def list_applications(apps: Applications = Depends(lambda: get_applications(app))) -> List[ApplicationModel]:
         return [ApplicationModel.from_object(app) for app in apps.list()]
+
+    @app.get(
+        path="/applications/scheduling-state/",
+        response_model=List[ApplicationState],
+        operation_id="list_scheduling_state",
+    )
+    def list_scheduling_state(apps: Applications = Depends(lambda: get_applications(app))) -> List[ApplicationState]:
+        return apps.list_scheduling_state()
 
     @app.put(
         "/applications/{namespace}/{name}/placements", response_model=ApplicationModel, operation_id="set_placements"

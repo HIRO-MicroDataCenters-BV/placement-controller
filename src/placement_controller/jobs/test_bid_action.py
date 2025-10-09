@@ -17,6 +17,7 @@ from placement_controller.api.model import (
 )
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
+from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.jobs.bid_action import BidAction
 from placement_controller.jobs.fake_placement_server import FakePlacementController
 from placement_controller.jobs.types import ExecutorContext
@@ -66,7 +67,9 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
 
         self.api_factory = ZoneApiFactoryImpl()
         self.context = ExecutorContext(
-            zone_api_factory=self.api_factory, application_controller_client=Client(base_url="")
+            zone_api_factory=self.api_factory,
+            application_controller_client=Client(base_url=""),
+            kube_client=FakeClient(),
         )
 
         self.server1 = FakePlacementController(host="127.0.0.1")

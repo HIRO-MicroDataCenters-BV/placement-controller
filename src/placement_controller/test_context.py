@@ -29,7 +29,9 @@ class ContextTest(AsyncTestFixture):
         self.app_client = Client(base_url="http://127.0.0.1/")
         self.zone_api_client = ZoneApiFactoryImpl()
         self.executor_context = ExecutorContext(
-            application_controller_client=self.app_client, zone_api_factory=self.zone_api_client
+            application_controller_client=self.app_client,
+            zone_api_factory=self.zone_api_client,
+            kube_client=self.k8s_client,
         )
         self.settings = self.make_settings()
         self.context = Context(self.clock, self.executor_context, self.k8s_client, self.settings, self.loop)

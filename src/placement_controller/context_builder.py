@@ -62,7 +62,9 @@ class ContextBuilder:
 
         # TODO base_url
         executor_context = ExecutorContext(
-            application_controller_client=Client(base_url="TODO"), zone_api_factory=ZoneApiFactoryImpl()
+            application_controller_client=Client(base_url="TODO"),
+            zone_api_factory=ZoneApiFactoryImpl(),
+            kube_client=client,
         )
 
         context = Context(clock, executor_context, client, self.settings, loop)

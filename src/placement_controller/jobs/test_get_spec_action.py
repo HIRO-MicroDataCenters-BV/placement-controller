@@ -5,6 +5,7 @@ from application_client.client import Client
 
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
+from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.jobs.fake_application_controller import FakeApplicationController
 from placement_controller.jobs.get_spec_action import GetSpecAction
 from placement_controller.jobs.types import ExecutorContext
@@ -36,7 +37,11 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
         self.server.start()
 
         self.client = Client(base_url=self.server.get_base_url())
-        self.context = ExecutorContext(application_controller_client=self.client, zone_api_factory=ZoneApiFactory())
+        self.context = ExecutorContext(
+            application_controller_client=self.client,
+            zone_api_factory=ZoneApiFactory(),
+            kube_client=FakeClient(),
+        )
         self.action = GetSpecAction(self.name, "test")
         self.wait_for_condition(2, lambda: self.server.is_available())
 

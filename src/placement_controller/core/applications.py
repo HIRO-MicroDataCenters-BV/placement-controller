@@ -99,19 +99,16 @@ class Applications:
 
     def handle_result(self, result: ActionResult) -> None:
         actions = self.scheduling_queue.on_action_result(result, self.clock.now_seconds())
-        for action in actions:
-            self.actions.put_nowait(action)
+        self.handle_actions(actions)
 
     def on_membership_change(self, membership: Membership) -> None:
         actions = self.scheduling_queue.on_membership_update(membership, self.clock.now_seconds())
-        for action in actions:
-            self.actions.put_nowait(action)
+        self.handle_actions(actions)
 
     async def ticker(self) -> None:
         while not self.is_terminated.is_set():
             actions = self.scheduling_queue.on_tick(self.clock.now_seconds())
-            for action in actions:
-                self.actions.put_nowait(action)
+            self.handle_actions(actions)
             await asyncio.sleep(self.tick_interval_seconds)
 
     def list(self) -> List[AnyApplication]:
@@ -149,3 +146,7 @@ class Applications:
         if not updated:
             raise Exception("updated object is not available")
         return AnyApplication(updated)
+
+    def handle_actions(self, actions: List[Action[ActionResult]]) -> None:
+        for action in actions:
+            self.actions.put_nowait(action)

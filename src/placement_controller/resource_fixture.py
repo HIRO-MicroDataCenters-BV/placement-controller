@@ -169,9 +169,11 @@ class ResourceTestFixture:
     def make_anyapp_status(self, state: str, owner: str, placements: List[str]) -> Dict[str, Any]:
         return {
             "status": {
-                "state": state,
-                "owner": owner,
-                "placements": [{"node-affinity": None, "zone": placement} for placement in placements],
+                "ownership": {
+                    "state": state,
+                    "owner": owner,
+                    "placements": [{"node-affinity": None, "zone": placement} for placement in placements],
+                },
                 "conditions": [
                     {
                         "lastTransitionTime": "2025-06-04T09:40:41Z",

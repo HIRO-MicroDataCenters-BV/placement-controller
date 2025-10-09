@@ -2,6 +2,7 @@ import asyncio
 
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
+from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.core.async_queue import AsyncQueue
 from placement_controller.jobs.executor import JobExecutor
 from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
@@ -47,6 +48,7 @@ class JobExecutorTest(AsyncTestFixture):
         self.executor_context = ExecutorContext(
             application_controller_client=None,  # type: ignore
             zone_api_factory=None,  # type: ignore
+            kube_client=FakeClient(),
         )
         self.executor = JobExecutor(self.executor_context, self.actions, self.results, self.terminated)  # type: ignore
 

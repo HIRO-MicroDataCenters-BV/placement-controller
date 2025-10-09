@@ -71,7 +71,15 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
     def tearDown(self) -> None:
         super().tearDown()
 
-    def test_decide_success(self) -> None:
+    def test_decide_success_single_zone(self) -> None:
         result = self.loop.run_until_complete(self.action.run(self.context))
 
         self.assertEqual(result.result, [PlacementZone(id="zone1")])
+
+    def test_decide_success_multiple_zones(self) -> None:
+        dict_app = self.make_anyapp(self.name.name, 2) | self.make_anyapp_status("state", "owner", [])
+        self.application = AnyApplication(dict_app)
+        self.action = DecisionAction(self.bids, self.application, self.name, "test")
+
+        result = self.loop.run_until_complete(self.action.run(self.context))
+        self.assertEqual(result.result, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])

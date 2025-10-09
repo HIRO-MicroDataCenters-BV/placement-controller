@@ -75,6 +75,10 @@ class BidResponseModel(BaseModel):
     msg: Optional[str] = None
     metrics: List[MetricValue]
 
+    def get_metric_value(self, metric: Metric) -> Optional[MetricValue]:
+        found = [m for m in self.metrics if m.id == metric]
+        return next(iter(found), None)
+
 
 class ErrorResponse(BaseModel):
     status: int

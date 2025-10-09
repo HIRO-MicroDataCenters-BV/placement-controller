@@ -12,16 +12,14 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
     name: NamespacedName
     application: AnyApplication
 
-    fsm: FSM
-
     def setUp(self) -> None:
         self.name = NamespacedName(name="test", namespace="testns")
         self.application = AnyApplication(self.make_anyapp("nginx", 1))
-        self.fsm = FSM()
 
     def test_new_application(self) -> None:
         context = SchedulingContext.new(1)
-        result = self.fsm.next_state(context, self.application)
+
+        result = FSM(context, 1).next_state(self.application)
 
         self.assertEqual(result.actions, [])
         # self.assertEqual(result.context.state, SchedulingState.NEW)

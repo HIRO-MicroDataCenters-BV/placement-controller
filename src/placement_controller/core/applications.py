@@ -12,7 +12,7 @@ from placement_controller.core.async_queue import AsyncQueue
 from placement_controller.core.scheduling_queue import SchedulingQueue
 from placement_controller.jobs.executor import JobExecutor
 from placement_controller.jobs.types import Action, ActionResult, ExecutorContext
-from placement_controller.membership.types import Membership
+from placement_controller.membership.types import Membership, PlacementZone
 from placement_controller.membership.watcher import MembershipWatcher
 from placement_controller.settings import PlacementSettings
 from placement_controller.util.clock import Clock
@@ -28,6 +28,7 @@ class Applications:
     applications: Dict[NamespacedName, AnyApplication]
     membership_watcher: MembershipWatcher
     tick_interval_seconds: float
+    initialized: bool
 
     scheduling_queue: SchedulingQueue
     actions: AsyncQueue[Action[ActionResult]]
@@ -47,6 +48,7 @@ class Applications:
         self.tick_interval_seconds = 1.0
         self.is_terminated = is_terminated
         self.applications = {}
+        self.initialized = False
 
         self.actions = AsyncQueue[Action[ActionResult]]()
         self.results = AsyncQueue[ActionResult]()
@@ -55,6 +57,14 @@ class Applications:
         self.executor = JobExecutor(executor_context, self.actions, self.results, self.is_terminated)
 
         logger.info(f"owner zone '{settings.current_zone}'")
+
+        self.scheduling_queue.on_membership_update(
+            Membership({PlacementZone(id=zone) for zone in self.settings.available_zones}),
+            self.clock.now_seconds(),
+        )
+
+    def is_initialized(self) -> bool:
+        return self.initialized
 
     async def run(self) -> None:
         await asyncio.gather(
@@ -67,6 +77,7 @@ class Applications:
 
     async def run_kube_watch(self) -> None:
         subscriber_id, queue = self.client.watch(AnyApplication.GVK, self.settings.namespace, 0, self.is_terminated)
+        self.initialized = True
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:
@@ -79,13 +90,16 @@ class Applications:
     async def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
             application = AnyApplication(event.object)
-            self.applications[application.get_namespaced_name()] = application
-            await self.set_default_placement(application)
-            self.scheduling_queue.on_application_update(application, self.clock.now_seconds())
+            # self.applications[application.get_namespaced_name()] = application
+            # await self.set_default_placement(application)
+
+            action_result = self.scheduling_queue.on_application_update(application, self.clock.now_seconds())
+            self.handle_actions(action_result)
         elif event.event == EventType.DELETED:
             application = AnyApplication(event.object)
-            del self.applications[application.get_namespaced_name()]
-            self.scheduling_queue.on_application_delete(application, self.clock.now_seconds())
+            # del self.applications[application.get_namespaced_name()]
+            action_result = self.scheduling_queue.on_application_delete(application, self.clock.now_seconds())
+            self.handle_actions(action_result)
         else:
             raise NotImplementedError(f"Unknown event type {event.event}")
 

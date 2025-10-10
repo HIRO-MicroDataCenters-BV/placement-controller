@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, List, Mapping, Tuple, Union
 
 import functools
 
@@ -24,12 +24,12 @@ class DecisionActionResult(ActionResult):
 
 
 class DecisionAction(Action[DecisionActionResult]):
-    bids: Dict[ZoneId, BidResponseOrError]
+    bids: Mapping[ZoneId, BidResponseOrError]
     application: AnyApplication
 
     def __init__(
         self,
-        bids: Dict[ZoneId, BidResponseOrError],
+        bids: Mapping[ZoneId, BidResponseOrError],
         application: AnyApplication,
         name: NamespacedName,
         action_id: ActionId,

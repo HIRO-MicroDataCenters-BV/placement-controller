@@ -1,10 +1,10 @@
-from typing import Dict, List
+from typing import List, Mapping
 
 import json
 
 from application_client import models
 
-from placement_controller.api.model import BidCriteria, BidRequestModel, Metric
+from placement_controller.api.model import BidCriteria, BidRequestModel, ErrorResponse, Metric
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication, GlobalState
 from placement_controller.core.context import SchedulingContext
@@ -84,7 +84,8 @@ class FSM:
             msg = "Application spec fetched successfully. Starting bidding..."
             return self.new_bid_action(result.response, result.get_application_name(), msg)
         else:
-            return self.retry("Failure while getting application specification. ")
+            error: ErrorResponse = result.response
+            return self.retry(f"Failure while getting application specification. {error.msg} ")
 
     def new_bid_action(self, spec: models.ApplicationSpec, name: NamespacedName, msg: str) -> NextStateResult:
         spec_str = json.dumps(spec.to_dict())
@@ -102,7 +103,7 @@ class FSM:
     def on_bid_action_result(self, result: BidActionResult) -> NextStateResult:
         action = self.ctx.get_action_by_id(result.action_id)
         if not action:
-            return self.placement_failure("Failure while receiving bids specification. Action is not found. ")
+            return self.placement_failure("Failure while receiving bids. Action is not found. ")
 
         if result.is_success():
             application = self.ctx.application
@@ -113,12 +114,12 @@ class FSM:
             msg = "Bids received. Making decision..."
             return self.new_decision_action(application, result.response, result.get_application_name(), msg)
         else:
-            return self.retry("Failure while receiving bids specification.")
+            return self.retry(f"Failure while receiving bids. {result.response} ")  # TODO stringify error
 
     def new_decision_action(
         self,
         application: AnyApplication,
-        bids: Dict[ZoneId, BidResponseOrError],
+        bids: Mapping[ZoneId, BidResponseOrError],
         name: NamespacedName,
         msg: str,
     ) -> NextStateResult:
@@ -142,7 +143,8 @@ class FSM:
             msg = "Decision is made. Setting placements..."
             return self.new_set_placement_action(result.result, result.get_application_name(), msg)
         else:
-            return self.retry("Failure while setting placements.")
+            error: ErrorResponse = result.result
+            return self.retry(f"Failure while setting placements. {error.msg} ")
 
     def new_set_placement_action(
         self,
@@ -171,7 +173,8 @@ class FSM:
             next_context = self.ctx.to_next(SchedulingState.DONE, self.timestamp, msg)
             return NextStateResult(context=next_context)
         else:
-            return self.retry("Failure while receiving bids specification.")
+            error: ErrorResponse = result.result
+            return self.retry(f"Failure while receiving bids specification. {error.msg} ")
 
     def retry(self, msg: str) -> NextStateResult:
         if not self.ctx.is_attempts_exhausted():
@@ -184,12 +187,12 @@ class FSM:
         next_context = self.ctx.to_next(SchedulingState.DONE, self.timestamp, msg)
         return NextStateResult(context=next_context)
 
-    def on_membership_change(self, zones: List[PlacementZone], timestamp: int) -> NextStateResult:
+    def on_membership_change(self, zones: List[PlacementZone]) -> NextStateResult:
         # ignore membership updates for now, just change active zones
 
         zone_names = ",".join([zone.id for zone in zones])
         next_context = self.ctx.to_next(
-            self.ctx.state, timestamp, f"Placement changed to '{zone_names}'"
+            self.ctx.state, self.timestamp, f"Placement changed to '{zone_names}'"
         ).with_placement_zones(zones)
 
         return NextStateResult(context=next_context)

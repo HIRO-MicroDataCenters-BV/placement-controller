@@ -54,7 +54,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
     def test_ordinary_placement(self) -> None:
         # NEW state
-        context = SchedulingContext.new(1, [])
+        context = SchedulingContext.new(1, self.name, [])
         self.assertEqual(context.state, SchedulingState.NEW)
 
         # FETCH_APPLICATION_SPEC
@@ -106,3 +106,4 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
 
 # TODO more tests covering application update during scheduling
+# TODO tests with retries

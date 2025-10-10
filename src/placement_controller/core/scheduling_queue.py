@@ -37,7 +37,7 @@ class SchedulingQueue:
         actions = []
         for name in self.contexts.keys():
             context = self.contexts[name]
-            next_state = FSM(context, timestamp).on_membership_change(self.zones)
+            next_state = FSM(context, timestamp).on_membership_change(list(self.zones))
             if next_state.context:
                 self.contexts[name] = next_state.context
             if next_state.actions:
@@ -66,7 +66,7 @@ class SchedulingQueue:
 
     def get_context(self, name: NamespacedName, timestamp: int) -> SchedulingContext:
         if name not in self.contexts:
-            self.contexts[name] = SchedulingContext.new(timestamp, list(self.zones))
+            self.contexts[name] = SchedulingContext.new(timestamp, name, list(self.zones))
 
         return self.contexts[name]
 

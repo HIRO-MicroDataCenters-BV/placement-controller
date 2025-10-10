@@ -3,7 +3,9 @@ from typing import Dict, List, Optional, Type
 from dataclasses import dataclass, field
 
 from application_client import models
+from loguru import logger
 
+from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.types import SchedulingState
 from placement_controller.jobs.types import Action, ActionId, ActionResult
@@ -15,6 +17,7 @@ DEFAULT_MAX_ACTION_ATTEMPTS: int = 3
 
 @dataclass
 class SchedulingContext:
+    name: NamespacedName
     seq_nr: int
     action_nr: int
     timestamp: int
@@ -28,8 +31,9 @@ class SchedulingContext:
     previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
-    def new(timestamp: int, placement_zones: List[PlacementZone]) -> "SchedulingContext":
+    def new(timestamp: int, name: NamespacedName, placement_zones: List[PlacementZone]) -> "SchedulingContext":
         return SchedulingContext(
+            name=name,
             seq_nr=0,
             action_nr=0,
             timestamp=timestamp,
@@ -41,13 +45,16 @@ class SchedulingContext:
         return self.to_next_with_app(state, self.application, timestamp, msg)
 
     def retry(self, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
-        # TODO attempts
-        return self.to_next_with_app(self.state, self.application, timestamp, msg)
+        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        context.retry_attempt += 1
+        return context
 
     def to_next_with_app(
         self, state: SchedulingState, application: Optional[AnyApplication], timestamp: int, msg: Optional[str]
     ) -> "SchedulingContext":
+        logger.info(f"{self.name}: state={state}, msg='{msg}', ts={timestamp}")
         return SchedulingContext(
+            name=self.name,
             seq_nr=self.seq_nr + 1,
             action_nr=self.action_nr,
             timestamp=timestamp,
@@ -79,7 +86,7 @@ class SchedulingContext:
         return None
 
     def is_attempts_exhausted(self) -> bool:
-        return self.retry_attempt < DEFAULT_MAX_ACTION_ATTEMPTS
+        return self.retry_attempt >= DEFAULT_MAX_ACTION_ATTEMPTS
 
     def is_timeout(self, now: int) -> bool:
         return (now - self.timestamp) > DEFAULT_ACTION_TIMEOUT_SECONDS * 1000

@@ -29,6 +29,17 @@ class GroupVersionKind:
     version: str
     kind: str
 
+    @staticmethod
+    def from_event(event: KubeEvent) -> "GroupVersionKind":
+        groupVersion = event.object["apiVersion"]
+        tokens = groupVersion.split("/")
+        if len(tokens) != 2:
+            group = ""
+            version = groupVersion
+        else:
+            group, version = tokens[0], tokens[1]
+        return GroupVersionKind(group, version, event.object["kind"])
+
 
 class KubeClient:
     def watch(

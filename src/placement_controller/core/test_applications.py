@@ -2,6 +2,7 @@ import asyncio
 
 from application_client import models
 from application_client.client import Client
+from placement_client import models as placement_client_models
 
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
@@ -45,6 +46,7 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         self.zone2_placement_controller.start()
 
         self.api_factory = ZoneApiFactoryImpl()
+        self.api_factory.add_static_zone("zone1", self.zone2_placement_controller.get_base_url())
         self.api_factory.add_static_zone("zone2", self.zone2_placement_controller.get_base_url())
 
         self.app_client = Client(base_url=self.app_server.get_base_url())
@@ -63,7 +65,10 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         self.task = self.loop.create_task(self.applications.run())
 
         self.wait_for_condition(
-            2, lambda: self.app_server.is_available() and self.zone2_placement_controller.is_available()
+            2,
+            lambda: self.app_server.is_available()
+            and self.zone2_placement_controller.is_available()
+            and self.applications.is_initialized(),
         )
 
         self.application = self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone1", [])
@@ -73,11 +78,24 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         )
         self.app_server.mock_response(self.spec)
 
+        self.bid_response = placement_client_models.BidResponseModel(
+            id="test",
+            status=placement_client_models.BidStatus.ACCEPTED,
+            metrics=[
+                placement_client_models.MetricValue(
+                    id=placement_client_models.Metric.COST, value="1.01", unit=placement_client_models.MetricUnit.EUR
+                )
+            ],
+            reason=None,
+            msg="OK",
+        )
+        self.zone2_placement_controller.mock_response(self.bid_response)
+
     def tearDown(self) -> None:
+        self.task.cancel()
         self.app_server.stop()
         self.zone2_placement_controller.stop()
         super().tearDown()
-        self.task.cancel()
 
     def test_ordinary_placement_flow(self) -> None:
         # new application added
@@ -91,4 +109,4 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
             else:
                 return False
 
-        self.wait_for_condition(3, placements_done)
+        self.wait_for_condition(5, placements_done)

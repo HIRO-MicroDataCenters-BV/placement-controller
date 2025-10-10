@@ -1,4 +1,4 @@
-from typing import Dict, Set, Union
+from typing import Mapping, Set, Union
 
 import asyncio
 from decimal import Decimal
@@ -24,9 +24,9 @@ ZoneId = str
 
 
 class BidActionResult(ActionResult):
-    response: Dict[ZoneId, BidResponseOrError]
+    response: Mapping[ZoneId, BidResponseOrError]
 
-    def __init__(self, response: Dict[ZoneId, BidResponseOrError], name: NamespacedName, action_id: ActionId):
+    def __init__(self, response: Mapping[ZoneId, BidResponseOrError], name: NamespacedName, action_id: ActionId):
         super().__init__(name, action_id)
         self.response = response
 

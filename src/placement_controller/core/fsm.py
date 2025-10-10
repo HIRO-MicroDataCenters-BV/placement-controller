@@ -34,7 +34,7 @@ class FSM:
         if global_state == GlobalState.PlacementGlobalState:
             return self.on_placement_action(application)
         elif global_state == GlobalState.FailureGlobalState:
-            return self.on_failure(application)
+            return self.on_global_failure(application)
         else:
             return NextStateResult()
 
@@ -46,7 +46,7 @@ class FSM:
 
         return NextStateResult()
 
-    def on_failure(self, application: AnyApplication) -> NextStateResult:
+    def on_global_failure(self, application: AnyApplication) -> NextStateResult:
         # not implemented yet, skipping for now
         return NextStateResult()
 
@@ -69,9 +69,9 @@ class FSM:
         )  # type: ignore
 
         msg = "Getting application specification..."
-        next_context = self.ctx.to_next(SchedulingState.FETCH_APPLICATION_SPEC, self.timestamp, msg).with_action(
-            next_action
-        )
+        next_context = self.ctx.to_next_with_app(
+            SchedulingState.FETCH_APPLICATION_SPEC, application, self.timestamp, msg
+        ).with_action(next_action)
 
         return NextStateResult(actions=[next_action], context=next_context)
 
@@ -87,7 +87,7 @@ class FSM:
             return self.retry("Failure while getting application specification. ")
 
     def new_bid_action(self, spec: models.ApplicationSpec, name: NamespacedName, msg: str) -> NextStateResult:
-        spec_str = json.dumps(spec)
+        spec_str = json.dumps(spec.to_dict())
         zones = [zone.id for zone in self.ctx.placement_zones]
         bid_criteria = [BidCriteria.cpu, BidCriteria.memory]
         metrics = {Metric.cost, Metric.energy}

@@ -1,13 +1,19 @@
-from typing import List
+from typing import Dict, List
+
+import json
+
+from application_client import models
 
 from placement_controller.api.model import BidCriteria, BidRequestModel, Metric
+from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication, GlobalState
 from placement_controller.core.context import SchedulingContext
 from placement_controller.core.next_state_result import NextStateResult
 from placement_controller.core.types import SchedulingState
-from placement_controller.jobs.bid_action import BidAction, BidActionResult
-from placement_controller.jobs.decision_action import DecisionAction
+from placement_controller.jobs.bid_action import BidAction, BidActionResult, BidResponseOrError, ZoneId
+from placement_controller.jobs.decision_action import DecisionAction, DecisionActionResult
 from placement_controller.jobs.get_spec_action import GetSpecAction, GetSpecResult
+from placement_controller.jobs.placement_action import SetPlacementAction, SetPlacementActionResult
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import PlacementZone
 
@@ -26,101 +32,157 @@ class FSM:
     def next_state(self, application: AnyApplication) -> NextStateResult:
         global_state = application.get_global_state()
         if global_state == GlobalState.PlacementGlobalState:
-            return self.on_placement(application)
+            return self.on_placement_action(application)
         elif global_state == GlobalState.FailureGlobalState:
             return self.on_failure(application)
         else:
             return NextStateResult()
 
-    def on_placement(self, application: AnyApplication) -> NextStateResult:
-        if self.ctx.state == SchedulingState.NEW and self.ctx.inprogress_actions_count() == 0:
-            next_action: Action[ActionResult] = GetSpecAction(
-                application.get_namespaced_name(),
-                self.ctx.gen_action_id(),
-            )  # type: ignore
-            next_context = self.ctx.to_next(
-                SchedulingState.FETCH_APPLICATION_SPEC, self.timestamp, "Getting application specification..."
-            ).with_action(next_action)
-
-            return NextStateResult(actions=[next_action], context=next_context)
+    def on_placement_action(self, application: AnyApplication) -> NextStateResult:
+        if self.ctx.state == SchedulingState.NEW:
+            # no action is progress
+            if self.ctx.inprogress_actions_count() == 0:
+                return self.new_get_spec(application)
 
         return NextStateResult()
 
     def on_failure(self, application: AnyApplication) -> NextStateResult:
+        # not implemented yet, skipping for now
         return NextStateResult()
 
     def on_action_result(self, result: ActionResult) -> NextStateResult:
-        next_action: Action[ActionResult]
-
         if self.ctx.state == SchedulingState.FETCH_APPLICATION_SPEC and isinstance(result, GetSpecResult):
-            action = self.ctx.get_action_by_id(result.action_id)
-            if action:
-                if result.is_success():
-                    request_id = self.ctx.gen_action_id()
-                    zones = [zone.id for zone in self.ctx.placement_zones]
-                    next_action = BidAction(
-                        set(zones),
-                        BidRequestModel(
-                            id=request_id,
-                            spec="TODO",
-                            bid_criteria=[BidCriteria.cpu, BidCriteria.memory],
-                            metrics={Metric.cost, Metric.energy},
-                        ),
-                        result.get_application_name(),
-                    )  # type: ignore
-                    next_context = self.ctx.to_next(
-                        SchedulingState.BID_COLLECTION,
-                        self.timestamp,
-                        "Application spec fetched successfully. Starting bidding...",
-                    ).with_action(next_action)
-                    return NextStateResult(actions=[next_action], context=next_context)
-                else:
-                    # action failure case
-                    pass
-            else:
-                if not self.ctx.is_attempts_exhausted():
-                    next_context = self.ctx.retry(
-                        self.timestamp, "Get Spec failure. Retrying..."
-                    )  # TODO attempt number
-                else:
-                    # no more attempts
-                    pass
-
+            return self.on_get_spec_result(result)
         elif self.ctx.state == SchedulingState.BID_COLLECTION and isinstance(result, BidActionResult):
-            action = self.ctx.get_action_by_id(result.action_id)
-            if action:
-                if result.is_success():
-                    application = self.ctx.application
-                    if not application:
-                        raise Exception("Application is not set in context. Invariant failure. Programmer mistake!")
-                    next_action = DecisionAction(
-                        result.response,
-                        application,
-                        result.get_application_name(),
-                        self.ctx.gen_action_id(),
-                    )  # type: ignore
-                    next_context = self.ctx.to_next(
-                        SchedulingState.DECISION, self.timestamp, "Bids received. Making decision..."
-                    ).with_action(next_action)
-                    return NextStateResult(actions=[next_action], context=next_context)
-                else:
-                    # action failure case
-                    pass
-            else:
-                if not self.ctx.is_attempts_exhausted():
-                    next_context = self.ctx.retry(
-                        self.timestamp, "Get Spec failure. Retrying..."
-                    )  # TODO attempt number
-                else:
-                    # no more attempts
-                    pass
-        elif self.ctx.state == SchedulingState.DECISION and isinstance(result, BidActionResult):
-            action = self.ctx.get_action_by_id(result.action_id)
-            if action:
-                if result.is_success():
-                    pass
+            return self.on_bid_action_result(result)
+        elif self.ctx.state == SchedulingState.DECISION and isinstance(result, DecisionActionResult):
+            return self.on_decision_action_result(result)
+        elif self.ctx.state == SchedulingState.SET_PLACEMENT and isinstance(result, SetPlacementActionResult):
+            return self.on_set_placement_action_result(result)
 
         return NextStateResult()
+
+    def new_get_spec(self, application: AnyApplication) -> NextStateResult:
+        next_action: Action[ActionResult] = GetSpecAction(
+            application.get_namespaced_name(),
+            self.ctx.gen_action_id(),
+        )  # type: ignore
+
+        msg = "Getting application specification..."
+        next_context = self.ctx.to_next(SchedulingState.FETCH_APPLICATION_SPEC, self.timestamp, msg).with_action(
+            next_action
+        )
+
+        return NextStateResult(actions=[next_action], context=next_context)
+
+    def on_get_spec_result(self, result: GetSpecResult) -> NextStateResult:
+        action = self.ctx.get_action_by_id(result.action_id)
+        if not action:
+            return self.placement_failure("Failure while getting application specification. Action is not found. ")
+
+        if isinstance(result.response, models.ApplicationSpec):
+            msg = "Application spec fetched successfully. Starting bidding..."
+            return self.new_bid_action(result.response, result.get_application_name(), msg)
+        else:
+            return self.retry("Failure while getting application specification. ")
+
+    def new_bid_action(self, spec: models.ApplicationSpec, name: NamespacedName, msg: str) -> NextStateResult:
+        spec_str = json.dumps(spec)
+        zones = [zone.id for zone in self.ctx.placement_zones]
+        bid_criteria = [BidCriteria.cpu, BidCriteria.memory]
+        metrics = {Metric.cost, Metric.energy}
+
+        bid = BidRequestModel(id=self.ctx.gen_action_id(), spec=spec_str, bid_criteria=bid_criteria, metrics=metrics)
+
+        next_action: Action[ActionResult] = BidAction(set(zones), bid, name)  # type: ignore
+        next_context = self.ctx.to_next(SchedulingState.BID_COLLECTION, self.timestamp, msg).with_action(next_action)
+
+        return NextStateResult(actions=[next_action], context=next_context)
+
+    def on_bid_action_result(self, result: BidActionResult) -> NextStateResult:
+        action = self.ctx.get_action_by_id(result.action_id)
+        if not action:
+            return self.placement_failure("Failure while receiving bids specification. Action is not found. ")
+
+        if result.is_success():
+            application = self.ctx.application
+            if not application:
+                return self.placement_failure(
+                    "Application is not set in context. Invariant failure. Programmer mistake!"
+                )
+            msg = "Bids received. Making decision..."
+            return self.new_decision_action(application, result.response, result.get_application_name(), msg)
+        else:
+            return self.retry("Failure while receiving bids specification.")
+
+    def new_decision_action(
+        self,
+        application: AnyApplication,
+        bids: Dict[ZoneId, BidResponseOrError],
+        name: NamespacedName,
+        msg: str,
+    ) -> NextStateResult:
+        next_action: Action[ActionResult] = DecisionAction(
+            bids, application, name, self.ctx.gen_action_id()
+        )  # type: ignore
+        next_context = self.ctx.to_next(SchedulingState.DECISION, self.timestamp, msg).with_action(next_action)
+        return NextStateResult(actions=[next_action], context=next_context)
+
+    def on_decision_action_result(self, result: DecisionActionResult) -> NextStateResult:
+        action = self.ctx.get_action_by_id(result.action_id)
+        if not action:
+            return self.placement_failure("Failure while making placements decision. Action is not found. ")
+
+        if isinstance(result.result, list):
+            application = self.ctx.application
+            if not application:
+                return self.placement_failure(
+                    "Application is not set in context. Invariant failure. Programmer mistake!"
+                )
+            msg = "Decision is made. Setting placements..."
+            return self.new_set_placement_action(result.result, result.get_application_name(), msg)
+        else:
+            return self.retry("Failure while setting placements.")
+
+    def new_set_placement_action(
+        self,
+        placements: List[PlacementZone],
+        name: NamespacedName,
+        msg: str,
+    ) -> NextStateResult:
+        next_action: Action[ActionResult] = SetPlacementAction(
+            placements, name, self.ctx.gen_action_id()
+        )  # type: ignore
+        next_context = self.ctx.to_next(SchedulingState.SET_PLACEMENT, self.timestamp, msg).with_action(next_action)
+        return NextStateResult(actions=[next_action], context=next_context)
+
+    def on_set_placement_action_result(self, result: SetPlacementActionResult) -> NextStateResult:
+        action = self.ctx.get_action_by_id(result.action_id)
+        if not action:
+            return self.placement_failure("Failure while setting placements. Action is not found. ")
+
+        if isinstance(result.result, bool):
+            application = self.ctx.application
+            if not application:
+                return self.placement_failure(
+                    "Application is not set in context. Invariant failure. Programmer mistake!"
+                )
+            msg = "Placement done."
+            next_context = self.ctx.to_next(SchedulingState.DONE, self.timestamp, msg)
+            return NextStateResult(context=next_context)
+        else:
+            return self.retry("Failure while receiving bids specification.")
+
+    def retry(self, msg: str) -> NextStateResult:
+        if not self.ctx.is_attempts_exhausted():
+            next_context = self.ctx.retry(self.timestamp, msg + "Retrying...")
+            return NextStateResult(context=next_context)
+        else:
+            return self.placement_failure(msg + "All attempts exhausted.")
+
+    def placement_failure(self, msg: str) -> NextStateResult:
+        next_context = self.ctx.to_next(SchedulingState.DONE, self.timestamp, msg)
+        return NextStateResult(context=next_context)
 
     def on_membership_change(self, zones: List[PlacementZone], timestamp: int) -> NextStateResult:
         # ignore membership updates for now, just change active zones

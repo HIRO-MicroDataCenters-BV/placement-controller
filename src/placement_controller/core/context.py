@@ -9,6 +9,9 @@ from placement_controller.core.types import SchedulingState
 from placement_controller.jobs.types import Action, ActionId, ActionResult
 from placement_controller.membership.types import PlacementZone
 
+DEFAULT_ACTION_TIMEOUT_SECONDS: int = 60
+DEFAULT_MAX_ACTION_ATTEMPTS: int = 3
+
 
 @dataclass
 class SchedulingContext:
@@ -76,7 +79,10 @@ class SchedulingContext:
         return None
 
     def is_attempts_exhausted(self) -> bool:
-        return False
+        return self.retry_attempt < DEFAULT_MAX_ACTION_ATTEMPTS
+
+    def is_timeout(self, now: int) -> bool:
+        return (now - self.timestamp) > DEFAULT_ACTION_TIMEOUT_SECONDS * 1000
 
     def inprogress_actions_count(self) -> int:
         return len(self.inprogress_actions)

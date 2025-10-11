@@ -1,9 +1,6 @@
-from placement_client.client import Client
+from placement_controller.clients.placement.types import PlacementClient
 
 
 class ZoneApiFactory:
-    def create(self, zone: str) -> Client:
-        raise NotImplementedError()
-
-    def is_local(self, zone: str) -> bool:
+    def create(self, zone: str) -> PlacementClient:
         raise NotImplementedError()

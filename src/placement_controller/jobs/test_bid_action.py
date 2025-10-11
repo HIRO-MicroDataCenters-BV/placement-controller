@@ -18,10 +18,12 @@ from placement_controller.api.model import (
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.clients.k8s.fake_client import FakeClient
+from placement_controller.clients.placement.local import LocalPlacementClient
 from placement_controller.jobs.bid_action import BidAction
 from placement_controller.jobs.fake_placement_server import FakePlacementController
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.resources.fake_resource_management import FakeResourceManagement
 from placement_controller.settings import PlacementSettings
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
@@ -32,6 +34,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
     loop: asyncio.AbstractEventLoop
     server1: FakePlacementController
     server2: FakePlacementController
+    resource_management: FakeResourceManagement
 
     name: NamespacedName
     action: BidAction
@@ -39,6 +42,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
     request: BidRequestModel
     response1: models.BidResponseModel
     response2: models.BidResponseModel
+    local_bid_response: BidResponseModel
 
     def setUp(self) -> None:
         super().setUp()
@@ -65,6 +69,14 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
             reason=None,
             msg="OK",
         )
+        self.local_bid_response = BidResponseModel(
+            id="test",
+            status=BidStatus.accepted,
+            metrics=[MetricValue(id=Metric.cost, value=Decimal("1.00"), unit=MetricUnit.eur)],
+            reason=None,
+            msg="OK",
+        )
+
         self.server1 = FakePlacementController(host="127.0.0.1")
         self.server1.mock_response(self.response1)
         self.server1.start()
@@ -75,23 +87,25 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
 
         self.settings = PlacementSettings(
             namespace="test",
-            available_zones=["zone1", "zone2"],
-            current_zone="zone1",
+            available_zones=["zone1", "zone2", "zone3"],
+            current_zone="zone3",
             application_controller_endpoint="not used",
             static_controller_endpoints={
                 "zone1": self.server1.get_base_url(),
                 "zone2": self.server2.get_base_url(),
             },
         )
+        self.resource_management = FakeResourceManagement()
+        self.resource_management.mock_response(self.local_bid_response)
 
-        self.api_factory = ZoneApiFactoryImpl(self.settings)
+        self.api_factory = ZoneApiFactoryImpl(self.settings, LocalPlacementClient(self.resource_management))
         self.context = ExecutorContext(
             zone_api_factory=self.api_factory,
             application_controller_client=Client(base_url=""),
             kube_client=FakeClient(),
         )
 
-        self.action = BidAction({"zone1", "zone2"}, self.request, self.name)
+        self.action = BidAction({"zone1", "zone2", "zone3"}, self.request, self.name)
         self.wait_for_condition(2, lambda: self.server1.is_available() and self.server2.is_available())
 
     def tearDown(self) -> None:
@@ -118,6 +132,13 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     reason=None,
                     msg="OK",
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.03"), unit=MetricUnit.eur)],
+                ),
+                "zone3": BidResponseModel(
+                    id="test",
+                    status=BidStatus.accepted,
+                    reason=None,
+                    msg="OK",
+                    metrics=[MetricValue(id=Metric.cost, value=Decimal("1.00"), unit=MetricUnit.eur)],
                 ),
             },
         )

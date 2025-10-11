@@ -1,22 +1,14 @@
 from typing import Mapping, Set, Union
 
 import asyncio
-from decimal import Decimal
-
-from placement_client import models
-from placement_client.api.default import application_bid
-from placement_client.client import Client
 
 from placement_controller.api.model import (
     BidRequestModel,
     BidResponseModel,
-    BidStatus,
     ErrorResponse,
-    Metric,
-    MetricUnit,
-    MetricValue,
 )
 from placement_controller.clients.k8s.client import NamespacedName
+from placement_controller.clients.placement.types import PlacementClient
 from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
 
 BidResponseOrError = Union[BidResponseModel, ErrorResponse]
@@ -44,11 +36,7 @@ class BidAction(Action[BidActionResult]):
         self.zones = zones
 
     async def run(self, context: ExecutorContext) -> BidActionResult:
-        zone_to_client = [
-            (zone, context.zone_api_factory.create(zone))
-            for zone in self.zones
-            if not context.zone_api_factory.is_local(zone)
-        ]
+        zone_to_client = [(zone, context.zone_api_factory.create(zone)) for zone in self.zones]
         queries = [self.query_one(client) for (_, client) in zone_to_client]
 
         responses = await asyncio.gather(*queries)
@@ -57,40 +45,5 @@ class BidAction(Action[BidActionResult]):
 
         return BidActionResult(zone_to_response, self.name, self.action_id)
 
-    async def query_one(self, client: Client) -> BidResponseOrError:
-        api_response = await application_bid.asyncio(
-            client=client, body=BidAction.to_request(self.request, self.action_id)
-        )
-        response: BidResponseOrError
-        if not api_response:
-            response = ErrorResponse(status=500, code="INTERNAL_ERROR", msg="Received empty response")
-        elif isinstance(api_response, models.BidResponseModel):
-            response = BidAction.to_response(api_response)
-        elif isinstance(api_response, models.ErrorResponse):
-            response = ErrorResponse(status=api_response.status, code=api_response.code, msg=api_response.msg or None)
-        elif isinstance(api_response, models.HTTPValidationError):
-            response = ErrorResponse(status=422, code="VALIDATION_ERROR", msg=str(api_response))
-
-        return response
-
-    @staticmethod
-    def to_request(request: BidRequestModel, action_id: ActionId) -> models.BidRequestModel:
-        return models.BidRequestModel(
-            id=action_id,
-            spec=request.spec,
-            bid_criteria=[models.BidCriteria(criteria) for criteria in request.bid_criteria],
-            metrics=[models.Metric(metric) for metric in request.metrics],
-        )
-
-    @staticmethod
-    def to_response(bid_response: models.BidResponseModel) -> BidResponseModel:
-        def to_metric_value(m: models.MetricValue) -> MetricValue:
-            return MetricValue(id=Metric(m.id), value=Decimal(m.value), unit=MetricUnit(m.unit))
-
-        return BidResponseModel(
-            id=bid_response.id,
-            status=BidStatus(bid_response.status),
-            reason=bid_response.reason or None,
-            msg=bid_response.msg or None,
-            metrics=[to_metric_value(m) for m in bid_response.metrics],
-        )
+    async def query_one(self, client: PlacementClient) -> BidResponseOrError:
+        return await client.bid(self.request)

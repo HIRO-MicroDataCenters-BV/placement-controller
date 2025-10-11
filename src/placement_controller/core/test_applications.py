@@ -1,18 +1,22 @@
 import asyncio
+from decimal import Decimal
 
 from application_client import models
 from application_client.client import Client
 from placement_client import models as placement_client_models
 
+from placement_controller.api.model import BidResponseModel, BidStatus, Metric, MetricUnit, MetricValue
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.clients.k8s.fake_client import FakeClient
+from placement_controller.clients.placement.local import LocalPlacementClient
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.applications import Applications
 from placement_controller.jobs.fake_application_controller import FakeApplicationController
 from placement_controller.jobs.fake_placement_server import FakePlacementController
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.resources.fake_resource_management import FakeResourceManagement
 from placement_controller.settings import PlacementSettings
 from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
@@ -30,6 +34,7 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
     client: FakeClient
     clock: MockClock
     settings: PlacementSettings
+    resource_management: FakeResourceManagement
     executor_context: ExecutorContext
 
     applications: Applications
@@ -55,7 +60,8 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
             },
         )
 
-        self.api_factory = ZoneApiFactoryImpl(self.settings)
+        self.resource_management = FakeResourceManagement()
+        self.api_factory = ZoneApiFactoryImpl(self.settings, LocalPlacementClient(self.resource_management))
 
         self.app_client = Client(base_url=self.app_server.get_base_url())
 
@@ -96,6 +102,15 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
             reason=None,
             msg="OK",
         )
+        self.local_bid_response = BidResponseModel(
+            id="test",
+            status=BidStatus.accepted,
+            metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
+            reason=None,
+            msg="OK",
+        )
+
+        self.resource_management.mock_response(self.local_bid_response)
         self.zone2_placement_controller.mock_response(self.bid_response)
 
     def tearDown(self) -> None:

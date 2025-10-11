@@ -45,16 +45,23 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         self.zone2_placement_controller = FakePlacementController(host="127.0.0.1")
         self.zone2_placement_controller.start()
 
-        self.api_factory = ZoneApiFactoryImpl()
-        self.api_factory.add_static_zone("zone1", self.zone2_placement_controller.get_base_url())
-        self.api_factory.add_static_zone("zone2", self.zone2_placement_controller.get_base_url())
+        self.settings = PlacementSettings(
+            namespace="test",
+            available_zones=["zone1", "zone2"],
+            current_zone="zone1",
+            application_controller_endpoint=self.app_server.get_base_url(),
+            static_controller_endpoints={
+                "zone2": self.zone2_placement_controller.get_base_url(),
+            },
+        )
+
+        self.api_factory = ZoneApiFactoryImpl(self.settings)
 
         self.app_client = Client(base_url=self.app_server.get_base_url())
 
         self.clock = MockClock()
         self.client = FakeClient()
         self.name = NamespacedName(name="test", namespace="test")
-        self.settings = PlacementSettings(namespace="test", available_zones=["zone1", "zone2"], current_zone="zone1")
 
         self.executor_context = ExecutorContext(
             application_controller_client=self.app_client,

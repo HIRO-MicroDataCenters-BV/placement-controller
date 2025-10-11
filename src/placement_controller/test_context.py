@@ -27,13 +27,13 @@ class ContextTest(AsyncTestFixture):
         self.clock = MockClock()
         self.k8s_client = FakeClient()
         self.app_client = Client(base_url="http://127.0.0.1/")
-        self.zone_api_client = ZoneApiFactoryImpl()
+        self.settings = self.make_settings()
+        self.zone_api_client = ZoneApiFactoryImpl(self.settings.placement)
         self.executor_context = ExecutorContext(
             application_controller_client=self.app_client,
             zone_api_factory=self.zone_api_client,
             kube_client=self.k8s_client,
         )
-        self.settings = self.make_settings()
         self.context = Context(self.clock, self.executor_context, self.k8s_client, self.settings, self.loop)
 
     def tearDown(self) -> None:
@@ -48,7 +48,15 @@ class ContextTest(AsyncTestFixture):
         settings = Settings(
             k8s=K8SSettings(incluster=True, context=None, timeout_seconds=10),
             api=ApiSettings(port=8000),
-            placement=PlacementSettings(namespace="test", current_zone="zone1", available_zones=["zone1", "zone2"]),
+            placement=PlacementSettings(
+                namespace="test",
+                current_zone="zone1",
+                available_zones=["zone1", "zone2"],
+                application_controller_endpoint="fake: not used",
+                static_controller_endpoints={
+                    "zone1": "fake: not used",
+                },
+            ),
             prometheus=PrometheusSettings(endpoint_port=8080),
             metrics=MetricSettings(
                 static_metrics=[

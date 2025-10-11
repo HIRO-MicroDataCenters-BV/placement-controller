@@ -22,6 +22,7 @@ from placement_controller.jobs.bid_action import BidAction
 from placement_controller.jobs.fake_placement_server import FakePlacementController
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.settings import PlacementSettings
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
 
@@ -64,14 +65,6 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
             reason=None,
             msg="OK",
         )
-
-        self.api_factory = ZoneApiFactoryImpl()
-        self.context = ExecutorContext(
-            zone_api_factory=self.api_factory,
-            application_controller_client=Client(base_url=""),
-            kube_client=FakeClient(),
-        )
-
         self.server1 = FakePlacementController(host="127.0.0.1")
         self.server1.mock_response(self.response1)
         self.server1.start()
@@ -80,8 +73,23 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
         self.server2.mock_response(self.response2)
         self.server2.start()
 
-        self.api_factory.add_static_zone("zone1", self.server1.get_base_url())
-        self.api_factory.add_static_zone("zone2", self.server2.get_base_url())
+        self.settings = PlacementSettings(
+            namespace="test",
+            available_zones=["zone1", "zone2"],
+            current_zone="zone1",
+            application_controller_endpoint="not used",
+            static_controller_endpoints={
+                "zone1": self.server1.get_base_url(),
+                "zone2": self.server2.get_base_url(),
+            },
+        )
+
+        self.api_factory = ZoneApiFactoryImpl(self.settings)
+        self.context = ExecutorContext(
+            zone_api_factory=self.api_factory,
+            application_controller_client=Client(base_url=""),
+            kube_client=FakeClient(),
+        )
 
         self.action = BidAction({"zone1", "zone2"}, self.request, self.name)
         self.wait_for_condition(2, lambda: self.server1.is_available() and self.server2.is_available())

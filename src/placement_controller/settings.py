@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Optional
 
 from pydantic_settings import BaseSettings
 
@@ -18,6 +18,8 @@ class PlacementSettings(BaseSettings):
     namespace: str
     available_zones: List[str]
     current_zone: str
+    static_controller_endpoints: Optional[Dict[str, str]]
+    application_controller_endpoint: str
 
 
 class Settings(BaseSettings):

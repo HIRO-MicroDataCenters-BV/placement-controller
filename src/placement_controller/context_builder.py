@@ -60,10 +60,9 @@ class ContextBuilder:
         loop = asyncio.get_event_loop()
         client = KubeClientImpl(self.settings.k8s, loop)
 
-        # TODO base_url
         executor_context = ExecutorContext(
-            application_controller_client=Client(base_url="TODO"),
-            zone_api_factory=ZoneApiFactoryImpl(),
+            application_controller_client=Client(base_url=self.settings.placement.application_controller_endpoint),
+            zone_api_factory=ZoneApiFactoryImpl(self.settings.placement),
             kube_client=client,
         )
 

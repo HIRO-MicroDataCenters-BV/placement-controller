@@ -2,7 +2,7 @@ from typing import Union
 
 from placement_controller.api.model import BidRequestModel, BidResponseModel, ErrorResponse
 from placement_controller.clients.placement.types import PlacementClient
-from placement_controller.resources.resource_managment import ResourceManagement
+from placement_controller.resources.types import ResourceManagement
 
 
 class LocalPlacementClient(PlacementClient):

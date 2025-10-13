@@ -13,7 +13,7 @@ from placement_controller.api.model import (
 )
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.applications import Applications
-from placement_controller.resources.resource_managment import ResourceManagement
+from placement_controller.resources.types import ResourceManagement
 
 
 class PlacementFastAPI(FastAPI):

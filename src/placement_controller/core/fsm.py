@@ -83,7 +83,13 @@ class FSM:
             return self.placement_failure("Failure while getting application specification. Action is not found. ")
 
         if isinstance(result.response, models.ApplicationSpec):
-            msg = "Application spec fetched successfully. Starting bidding..."
+            self.ctx = self.ctx.with_application_spec(
+                action.action_id,
+                result.response,
+                self.timestamp,
+                "Application spec fetched successfully.",
+            )
+            msg = "Starting bidding..."
             return self.new_bid_action(result.response, result.get_application_name(), msg)
         else:
             error: ErrorResponse = result.response
@@ -113,7 +119,13 @@ class FSM:
                 return self.placement_failure(
                     "Application is not set in context. Invariant failure. Programmer mistake!"
                 )
-            msg = "Bids received. Making decision..."
+            self.ctx = self.ctx.with_bid_responses(
+                action.action_id,
+                result.response,
+                self.timestamp,
+                "Bids received.",
+            )
+            msg = "Making decision..."
             return self.new_decision_action(application, result.response, result.get_application_name(), msg)
         else:
             return self.retry(f"Failure while receiving bids. {result.response} ")  # TODO stringify error
@@ -142,7 +154,13 @@ class FSM:
                 return self.placement_failure(
                     "Application is not set in context. Invariant failure. Programmer mistake!"
                 )
-            msg = "Decision is made. Setting placements..."
+            self.ctx = self.ctx.with_placement_decision(
+                action.action_id,
+                result.result,
+                self.timestamp,
+                "Decision is made.",
+            )
+            msg = "Setting placements..."
             return self.new_set_placement_action(result.result, result.get_application_name(), msg)
         else:
             error: ErrorResponse = result.result

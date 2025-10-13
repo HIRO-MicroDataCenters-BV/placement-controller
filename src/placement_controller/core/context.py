@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Mapping, Optional, Type
 
 from dataclasses import dataclass, field
 
@@ -8,6 +8,7 @@ from loguru import logger
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.types import SchedulingState
+from placement_controller.jobs.bid_action import BidResponseOrError
 from placement_controller.jobs.types import Action, ActionId, ActionResult
 from placement_controller.membership.types import PlacementZone
 from placement_controller.resources.trace_log import TraceLog
@@ -30,6 +31,8 @@ class SchedulingContext:
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
     application: Optional[AnyApplication] = field(default=None)
     application_spec: Optional[models.ApplicationSpec] = field(default=None)
+    bid_responses: Optional[Mapping[str, BidResponseOrError]] = field(default=None)
+    decision: Optional[List[PlacementZone]] = field(default=None)
     previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
@@ -68,6 +71,8 @@ class SchedulingContext:
             inprogress_actions=self.inprogress_actions,
             application=application,
             application_spec=self.application_spec,
+            bid_responses=self.bid_responses,
+            decision=self.decision,
             previous=self,
             trace=self.trace,
         )
@@ -88,6 +93,30 @@ class SchedulingContext:
             if isinstance(action, action_type):
                 return action
         return None
+
+    def with_application_spec(
+        self, action_id: ActionId, application_spec: models.ApplicationSpec, timestamp: int, msg: str
+    ) -> "SchedulingContext":
+        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        context.application_spec = application_spec
+        del context.inprogress_actions[action_id]
+        return context
+
+    def with_bid_responses(
+        self, action_id: ActionId, bid_responses: Mapping[str, BidResponseOrError], timestamp: int, msg: str
+    ) -> "SchedulingContext":
+        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        context.bid_responses = bid_responses
+        del context.inprogress_actions[action_id]
+        return context
+
+    def with_placement_decision(
+        self, action_id: ActionId, decision: List[PlacementZone], timestamp: int, msg: str
+    ) -> "SchedulingContext":
+        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        context.decision = decision
+        del context.inprogress_actions[action_id]
+        return context
 
     def is_attempts_exhausted(self) -> bool:
         return self.retry_attempt >= DEFAULT_MAX_ACTION_ATTEMPTS

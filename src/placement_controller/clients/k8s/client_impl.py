@@ -231,21 +231,22 @@ class KubeClientImpl(KubeClient):
         name: NamespacedName,
         uid: str,
         reason: str,
+        action: str,
         message: str,
         event_type: str,
         timestamp: int,
     ) -> Optional[Dict[str, Any]]:
-        event = KubeClient.new_event(gvk, name, uid, reason, message, event_type, timestamp)
-        events_api = client.EventsV1Api()
+        event = KubeClient.new_event(gvk, name, uid, reason, action, message, event_type, timestamp)
 
-        async def emit_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
+        async def emit_internal(api_client: ApiClient) -> Optional[Dict[str, Any]]:
+            events_api = client.EventsV1Api(api_client)
             result = await events_api.create_namespaced_event(name.namespace, event)
             result_dict: Dict[str, Any] = result.to_dict()
             if result_dict.get("status") == "Failure" and result_dict.get("code") == 404:
                 return None
             return result_dict
 
-        return await self.execute(emit_internal)
+        return await self.execute(emit_internal, is_dynamic_client=False)
 
     async def execute(
         self, func: Callable[[DynamicClient | ApiClient], Coroutine[Any, Any, T]], is_dynamic_client: bool = True

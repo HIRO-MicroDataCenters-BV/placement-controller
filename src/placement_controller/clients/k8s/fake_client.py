@@ -144,10 +144,11 @@ class FakeClient(KubeClient):
         name: NamespacedName,
         uid: str,
         reason: str,
+        action: str,
         message: str,
         event_type: str,
         timestamp: int,
     ) -> Optional[Dict[str, Any]]:
-        event = KubeClient.new_event(gvk, name, uid, reason, message, event_type, timestamp)
+        event = KubeClient.new_event(gvk, name, uid, reason, action, message, event_type, timestamp)
         event_gvk = GroupVersionKind("", "v1", event.kind)
         return await self.patch(event_gvk, event.to_dict())

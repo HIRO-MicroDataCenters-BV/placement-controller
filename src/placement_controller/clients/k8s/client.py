@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import asyncio
+import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from kubernetes_asyncio import client
 
@@ -76,6 +78,7 @@ class KubeClient:
         name: NamespacedName,
         uid: str,
         reason: str,
+        action: str,
         message: str,
         event_type: str,
         timestamp: int,
@@ -88,23 +91,27 @@ class KubeClient:
         name: NamespacedName,
         uid: str,
         reason: str,
+        action: str,
         message: str,
         event_type: str,
         timestamp: int,
     ) -> client.CoreV1Event:
-        return client.CoreV1Event(
-            metadata=client.V1ObjectMeta(name=f"{name.name}-{uid}", namespace=name.namespace),
-            involved_object=client.V1ObjectReference(
+        dt = datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
+        event_time = dt.isoformat(timespec="microseconds").replace("+00:00", "Z")
+        return client.EventsV1Event(
+            metadata=client.V1ObjectMeta(name=f"{name.name}-{uuid.uuid4()}", namespace=name.namespace),
+            regarding=client.V1ObjectReference(
                 api_version=f"{gvk.group}/{gvk.version}",
                 kind=gvk.kind,
                 name=name.name,
                 namespace=name.namespace,
                 uid=uid,
             ),
+            action=action,
             reason=reason,
-            message=message,
-            type=event_type,  # "Normal",  # or "Warning"
-            event_time=timestamp,
+            note=message,
+            type=event_type,
+            event_time=event_time,
             reporting_controller="placement-controller",
             reporting_instance="placement-controller",  # TODO pod_id
         )

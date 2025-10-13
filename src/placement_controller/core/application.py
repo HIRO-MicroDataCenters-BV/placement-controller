@@ -33,6 +33,10 @@ class AnyApplication:
         namespace = self.object["metadata"]["namespace"]
         return NamespacedName(name, namespace)
 
+    def get_uid(self) -> Optional[str]:
+        metadata: Dict[str, str] = self.object["metadata"] or {}
+        return metadata.get("uid")
+
     def get_spec(self) -> Dict[str, Any]:
         return self.object.get("spec") or {}
 

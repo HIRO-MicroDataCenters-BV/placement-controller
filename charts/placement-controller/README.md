@@ -55,9 +55,11 @@ Placement controller for decentralized control plane.
 | settings.metrics.static_metrics[0].weight.gpu | float | `1` |  |
 | settings.metrics.static_metrics[0].weight.memory | float | `1` |  |
 | settings.metrics.static_metrics[0].weight.storage | float | `1` |  |
+| settings.placement.application_controller_endpoint | string | `nil` |  |
 | settings.placement.available_zones | list | `[]` |  |
 | settings.placement.current_zone | string | `nil` |  |
 | settings.placement.namespace | string | `"default"` |  |
+| settings.placement.static_controller_endpoints | object | `{}` |  |
 | settings.prometheus.endpoint_port | int | `8080` | KG exporter '/metrics' API port |
 
 ----------------------------------------------

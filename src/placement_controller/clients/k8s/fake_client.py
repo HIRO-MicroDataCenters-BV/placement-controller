@@ -96,6 +96,13 @@ class FakeClient(KubeClient):
             return copy.deepcopy(object)
 
     @override
+    async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
+        named_objects = self.objects.get(gvk)
+        if not named_objects:
+            return []
+        return [copy.deepcopy(obj) for obj in named_objects.values()]
+
+    @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
         named_objects = self.objects.get(gvk)
         if not named_objects:
@@ -121,17 +128,27 @@ class FakeClient(KubeClient):
 
     def send_event(self, event: KubeEvent) -> None:
         self.events.append(event)
+
+        gvk = GroupVersionKind.from_event(event)
+        namespace = event.object["metadata"].get("namespace") or "default"
+
         for _, subscription in self.subscriptions.items():
-            namespace = event.object["metadata"].get("namespace") or "default"
-            groupVersion = event.object["apiVersion"]
-            tokens = groupVersion.split("/")
-            if len(tokens) != 2:
-                group = ""
-                version = groupVersion
-            else:
-                group, version = tokens[0], tokens[1]
-            gvk = GroupVersionKind(group, version, event.object["kind"])
             is_gvk_match = gvk == subscription.gvk
             is_namespace_match = subscription.namespace == namespace or subscription.namespace is None
             if is_namespace_match and is_gvk_match:
                 subscription.queue.put_nowait(event)
+
+    async def emit_event(
+        self,
+        gvk: GroupVersionKind,
+        name: NamespacedName,
+        uid: str,
+        reason: str,
+        action: str,
+        message: str,
+        event_type: str,
+        timestamp: int,
+    ) -> Optional[Dict[str, Any]]:
+        event = KubeClient.new_event(gvk, name, uid, reason, action, message, event_type, timestamp)
+        event_gvk = GroupVersionKind("", "v1", event.kind)
+        return await self.patch(event_gvk, event.to_dict())

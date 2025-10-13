@@ -1,9 +1,28 @@
 from typing import Any, Dict, List, Optional
 
-from placement_controller.clients.k8s.client import NamespacedName
+from enum import StrEnum
+
+from placement_controller.clients.k8s.client import GroupVersionKind, NamespacedName
 
 
-class Application:
+class GlobalState(StrEnum):
+    UnknownGlobalState = "Unknown"
+    NewGlobalState = "New"
+    PlacementGlobalState = "Placement"
+    OperationalGlobalState = "Operational"
+    RelocationGlobalState = "Relocation"
+    FailureGlobalState = "Failure"
+    OwnershipTransferGlobalState = "OwnershipTransfer"
+
+
+class PlacementStrategy(StrEnum):
+    Global = "Global"
+    Local = "Local"
+
+
+class AnyApplication:
+    GVK: GroupVersionKind = GroupVersionKind("dcp.hiro.io", "v1", "AnyApplication")
+
     object: Dict[str, Any]
 
     def __init__(self, object: Dict[str, Any]):
@@ -14,8 +33,17 @@ class Application:
         namespace = self.object["metadata"]["namespace"]
         return NamespacedName(name, namespace)
 
+    def get_uid(self) -> Optional[str]:
+        metadata: Dict[str, str] = self.object["metadata"] or {}
+        return metadata.get("uid")
+
     def get_spec(self) -> Dict[str, Any]:
         return self.object.get("spec") or {}
+
+    def get_placement_strategy(self) -> PlacementStrategy:
+        strategy = self.get_spec()["placementStrategy"] or {}
+        placement_strategy_str = strategy.get("strategy") or "Local"
+        return PlacementStrategy(placement_strategy_str)
 
     def get_owner_zone(self) -> Optional[str]:
         status = self.object.get("status") or {}
@@ -50,10 +78,11 @@ class Application:
         placements = ownership.get("placements") or []
         return [placement["zone"] for placement in placements]
 
-    def get_global_state(self) -> Optional[str]:
+    def get_global_state(self) -> Optional[GlobalState]:
         status = self.object.get("status") or {}
         ownership = status.get("ownership") or {}
-        return ownership.get("state")
+        state = ownership.get("state")
+        return GlobalState(state) if state else None
 
     def set_owner_zone(self, owner: str) -> None:
         status: Optional[Dict[str, Any]] = self.object.get("status")

@@ -6,9 +6,10 @@ from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import GroupVersionKind, NamespacedName
 from placement_controller.clients.k8s.event import EventType, KubeEvent
 from placement_controller.clients.k8s.fake_client import FakeClient
+from placement_controller.resource_fixture import ResourceTestFixture
 
 
-class FakeClientTest(AsyncTestFixture):
+class FakeClientTest(AsyncTestFixture, ResourceTestFixture):
     client: FakeClient
     gvk: GroupVersionKind
     name: NamespacedName
@@ -88,47 +89,7 @@ class FakeClientTest(AsyncTestFixture):
         self.client.stop_watch(sub_id)
 
     def make_object(self) -> Dict[str, Any]:
-        return {
-            "apiVersion": "dcp.hiro.io/v1",
-            "kind": "AnyApplication",
-            "metadata": {
-                "name": "nginx-app",
-                "namespace": "test",
-            },
-            "spec": {
-                "application": {
-                    "helm": {
-                        "chart": "nginx-ingress",
-                        "namespace": "nginx",
-                        "repository": "https://helm.nginx.com/stable",
-                        "version": "2.0.1",
-                    }
-                },
-                "placement-strategy": {"strategy": "Local"},
-                "recover-strategy": {"max-retries": 3, "tolerance": 1},
-                "zones": 1,
-            },
-        }
+        return self.make_anyapp("nginx-app", 1)
 
     def make_status(self) -> Dict[str, Any]:
-        return {
-            "status": {
-                "state": "old",
-                "owner": "zone1",
-                "placements": [
-                    {
-                        "node-affinity": None,
-                        "zone": "zone1",
-                    }
-                ],
-                "conditions": [
-                    {
-                        "lastTransitionTime": "2025-06-04T09:40:41Z",
-                        "status": "status",
-                        "type": "conditionType",
-                        "zoneId": "zone1",
-                        "zoneVersion": "1",
-                    }
-                ],
-            }
-        }
+        return self.make_anyapp_status("old", "zone1", ["zone1"])

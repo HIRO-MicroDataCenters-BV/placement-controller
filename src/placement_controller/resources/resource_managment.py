@@ -7,10 +7,10 @@ from application_client.models.application_spec import ApplicationSpec
 from placement_controller.api.model import BidRequestModel, BidResponseModel, BidStatus
 from placement_controller.clients.k8s.client import KubeClient
 from placement_controller.resources.placement import GreedyPlacement
-from placement_controller.resources.types import ResourceMetrics, ResourceTracking
+from placement_controller.resources.types import ResourceManagement, ResourceMetrics, ResourceTracking
 
 
-class ResourceManagement:
+class ResourceManagementImpl(ResourceManagement):
     client: KubeClient
     resource_tracking: ResourceTracking
     resource_metrics: ResourceMetrics

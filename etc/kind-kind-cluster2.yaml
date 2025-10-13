@@ -11,6 +11,12 @@ placement:
 
   current_zone: "kind-kind-cluster2"
 
+  static_controller_endpoints:
+    kind-kind-cluster1: http://localhost:8001
+    kind-kind-cluster2: http://localhost:8002
+
+  application_controller_endpoint: http://localhost:29092
+
 api:
   port: 8002
 

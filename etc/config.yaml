@@ -10,6 +10,10 @@ placement:
 
   current_zone: "zone1"
 
+  static_controller_endpoints: {}
+
+  application_controller_endpoint:
+
 api:
   port: 8001
 

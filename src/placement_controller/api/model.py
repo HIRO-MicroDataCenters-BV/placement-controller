@@ -5,7 +5,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-from placement_controller.core.application import Application
+from placement_controller.core.application import AnyApplication
 
 
 class ApplicationModel(BaseModel):
@@ -15,7 +15,7 @@ class ApplicationModel(BaseModel):
     zones: List[str]
 
     @staticmethod
-    def from_object(application: Application) -> "ApplicationModel":
+    def from_object(application: AnyApplication) -> "ApplicationModel":
         name = application.get_namespaced_name()
         zones = application.get_placement_zones()
         owner = application.get_owner_zone() or ""
@@ -75,8 +75,25 @@ class BidResponseModel(BaseModel):
     msg: Optional[str] = None
     metrics: List[MetricValue]
 
+    def get_metric_value(self, metric: Metric) -> Optional[MetricValue]:
+        found = [m for m in self.metrics if m.id == metric]
+        return next(iter(found), None)
+
 
 class ErrorResponse(BaseModel):
     status: int
     code: str
     msg: Optional[str] = None
+
+
+class SchedulingEntry(BaseModel):
+    seq_nr: int
+    state: str
+    msg: Optional[str]
+    running_jobs: List[str]
+
+
+class ApplicationState(BaseModel):
+    name: str
+    namespace: str
+    history: List[SchedulingEntry]

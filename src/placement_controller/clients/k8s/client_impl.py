@@ -1,9 +1,9 @@
-from typing import Any, Callable, Coroutine, Dict, Optional, Tuple, TypeVar, override
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, TypeVar, override
 
 import asyncio
 from dataclasses import dataclass
 
-from kubernetes_asyncio import config
+from kubernetes_asyncio import client, config
 from kubernetes_asyncio.client import ApiClient, CoreV1Api, CustomObjectsApi
 from kubernetes_asyncio.client.configuration import Configuration
 from kubernetes_asyncio.dynamic import DynamicClient
@@ -201,6 +201,19 @@ class KubeClientImpl(KubeClient):
         return await self.execute(get_internal)
 
     @override
+    async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
+        async def list_internal(client: DynamicClient) -> List[Dict[str, Any]]:
+
+            api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
+            result = await api.get()
+            result_dict: Dict[str, Any] = result.to_dict()
+            if result_dict.get("status") == "Failure" and result_dict.get("code") == 404:
+                return []
+            return result_dict["items"] or []
+
+        return await self.execute(list_internal)
+
+    @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
         async def delete_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
@@ -211,6 +224,29 @@ class KubeClientImpl(KubeClient):
             return result_dict
 
         return await self.execute(delete_internal)
+
+    async def emit_event(
+        self,
+        gvk: GroupVersionKind,
+        name: NamespacedName,
+        uid: str,
+        reason: str,
+        action: str,
+        message: str,
+        event_type: str,
+        timestamp: int,
+    ) -> Optional[Dict[str, Any]]:
+        event = KubeClient.new_event(gvk, name, uid, reason, action, message, event_type, timestamp)
+
+        async def emit_internal(api_client: ApiClient) -> Optional[Dict[str, Any]]:
+            events_api = client.EventsV1Api(api_client)
+            result = await events_api.create_namespaced_event(name.namespace, event)
+            result_dict: Dict[str, Any] = result.to_dict()
+            if result_dict.get("status") == "Failure" and result_dict.get("code") == 404:
+                return None
+            return result_dict
+
+        return await self.execute(emit_internal, is_dynamic_client=False)
 
     async def execute(
         self, func: Callable[[DynamicClient | ApiClient], Coroutine[Any, Any, T]], is_dynamic_client: bool = True

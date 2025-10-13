@@ -14,7 +14,15 @@ class PyDanticYamlTest(TestCase):
         expected = Settings(
             k8s=K8SSettings(incluster=True, context=None, timeout_seconds=10),
             api=ApiSettings(port=8000),
-            placement=PlacementSettings(namespace="test", current_zone="zone1", available_zones=["zone1", "zone2"]),
+            placement=PlacementSettings(
+                namespace="test",
+                current_zone="zone1",
+                available_zones=["zone1", "zone2"],
+                application_controller_endpoint="fake: not used",
+                static_controller_endpoints={
+                    "zone1": "fake: not used",
+                },
+            ),
             prometheus=PrometheusSettings(endpoint_port=8080),
             metrics=MetricSettings(
                 static_metrics=[

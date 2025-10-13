@@ -3,5 +3,8 @@ from enum import StrEnum
 
 class SchedulingState(StrEnum):
     NEW = "new"
-    AWAITING_RETRY = "awaiting_retry"
-    ASSIGNED = "assigned"
+    FETCH_APPLICATION_SPEC = "fetch_spec"
+    BID_COLLECTION = "bid_collection"
+    DECISION = "decision"
+    SET_PLACEMENT = "set_placement"
+    DONE = "done"

@@ -18,10 +18,10 @@ from placement_controller.api.model import (
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.resource_fixture import ResourceTestFixture
-from placement_controller.resources.resource_managment import ResourceManagement
+from placement_controller.resources.resource_managment import ResourceManagementImpl
 from placement_controller.resources.resource_metrics import MetricSettings, ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
-from placement_controller.resources.types import ResourceTracking
+from placement_controller.resources.types import ResourceManagement, ResourceTracking
 
 
 class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
@@ -42,7 +42,7 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
 
         resource_metrics = ResourceMetricsImpl(config=MetricSettings(static_metrics=[]))
 
-        self.resource_management = ResourceManagement(self.client, self.tracking, resource_metrics)
+        self.resource_management = ResourceManagementImpl(self.client, self.tracking, resource_metrics)
 
         self.node1 = self.make_node("node1", 2, 32 * self.GIGA, 512 * self.GIGA, 0)
         self.node2 = self.make_node("node2", 4, 16 * self.GIGA, 512 * self.GIGA, 1)

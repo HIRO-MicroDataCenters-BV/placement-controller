@@ -78,6 +78,12 @@ settings:
     # current zone
     current_zone:
 
+    # local application controller url: e.g. zone1: http://placement.svc.kubernetes.local:8080
+    static_controller_endpoints: {}
+
+    # local application controller url: e.g. http://anyapplication.svc.kubernetes.local:8080
+    application_controller_endpoint:
+
   # Resource Metrics settings
   metrics:
     static_metrics:

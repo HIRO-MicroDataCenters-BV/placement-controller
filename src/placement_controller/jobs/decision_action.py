@@ -4,7 +4,7 @@ import functools
 
 from loguru import logger
 
-from placement_controller.api.model import BidResponseModel, ErrorResponse, Metric
+from placement_controller.api.model import BidResponseModel, BidStatus, ErrorResponse, Metric
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.jobs.bid_action import BidResponseOrError, ZoneId
@@ -39,21 +39,30 @@ class DecisionAction(Action[DecisionActionResult]):
         self.application = application
 
     async def run(self, _: ExecutorContext) -> DecisionActionResult:
+
         result: Union[List[PlacementZone], ErrorResponse]
         valid_responses = [(zone, bid) for zone, bid in self.bids.items() if isinstance(bid, BidResponseModel)]
+        accepted_responses = [(zone, bid) for zone, bid in valid_responses if bid.status == BidStatus.accepted]
+
+        logger.info(
+            f"{self.name.to_string()}: Making decision. Total responses: {len(self.bids)}, "
+            + f"valid: {len(valid_responses)}, accepted {len(accepted_responses)}"
+        )
+
         if len(valid_responses) == 0:
-            logger.error(f"No valid bid responses for application {self.name}")
+            logger.error(f"{self.name.to_string()}:  No valid bid responses for application.")
             result = ErrorResponse(status=500, code="APPLICATION_ERROR", msg="No valid bid responses for application.")
         else:
             criteria_priority = [Metric.cost, Metric.energy]
             sorted_responses = sorted(
-                valid_responses,
+                accepted_responses,
                 key=functools.cmp_to_key(bid_response_comparator(criteria_priority)),
             )
             replica = self.get_replica_count()
             first_responses = sorted_responses[:replica]
 
             result = [PlacementZone(id=response[0]) for response in first_responses]
+            logger.info(f"{self.name.to_string()}: placements decided: {result}")
 
         return DecisionActionResult(result, self.name, self.action_id)
 

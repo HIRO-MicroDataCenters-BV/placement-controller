@@ -22,6 +22,9 @@ class NamespacedName:
         namespace = object["metadata"].get("namespace") or "default"
         return NamespacedName(name, namespace)
 
+    def to_string(self) -> str:
+        return f"{self.namespace}/{self.name}"
+
 
 @dataclass(frozen=True, eq=True)
 class GroupVersionKind:

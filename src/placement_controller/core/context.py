@@ -52,7 +52,7 @@ class SchedulingContext:
     def to_next_with_app(
         self, state: SchedulingState, application: Optional[AnyApplication], timestamp: int, msg: Optional[str]
     ) -> "SchedulingContext":
-        logger.info(f"{self.name}: state={state}, msg='{msg}', ts={timestamp}")
+        logger.info(f"{self.name.to_string()}: state={state}, msg='{msg}', ts={timestamp}")
         return SchedulingContext(
             name=self.name,
             seq_nr=self.seq_nr + 1,

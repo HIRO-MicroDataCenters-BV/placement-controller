@@ -2,6 +2,8 @@ from typing import Mapping, Set, Union
 
 import asyncio
 
+from loguru import logger
+
 from placement_controller.api.model import (
     BidRequestModel,
     BidResponseModel,
@@ -36,12 +38,17 @@ class BidAction(Action[BidActionResult]):
         self.zones = zones
 
     async def run(self, context: ExecutorContext) -> BidActionResult:
+
+        logger.info(f"{self.name.to_string()}: sending bid request to zones: {self.zones}")
+
         zone_to_client = [(zone, context.zone_api_factory.create(zone)) for zone in self.zones]
         queries = [self.query_one(client) for (_, client) in zone_to_client]
 
         responses = await asyncio.gather(*queries)
 
         zone_to_response = {zone: response for ((zone, _), response) in zip(zone_to_client, responses)}
+
+        logger.info(f"{self.name.to_string()}: received responses {len(zone_to_response)}")
 
         return BidActionResult(zone_to_response, self.name, self.action_id)
 

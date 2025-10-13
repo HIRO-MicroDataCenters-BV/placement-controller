@@ -107,7 +107,9 @@ class Applications:
         while not self.is_terminated.is_set():
             action_result = await self.results.get()
             try:
-                logger.info(f"action result {action_result}")
+                logger.info(
+                    f"{action_result.get_application_name().to_string()}: action result {type(action_result).__name__}"
+                )
                 self.handle_result(action_result)
             except Exception as e:
                 logger.error(f"error while handling result {e}")

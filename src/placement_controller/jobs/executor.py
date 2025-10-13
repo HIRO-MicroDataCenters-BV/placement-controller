@@ -40,7 +40,7 @@ class JobExecutor:
         while not self.is_terminated.is_set():
             action = await self.incoming.get()
             try:
-                logger.info(f"received action {action}")
+                logger.info(f"{action.get_application_name().to_string()}: received action {type(action).__name__}")
                 self.handle_action(action)
             except Exception as e:
                 logger.error(f"error while handling action {e}")

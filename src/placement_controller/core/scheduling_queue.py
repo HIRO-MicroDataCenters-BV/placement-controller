@@ -14,21 +14,26 @@ class SchedulingQueue:
     clock: Clock
     contexts: Dict[NamespacedName, SchedulingContext]
     zones: Set[PlacementZone]
+    current_zone: str
 
-    def __init__(self, clock: Clock):
+    def __init__(self, clock: Clock, current_zone: str):
         self.contexts = dict()
         self.zones = set()
         self.clock = clock
+        self.current_zone = current_zone
 
     def on_tick(self, timestamp: int) -> List[Action[ActionResult]]:
         actions = []
         for name in self.contexts.keys():
             context = self.contexts[name]
-            next_state = FSM(context, timestamp).on_tick()
+            next_state = FSM(context, self.current_zone, timestamp).on_tick()
+            if next_state.remove_and_drop_context:
+                del self.contexts[name]
             if next_state.context:
                 self.contexts[name] = next_state.context
             if next_state.actions:
                 actions.extend(next_state.actions)
+
         return actions
 
     def on_membership_update(self, membership: Membership, timestamp: int) -> List[Action[ActionResult]]:
@@ -37,7 +42,9 @@ class SchedulingQueue:
         actions = []
         for name in self.contexts.keys():
             context = self.contexts[name]
-            next_state = FSM(context, timestamp).on_membership_change(list(self.zones))
+            next_state = FSM(context, self.current_zone, timestamp).on_membership_change(list(self.zones))
+            if next_state.remove_and_drop_context:
+                del self.contexts[name]
             if next_state.context:
                 self.contexts[name] = next_state.context
             if next_state.actions:
@@ -47,7 +54,7 @@ class SchedulingQueue:
 
     def on_application_update(self, application: AnyApplication, timestamp: int) -> List[Action[ActionResult]]:
         context = self.get_context(application.get_namespaced_name(), timestamp)
-        next_state = FSM(context, timestamp).next_state(application)
+        next_state = FSM(context, self.current_zone, timestamp).next_state(application)
         if next_state.context:
             self.contexts[application.get_namespaced_name()] = next_state.context
         return next_state.actions
@@ -59,7 +66,9 @@ class SchedulingQueue:
 
     def on_action_result(self, result: ActionResult, timestamp: int) -> List[Action[ActionResult]]:
         context = self.get_context(result.get_application_name(), timestamp)
-        next_state = FSM(context, timestamp).on_action_result(result)
+        next_state = FSM(context, self.current_zone, timestamp).on_action_result(result)
+        if next_state.remove_and_drop_context:
+            del self.contexts[result.get_application_name()]
         if next_state.context:
             self.contexts[result.get_application_name()] = next_state.context
         return next_state.actions

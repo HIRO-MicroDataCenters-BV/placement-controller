@@ -27,6 +27,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
     def setUp(self) -> None:
         self.name = NamespacedName(name="test", namespace="test")
+        self.current_zone = "zone1"
         self.application = AnyApplication(
             self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone1", [])
         )
@@ -58,7 +59,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         self.assertEqual(context.state, SchedulingState.NEW)
 
         # FETCH_APPLICATION_SPEC
-        result = FSM(context, 1).next_state(self.application)
+        result = FSM(context, self.current_zone, 1).next_state(self.application)
 
         context = result.context  # type: ignore
         self.assertEqual(context.state, SchedulingState.FETCH_APPLICATION_SPEC)
@@ -68,7 +69,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
         # BID_COLLECTION
         get_spec_result = GetSpecResult(self.spec, self.name, get_spec.action_id)
-        result = FSM(context, 2).on_action_result(get_spec_result)
+        result = FSM(context, self.current_zone, 2).on_action_result(get_spec_result)
 
         context = result.context  # type: ignore
         self.assertEqual(context.state, SchedulingState.BID_COLLECTION)
@@ -79,7 +80,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         # DECISION
         bid_responses = {"zone1": self.response1, "zone2": self.response2}
         bid_action_result = BidActionResult(bid_responses, self.name, bid_action.action_id)
-        result = FSM(context, 3).on_action_result(bid_action_result)
+        result = FSM(context, self.current_zone, 3).on_action_result(bid_action_result)
 
         context = result.context  # type: ignore
         self.assertEqual(context.state, SchedulingState.DECISION)
@@ -89,7 +90,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
         # SET_PLACEMENT
         decision_result = DecisionActionResult(self.placements, self.name, decision_action.action_id)
-        result = FSM(context, 4).on_action_result(decision_result)
+        result = FSM(context, self.current_zone, 4).on_action_result(decision_result)
 
         context = result.context  # type: ignore
         self.assertEqual(context.state, SchedulingState.SET_PLACEMENT)
@@ -99,7 +100,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
         # DONE
         set_placement_result = SetPlacementActionResult(True, self.name, set_placement_action.action_id)
-        result = FSM(context, 5).on_action_result(set_placement_result)
+        result = FSM(context, self.current_zone, 5).on_action_result(set_placement_result)
 
         context = result.context  # type: ignore
         self.assertEqual(context.state, SchedulingState.DONE)

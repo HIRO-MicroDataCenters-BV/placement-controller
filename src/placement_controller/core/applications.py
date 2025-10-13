@@ -50,7 +50,7 @@ class Applications:
 
         self.actions = AsyncQueue[Action[ActionResult]]()
         self.results = AsyncQueue[ActionResult]()
-        self.scheduling_queue = SchedulingQueue(clock)
+        self.scheduling_queue = SchedulingQueue(clock, settings.current_zone)
         self.membership_watcher = MembershipWatcher(client, self.is_terminated, self.on_membership_change)
         self.executor = JobExecutor(executor_context, self.actions, self.results, self.is_terminated)
 

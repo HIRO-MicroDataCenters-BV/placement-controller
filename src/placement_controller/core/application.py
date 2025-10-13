@@ -15,6 +15,11 @@ class GlobalState(StrEnum):
     OwnershipTransferGlobalState = "OwnershipTransfer"
 
 
+class PlacementStrategy(StrEnum):
+    Global = "Global"
+    Local = "Local"
+
+
 class AnyApplication:
     GVK: GroupVersionKind = GroupVersionKind("dcp.hiro.io", "v1", "AnyApplication")
 
@@ -30,6 +35,11 @@ class AnyApplication:
 
     def get_spec(self) -> Dict[str, Any]:
         return self.object.get("spec") or {}
+
+    def get_placement_strategy(self) -> PlacementStrategy:
+        strategy = self.get_spec()["placementStrategy"] or {}
+        placement_strategy_str = strategy.get("strategy") or "Local"
+        return PlacementStrategy(placement_strategy_str)
 
     def get_owner_zone(self) -> Optional[str]:
         status = self.object.get("status") or {}

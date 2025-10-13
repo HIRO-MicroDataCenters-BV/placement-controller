@@ -6,7 +6,7 @@ from application_client import models
 
 from placement_controller.api.model import BidCriteria, BidRequestModel, ErrorResponse, Metric
 from placement_controller.clients.k8s.client import NamespacedName
-from placement_controller.core.application import AnyApplication, GlobalState
+from placement_controller.core.application import AnyApplication, GlobalState, PlacementStrategy
 from placement_controller.core.context import SchedulingContext
 from placement_controller.core.next_state_result import NextStateResult
 from placement_controller.core.types import SchedulingState
@@ -20,17 +20,37 @@ from placement_controller.membership.types import PlacementZone
 
 class FSM:
     ctx: SchedulingContext
+    current_zone: str
     timestamp: int
 
-    def __init__(self, ctx: SchedulingContext, timestamp: int):
+    def __init__(self, ctx: SchedulingContext, current_zone: str, timestamp: int):
         self.ctx = ctx
         self.timestamp = timestamp
+        self.current_zone = current_zone
 
     def on_tick(self) -> NextStateResult:
+        # TODO timeout
         return NextStateResult()
 
     def next_state(self, application: AnyApplication) -> NextStateResult:
+        placement_strategy = application.get_placement_strategy()
         global_state = application.get_global_state()
+        owner_zone = application.get_owner_zone()
+
+        # if current zone is not the owner -> ignore (or drop scheduling context)
+        if owner_zone != self.current_zone:
+            if self.ctx.state != SchedulingState.NEW:
+                return NextStateResult(remove_and_drop_context=True)
+            else:
+                return NextStateResult()
+
+        # Placement strategy is local -> ignore (or drop scheduling context)
+        if placement_strategy == PlacementStrategy.Local:
+            if self.ctx.state != SchedulingState.NEW:
+                return NextStateResult(remove_and_drop_context=True)
+            else:
+                return NextStateResult()
+
         if global_state == GlobalState.PlacementGlobalState:
             return self.on_placement_action(application)
         elif global_state == GlobalState.FailureGlobalState:
@@ -39,8 +59,6 @@ class FSM:
             return NextStateResult()
 
     def on_placement_action(self, application: AnyApplication) -> NextStateResult:
-        # TODO schedule action only if current zone is owner
-
         if self.ctx.state == SchedulingState.NEW:
             # no action is progress
             if self.ctx.inprogress_actions_count() == 0:

@@ -13,7 +13,8 @@ class SchedulingQueueTest(unittest.TestCase):
     def setUp(self) -> None:
         self.name = NamespacedName(name="test", namespace="testns")
         self.clock = MockClock()
-        self.queue = SchedulingQueue(self.clock)
+        self.queue = SchedulingQueue(self.clock, "zone1")
 
     def test_schedule(self) -> None:
+        # TODO tests
         pass

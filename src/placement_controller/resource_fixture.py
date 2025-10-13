@@ -160,8 +160,8 @@ class ResourceTestFixture:
                         "version": "2.0.1",
                     }
                 },
-                "placement-strategy": {"strategy": "Local"},
-                "recover-strategy": {"max-retries": 3, "tolerance": 1},
+                "placementStrategy": {"strategy": "Global"},
+                "recoverStrategy": {"maxRetries": 3, "tolerance": 1},
                 "zones": zones,
             },
         }

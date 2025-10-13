@@ -10,6 +10,7 @@ from placement_controller.core.application import AnyApplication
 from placement_controller.core.types import SchedulingState
 from placement_controller.jobs.types import Action, ActionId, ActionResult
 from placement_controller.membership.types import PlacementZone
+from placement_controller.resources.trace_log import TraceLog
 
 DEFAULT_ACTION_TIMEOUT_SECONDS: int = 60
 DEFAULT_MAX_ACTION_ATTEMPTS: int = 3
@@ -24,6 +25,7 @@ class SchedulingContext:
     state: SchedulingState
     placement_zones: List[PlacementZone]
     retry_attempt: int = field(default=0)
+    trace: TraceLog = field(default_factory=TraceLog)
     msg: Optional[str] = field(default=None)
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
     application: Optional[AnyApplication] = field(default=None)
@@ -53,6 +55,7 @@ class SchedulingContext:
         self, state: SchedulingState, application: Optional[AnyApplication], timestamp: int, msg: Optional[str]
     ) -> "SchedulingContext":
         logger.info(f"{self.name.to_string()}: state={state}, msg='{msg}', ts={timestamp}")
+        self.trace.log(f"{self.name.to_string()}: state={state}, msg='{msg}', ts={timestamp}")
         return SchedulingContext(
             name=self.name,
             seq_nr=self.seq_nr + 1,
@@ -66,6 +69,7 @@ class SchedulingContext:
             application=application,
             application_spec=self.application_spec,
             previous=self,
+            trace=self.trace,
         )
 
     def with_action(self, action: Action[ActionResult]) -> "SchedulingContext":

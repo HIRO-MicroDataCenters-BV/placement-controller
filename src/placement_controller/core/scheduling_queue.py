@@ -80,7 +80,7 @@ class SchedulingQueue:
                     seq_nr=ctx.seq_nr,
                     state=str(ctx.state),
                     msg=ctx.msg,
-                    running_jobs=[str(type(action)) for action in ctx.inprogress_actions.values()],
+                    running_jobs=[type(action).__name__ for action in ctx.inprogress_actions.values()],
                 )
                 history.append(entry)
                 ctx = ctx.previous

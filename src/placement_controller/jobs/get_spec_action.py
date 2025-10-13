@@ -39,6 +39,8 @@ class GetSpecAction(Action[GetSpecResult]):
             logger.error(f"{self.name.to_string()}: Getting application specification failure. {api_response.message}")
             response = ErrorResponse(status=api_response.status, code=api_response.code, msg=api_response.message)
         elif isinstance(api_response, models.ApplicationSpec):
-            logger.info(f"{self.name.to_string()}: Getting application specification succeeded.")
+            logger.info(
+                f"{self.name.to_string()}: Getting application specification succeeded. spec: {api_response.to_dict()}"
+            )
             response = api_response  # type: ignore
         return GetSpecResult(response, self.name, self.action_id)

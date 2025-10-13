@@ -43,7 +43,6 @@ class BidAction(Action[BidActionResult]):
 
         zone_to_client = [(zone, context.zone_api_factory.create(zone)) for zone in self.zones]
         queries = [self.query_one(client) for (_, client) in zone_to_client]
-
         responses = await asyncio.gather(*queries)
 
         zone_to_response = {zone: response for ((zone, _), response) in zip(zone_to_client, responses)}
@@ -53,4 +52,7 @@ class BidAction(Action[BidActionResult]):
         return BidActionResult(zone_to_response, self.name, self.action_id)
 
     async def query_one(self, client: PlacementClient) -> BidResponseOrError:
-        return await client.bid(self.request)
+        try:
+            return await client.bid(self.request)
+        except Exception as e:
+            return ErrorResponse(status=500, code="INTERNAL_ERROR", msg=str(e))

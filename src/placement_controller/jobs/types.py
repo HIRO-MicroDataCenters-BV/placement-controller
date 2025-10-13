@@ -12,7 +12,6 @@ ActionId = str
 DEFAULT_TIMEOUT_SECONDS = 10
 
 
-# TODO dataclass
 class ActionResult:
     name: NamespacedName
     action_id: ActionId

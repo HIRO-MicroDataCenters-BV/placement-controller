@@ -16,7 +16,6 @@ class InProgressAction:
     task: Optional[asyncio.Task[None]] = None
 
 
-# TODO multiple in progress actions
 class JobExecutor:
     incoming: AsyncQueue[Action[ActionResult]]
     outgoing: AsyncQueue[ActionResult]

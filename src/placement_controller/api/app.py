@@ -64,8 +64,9 @@ def create_api() -> PlacementFastAPI:
         return {"application": "Placement Controller", "status": "OK"}
 
     @app.get(path="/applications/", response_model=List[ApplicationModel], operation_id="list_applications")
-    def list_applications(apps: Applications = Depends(lambda: get_applications(app))) -> List[ApplicationModel]:
-        return [ApplicationModel.from_object(app) for app in apps.list()]
+    async def list_applications(apps: Applications = Depends(lambda: get_applications(app))) -> List[ApplicationModel]:
+        list_of_apps = await apps.list()
+        return [ApplicationModel.from_object(app) for app in list_of_apps]
 
     @app.get(
         path="/applications/scheduling-state/",

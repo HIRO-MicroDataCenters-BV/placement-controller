@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import asyncio
 from dataclasses import dataclass
@@ -62,6 +62,9 @@ class KubeClient:
         raise NotImplementedError
 
     async def get(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
+        raise NotImplementedError
+
+    async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
         raise NotImplementedError
 
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:

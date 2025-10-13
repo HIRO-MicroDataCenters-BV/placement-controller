@@ -39,6 +39,8 @@ class FSM:
             return NextStateResult()
 
     def on_placement_action(self, application: AnyApplication) -> NextStateResult:
+        # TODO schedule action only if current zone is owner
+
         if self.ctx.state == SchedulingState.NEW:
             # no action is progress
             if self.ctx.inprogress_actions_count() == 0:

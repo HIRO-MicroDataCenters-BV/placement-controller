@@ -1,4 +1,4 @@
-from typing import Any, Callable, Coroutine, Dict, Optional, Tuple, TypeVar, override
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, TypeVar, override
 
 import asyncio
 from dataclasses import dataclass
@@ -201,6 +201,19 @@ class KubeClientImpl(KubeClient):
         return await self.execute(get_internal)
 
     @override
+    async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
+        async def list_internal(client: DynamicClient) -> List[Dict[str, Any]]:
+
+            api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
+            result = await api.get()
+            result_dict: Dict[str, Any] = result.to_dict()
+            if result_dict.get("status") == "Failure" and result_dict.get("code") == 404:
+                return []
+            return result_dict["items"] or []
+
+        return await self.execute(list_internal)
+
+    @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
         async def delete_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
@@ -222,22 +235,6 @@ class KubeClientImpl(KubeClient):
         event_type: str,
         timestamp: int,
     ) -> Optional[Dict[str, Any]]:
-        event = client.CoreV1Event(
-            metadata=client.V1ObjectMeta(name=f"{name.name}-{uid}", namespace=name.namespace),
-            involved_object=client.V1ObjectReference(
-                api_version=f"{gvk.group}/{gvk.version}",
-                kind=gvk.kind,
-                name=name.name,
-                namespace=name.namespace,
-                uid=uid,
-            ),
-            reason=reason,
-            message=message,
-            type=event_type,  # "Normal",  # or "Warning"
-            event_time=timestamp,
-            reporting_controller="placement-controller",
-            reporting_instance="placement-controller",  # TODO pod_id
-        )
         event = KubeClient.new_event(gvk, name, uid, reason, message, event_type, timestamp)
         events_api = client.EventsV1Api()
 

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Callable, List
 
 import asyncio
 
@@ -25,7 +25,6 @@ class Applications:
     client: KubeClient
     settings: PlacementSettings
     is_terminated: asyncio.Event
-    applications: Dict[NamespacedName, AnyApplication]
     membership_watcher: MembershipWatcher
     tick_interval_seconds: float
     initialized: bool
@@ -47,7 +46,6 @@ class Applications:
         self.settings = settings
         self.tick_interval_seconds = 1.0
         self.is_terminated = is_terminated
-        self.applications = {}
         self.initialized = False
 
         self.actions = AsyncQueue[Action[ActionResult]]()
@@ -90,14 +88,11 @@ class Applications:
     async def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
             application = AnyApplication(event.object)
-            # self.applications[application.get_namespaced_name()] = application
-            # await self.set_default_placement(application)
 
             action_result = self.scheduling_queue.on_application_update(application, self.clock.now_seconds())
             self.handle_actions(action_result)
         elif event.event == EventType.DELETED:
             application = AnyApplication(event.object)
-            # del self.applications[application.get_namespaced_name()]
             action_result = self.scheduling_queue.on_application_delete(application, self.clock.now_seconds())
             self.handle_actions(action_result)
         else:
@@ -128,25 +123,26 @@ class Applications:
             self.handle_actions(actions)
             await asyncio.sleep(self.tick_interval_seconds)
 
-    def list(self) -> List[AnyApplication]:
-        return list(self.applications.values())
+    async def list(self) -> List[AnyApplication]:
+        applications = await self.client.list(AnyApplication.GVK)
+        return [AnyApplication(app) for app in applications]
 
     def list_scheduling_state(self) -> List[ApplicationState]:
         return self.scheduling_queue.get_scheduling_states()
 
-    async def set_default_placement(self, application: AnyApplication) -> None:
-        if application.get_owner_zone() == self.settings.current_zone:
-            if application.get_global_state() == "Placement":
-                spec = application.get_spec()
-                strategy = spec.get("placementStrategy") or {}
-                if strategy.get("strategy") == "Global":
-                    # setting default placement zone to current
-                    if len(application.get_placement_zones()) == 0:
-                        zones = [self.settings.current_zone]
-                        name = application.get_namespaced_name()
-                        application.set_placement_zones(zones)
-                        await self.client.patch_status(AnyApplication.GVK, name, application.get_status_or_fail())
-                        logger.info(f"{name} setting placement zones {zones}")
+    # async def set_default_placement(self, application: AnyApplication) -> None:
+    #     if application.get_owner_zone() == self.settings.current_zone:
+    #         if application.get_global_state() == "Placement":
+    #             spec = application.get_spec()
+    #             strategy = spec.get("placementStrategy") or {}
+    #             if strategy.get("strategy") == "Global":
+    #                 # setting default placement zone to current
+    #                 if len(application.get_placement_zones()) == 0:
+    #                     zones = [self.settings.current_zone]
+    #                     name = application.get_namespaced_name()
+    #                     application.set_placement_zones(zones)
+    #                     await self.client.patch_status(AnyApplication.GVK, name, application.get_status_or_fail())
+    #                     logger.info(f"{name} setting placement zones {zones}")
 
     async def set_placement(self, name: NamespacedName, zones: List[str]) -> AnyApplication:
         return await self.patch_status(name, lambda app: app.set_placement_zones(zones))

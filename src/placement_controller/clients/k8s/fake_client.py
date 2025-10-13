@@ -96,6 +96,13 @@ class FakeClient(KubeClient):
             return copy.deepcopy(object)
 
     @override
+    async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
+        named_objects = self.objects.get(gvk)
+        if not named_objects:
+            return []
+        return [copy.deepcopy(obj) for obj in named_objects.values()]
+
+    @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
         named_objects = self.objects.get(gvk)
         if not named_objects:

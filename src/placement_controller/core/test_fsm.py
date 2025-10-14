@@ -114,6 +114,24 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context = result.context  # type: ignore
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.PENDING, 10000))
 
+    def test_upscale(self) -> None:
+        pass
 
-# TODO more tests covering application update during scheduling
-# TODO tests with retries
+    def test_downscale(self) -> None:
+        pass
+
+    def test_action_retries(self) -> None:
+        # TODO tests with retries
+        pass
+
+    def test_action_timeouts(self) -> None:
+        pass
+
+    def test_optimize_eventually(self) -> None:
+        pass
+
+    def test_zone_failure(self) -> None:
+        pass
+
+    def test_converge(self) -> None:
+        pass

@@ -31,7 +31,7 @@ class ObjectPool(Generic[T]):
     async def start(self) -> None:
         subscriber_id, queue = self.client.watch(self.gvk, None, 0, self.is_terminated)
         self.active = True
-
+        logger.info(f"ObjectPool{{{self.cls}}} started.")
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:

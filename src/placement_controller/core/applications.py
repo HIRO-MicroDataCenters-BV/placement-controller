@@ -55,6 +55,7 @@ class Applications:
         self.executor = JobExecutor(executor_context, self.actions, self.results, self.is_terminated)
 
         logger.info(f"owner zone '{settings.current_zone}'")
+        # this needs to be loaded separately from kubernetes on boot
 
         self.scheduling_queue.on_membership_update(
             Membership({PlacementZone(id=zone) for zone in self.settings.available_zones}),
@@ -88,7 +89,6 @@ class Applications:
     async def handle_event(self, event: KubeEvent) -> None:
         if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
             application = AnyApplication(event.object)
-
             action_result = self.scheduling_queue.on_application_update(application, self.clock.now_seconds())
             self.handle_actions(action_result)
         elif event.event == EventType.DELETED:
@@ -99,6 +99,7 @@ class Applications:
             raise NotImplementedError(f"Unknown event type {event.event}")
 
     async def run_result_listener(self) -> None:
+        logger.info("JobExecutor result listener started.")
         while not self.is_terminated.is_set():
             action_result = await self.results.get()
             try:
@@ -118,6 +119,7 @@ class Applications:
         self.handle_actions(actions)
 
     async def ticker(self) -> None:
+        logger.info("Ticker started.")
         while not self.is_terminated.is_set():
             actions = self.scheduling_queue.on_tick(self.clock.now_seconds())
             self.handle_actions(actions)

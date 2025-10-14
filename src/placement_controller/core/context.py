@@ -25,7 +25,7 @@ class SchedulingContext:
     action_nr: int
     timestamp: int
     state: SchedulingState
-    placement_zones: List[PlacementZone]
+    available_zones: List[PlacementZone]
     retry_attempt: int = field(default=0)
     trace: TraceLog = field(default_factory=TraceLog)
     msg: Optional[str] = field(default=None)
@@ -37,14 +37,14 @@ class SchedulingContext:
     previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
-    def new(timestamp: int, name: NamespacedName, placement_zones: List[PlacementZone]) -> "SchedulingContext":
+    def new(timestamp: int, name: NamespacedName, available_zones: List[PlacementZone]) -> "SchedulingContext":
         return SchedulingContext(
             name=name,
             seq_nr=0,
             action_nr=0,
             timestamp=timestamp,
             state=SchedulingState.start(timestamp),
-            placement_zones=placement_zones,
+            available_zones=available_zones,
         )
 
     def to_next(self, state: SchedulingState, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
@@ -66,7 +66,7 @@ class SchedulingContext:
             action_nr=self.action_nr,
             timestamp=timestamp,
             state=state,
-            placement_zones=copy.deepcopy(self.placement_zones),
+            available_zones=copy.deepcopy(self.available_zones),
             retry_attempt=self.retry_attempt,
             msg=msg,
             inprogress_actions=copy.deepcopy(self.inprogress_actions),
@@ -82,8 +82,8 @@ class SchedulingContext:
         self.inprogress_actions[action.action_id] = action
         return self
 
-    def with_placement_zones(self, placement_zones: List[PlacementZone]) -> "SchedulingContext":
-        self.placement_zones = placement_zones
+    def with_available_zones(self, available_zones: List[PlacementZone]) -> "SchedulingContext":
+        self.available_zones = available_zones
         return self
 
     def get_action_by_id(self, action_id: ActionId) -> Optional[Action[ActionResult]]:

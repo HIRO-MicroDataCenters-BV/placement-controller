@@ -36,6 +36,7 @@ class JobExecutor:
         self.context = executor_context
 
     async def run(self) -> None:
+        logger.info("JobExecutor started.")
         while not self.is_terminated.is_set():
             action = await self.incoming.get()
             try:

@@ -24,6 +24,10 @@ class SchedulingQueue:
         self.clock = clock
         self.current_zone = current_zone
 
+    def load_state(self, applications: List[AnyApplication]) -> None:
+        # TODO load application state from anyapplication zone conditions
+        pass
+
     def on_tick(self, timestamp: int) -> List[Action[ActionResult]]:
         actions = []
         for name in self.contexts.keys():

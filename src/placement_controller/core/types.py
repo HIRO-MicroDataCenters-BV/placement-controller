@@ -1,8 +1,8 @@
 from enum import StrEnum
 
 
-class SchedulingState(StrEnum):
-    NEW = "new"
+class SchedulingStep(StrEnum):
+    PENDING = "pending"
     FETCH_APPLICATION_SPEC = "fetch_spec"
     BID_COLLECTION = "bid_collection"
     DECISION = "decision"

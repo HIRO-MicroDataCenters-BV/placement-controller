@@ -8,7 +8,7 @@ from loguru import logger
 
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
-from placement_controller.core.types import SchedulingState
+from placement_controller.core.scheduling_state import SchedulingState
 from placement_controller.jobs.bid_action import BidResponseOrError
 from placement_controller.jobs.types import Action, ActionId, ActionResult
 from placement_controller.membership.types import PlacementZone
@@ -43,7 +43,7 @@ class SchedulingContext:
             seq_nr=0,
             action_nr=0,
             timestamp=timestamp,
-            state=SchedulingState.NEW,
+            state=SchedulingState.start(timestamp),
             placement_zones=placement_zones,
         )
 

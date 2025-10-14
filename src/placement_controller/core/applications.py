@@ -130,20 +130,6 @@ class Applications:
     def list_scheduling_state(self) -> List[ApplicationState]:
         return self.scheduling_queue.get_scheduling_states()
 
-    # async def set_default_placement(self, application: AnyApplication) -> None:
-    #     if application.get_owner_zone() == self.settings.current_zone:
-    #         if application.get_global_state() == "Placement":
-    #             spec = application.get_spec()
-    #             strategy = spec.get("placementStrategy") or {}
-    #             if strategy.get("strategy") == "Global":
-    #                 # setting default placement zone to current
-    #                 if len(application.get_placement_zones()) == 0:
-    #                     zones = [self.settings.current_zone]
-    #                     name = application.get_namespaced_name()
-    #                     application.set_placement_zones(zones)
-    #                     await self.client.patch_status(AnyApplication.GVK, name, application.get_status_or_fail())
-    #                     logger.info(f"{name} setting placement zones {zones}")
-
     async def set_placement(self, name: NamespacedName, zones: List[str]) -> AnyApplication:
         return await self.patch_status(name, lambda app: app.set_placement_zones(zones))
 

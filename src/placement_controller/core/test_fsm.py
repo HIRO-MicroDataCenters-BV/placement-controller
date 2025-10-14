@@ -7,8 +7,9 @@ from placement_controller.api.model import BidResponseModel, BidStatus, Metric, 
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.context import SchedulingContext
-from placement_controller.core.fsm import FSM
-from placement_controller.core.types import SchedulingState
+from placement_controller.core.fsm import FSM, FSMOptions
+from placement_controller.core.scheduling_state import SchedulingState
+from placement_controller.core.types import SchedulingStep
 from placement_controller.jobs.bid_action import BidActionResult
 from placement_controller.jobs.decision_action import DecisionActionResult
 from placement_controller.jobs.get_spec_action import GetSpecResult
@@ -19,6 +20,8 @@ from placement_controller.resource_fixture import ResourceTestFixture
 
 class FSMTest(unittest.TestCase, ResourceTestFixture):
 
+    options: FSMOptions
+    now: int
     name: NamespacedName
     application: AnyApplication
     spec: models.ApplicationSpec
@@ -26,6 +29,11 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
     response2: BidResponseModel
 
     def setUp(self) -> None:
+        self.now = 0
+        self.options = FSMOptions(
+            reschedule_default_delay_seconds=10,
+            reschedule_failure_delay_seconds=20,
+        )
         self.name = NamespacedName(name="test", namespace="test")
         self.current_zone = "zone1"
         self.application = AnyApplication(
@@ -55,24 +63,25 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
     def test_ordinary_placement(self) -> None:
         # NEW state
-        context = SchedulingContext.new(1, self.name, [])
-        self.assertEqual(context.state, SchedulingState.NEW)
+        context = SchedulingContext.new(self.now, self.name, [])
+
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.PENDING, self.now))
 
         # FETCH_APPLICATION_SPEC
-        result = FSM(context, self.current_zone, 1).next_state(self.application)
+        result = FSM(context, self.current_zone, self.now, self.options).on_update(self.application)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.FETCH_APPLICATION_SPEC)
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.FETCH_APPLICATION_SPEC, self.now))
 
         get_spec = result.actions[0]
         self.assertEqual(get_spec.name, self.name)
 
         # BID_COLLECTION
         get_spec_result = GetSpecResult(self.spec, self.name, get_spec.action_id)
-        result = FSM(context, self.current_zone, 2).on_action_result(get_spec_result)
+        result = FSM(context, self.current_zone, self.now, self.options).on_action_result(get_spec_result)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.BID_COLLECTION)
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.BID_COLLECTION, self.now))
 
         bid_action = result.actions[0]
         self.assertEqual(bid_action.name, self.name)
@@ -80,30 +89,30 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         # DECISION
         bid_responses = {"zone1": self.response1, "zone2": self.response2}
         bid_action_result = BidActionResult(bid_responses, self.name, bid_action.action_id)
-        result = FSM(context, self.current_zone, 3).on_action_result(bid_action_result)
+        result = FSM(context, self.current_zone, self.now, self.options).on_action_result(bid_action_result)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.DECISION)
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.DECISION, self.now))
 
         decision_action = result.actions[0]
         self.assertEqual(decision_action.name, self.name)
 
         # SET_PLACEMENT
         decision_result = DecisionActionResult(self.placements, self.name, decision_action.action_id)
-        result = FSM(context, self.current_zone, 4).on_action_result(decision_result)
+        result = FSM(context, self.current_zone, self.now, self.options).on_action_result(decision_result)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.SET_PLACEMENT)
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.SET_PLACEMENT, self.now))
 
         set_placement_action = result.actions[0]
         self.assertEqual(set_placement_action.name, self.name)
 
-        # DONE
+        # PENDING
         set_placement_result = SetPlacementActionResult(True, self.name, set_placement_action.action_id)
-        result = FSM(context, self.current_zone, 5).on_action_result(set_placement_result)
+        result = FSM(context, self.current_zone, self.now, self.options).on_action_result(set_placement_result)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.DONE)
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.PENDING, 10000))
 
 
 # TODO more tests covering application update during scheduling

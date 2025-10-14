@@ -1,5 +1,6 @@
 from typing import Dict, List, Mapping, Optional, Type
 
+import copy
 from dataclasses import dataclass, field
 
 from application_client import models
@@ -65,14 +66,14 @@ class SchedulingContext:
             action_nr=self.action_nr,
             timestamp=timestamp,
             state=state,
-            placement_zones=self.placement_zones,
+            placement_zones=copy.deepcopy(self.placement_zones),
             retry_attempt=self.retry_attempt,
             msg=msg,
-            inprogress_actions=self.inprogress_actions,
-            application=application,
-            application_spec=self.application_spec,
-            bid_responses=self.bid_responses,
-            decision=self.decision,
+            inprogress_actions=copy.deepcopy(self.inprogress_actions),
+            application=copy.deepcopy(application),
+            application_spec=copy.deepcopy(self.application_spec),
+            bid_responses=copy.deepcopy(self.bid_responses),
+            decision=copy.deepcopy(self.decision),
             previous=self,
             trace=self.trace,
         )

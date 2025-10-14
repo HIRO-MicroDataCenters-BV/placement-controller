@@ -27,7 +27,7 @@ metrics:
   static_metrics:
     - metric: cost
       value_per_unit:
-        cpu: 1.0
+        cpu: 2.0
         memory: 0.000000003
         storage: 0.000000001
         gpu: 3.0

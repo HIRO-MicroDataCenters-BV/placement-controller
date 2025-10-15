@@ -46,6 +46,9 @@ class SchedulingState:
     def new(step: SchedulingStep, now_timestamp: int) -> "SchedulingState":
         return SchedulingState(step, now_timestamp + DEFAULT_STEP_EXPIRATION_SECONDS * 1000, None)
 
+    def to(self, step: SchedulingStep, now_timestamp: int) -> "SchedulingState":
+        return SchedulingState(step, now_timestamp + DEFAULT_STEP_EXPIRATION_SECONDS * 1000, self.operation)
+
     def is_expired(self, now_timestamp: int) -> bool:
         return self.expires_at > now_timestamp
 

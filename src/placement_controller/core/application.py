@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+from dataclasses import dataclass
 from enum import StrEnum
 
 from placement_controller.clients.k8s.client import GroupVersionKind, NamespacedName
@@ -18,6 +19,31 @@ class GlobalState(StrEnum):
 class PlacementStrategy(StrEnum):
     Global = "Global"
     Local = "Local"
+
+
+@dataclass
+class AnyApplicationCondition:
+    last_transition_time: str
+    msg: str
+    reason: str
+    retry_attempt: int
+    status: str
+    cond_type: str
+    zone_id: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "lastTransitionTime": self.last_transition_time,
+            "msg": self.msg,
+            "reason": self.reason,
+            "retryAttempt": self.retry_attempt,
+            "status": self.status,
+            "type": self.cond_type,
+            "zoneId": self.zone_id,
+        }
+
+    def copy_into(self, condition: Dict[str, Any]) -> None:
+        condition.update(self.to_dict())
 
 
 class AnyApplication:
@@ -94,6 +120,28 @@ class AnyApplication:
 
         ownership["owner"] = owner
         ownership["epoch"] = ownership.get("epoch", 0) + 1
+
+    def get_desired_replica(self) -> int:
+        spec = self.get_spec() or {}
+        return int(spec.get("zones") or "1")
+
+    def set_placement_condition(self, zone_id: str, condition: AnyApplicationCondition) -> None:
+        status = self.object.setdefault("status", dict())
+        zones = status.setdefault("zones", [])
+
+        zone: Optional[Dict[str, Any]] = [zone for zone in zones if zone.get("zoneId") == zone_id][0]
+        if zone is None:
+            zone = {"zoneId": zone_id, "version": 1, "conditions": []}
+            zones.append(zone)
+
+        conditions = zone.setdefault("conditions", [])
+        existing: Optional[Dict[str, Any]] = [
+            condition for condition in conditions if condition.get("") == condition.cond_type
+        ][0]
+        if existing:
+            condition.copy_into(existing)
+        else:
+            conditions.append(condition.to_dict())
 
     def fail_if_none(self, value: Any, msg: str) -> None:
         if not value:

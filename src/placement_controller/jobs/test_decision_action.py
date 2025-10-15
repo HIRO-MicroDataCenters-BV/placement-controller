@@ -6,7 +6,7 @@ from placement_controller.api.model import BidResponseModel, BidStatus, ErrorRes
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.clients.k8s.fake_client import FakeClient
-from placement_controller.core.application import AnyApplication
+from placement_controller.core.scheduling_state import FSMOperation, ScaleDirection
 from placement_controller.jobs.bid_action import BidResponseOrError, ZoneId
 from placement_controller.jobs.decision_action import DecisionAction
 from placement_controller.jobs.types import ExecutorContext
@@ -17,16 +17,11 @@ from placement_controller.zone.types import ZoneApiFactory
 
 class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
     name: NamespacedName
-    action: DecisionAction
-
-    app: AnyApplication
     bids: Dict[ZoneId, BidResponseOrError]
 
     def setUp(self) -> None:
         super().setUp()
         self.name = NamespacedName(name="test", namespace="test")
-        dict_app = self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("state", "owner", [])
-        self.application = AnyApplication(dict_app)
 
         self.bids = {
             "zone1": BidResponseModel(
@@ -66,20 +61,44 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
             zone_api_factory=ZoneApiFactory(),
             kube_client=FakeClient(),
         )
-        self.action = DecisionAction(self.bids, self.application, self.name, "test")
 
     def tearDown(self) -> None:
         super().tearDown()
 
-    def test_decide_success_single_zone(self) -> None:
-        result = self.loop.run_until_complete(self.action.run(self.context))
+    def test_decide_success_single_zone_upscale(self) -> None:
+        operation = FSMOperation(
+            direction=ScaleDirection.UPSCALE,
+            required_replica=1,
+            current_zones=set(),
+            available_zones={"zone1", "zone2", "zone3"},
+        )
+
+        action = DecisionAction(self.bids, operation, self.name, "test")
+        result = self.loop.run_until_complete(action.run(self.context))
 
         self.assertEqual(result.result, [PlacementZone(id="zone1")])
 
-    def test_decide_success_multiple_zones(self) -> None:
-        dict_app = self.make_anyapp(self.name.name, 2) | self.make_anyapp_status("state", "owner", [])
-        self.application = AnyApplication(dict_app)
-        self.action = DecisionAction(self.bids, self.application, self.name, "test")
+    def test_decide_success_multiple_zones_upscale(self) -> None:
+        operation = FSMOperation(
+            direction=ScaleDirection.UPSCALE,
+            required_replica=2,
+            current_zones=set(),
+            available_zones={"zone1", "zone2", "zone3"},
+        )
+        action = DecisionAction(self.bids, operation, self.name, "test")
 
-        result = self.loop.run_until_complete(self.action.run(self.context))
+        result = self.loop.run_until_complete(action.run(self.context))
         self.assertEqual(result.result, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+
+    def test_decide_downscale(self) -> None:
+        operation = FSMOperation(
+            direction=ScaleDirection.DOWNSCALE,
+            required_replica=1,
+            current_zones={"zone1", "zone2"},
+            available_zones={"zone1", "zone2", "zone3"},
+        )
+
+        action = DecisionAction(self.bids, operation, self.name, "test")
+
+        result = self.loop.run_until_complete(action.run(self.context))
+        self.assertEqual(result.result, [PlacementZone(id="zone1")])

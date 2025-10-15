@@ -35,11 +35,18 @@ class SchedulingState:
         self.operation = operation
 
     @staticmethod
-    def start(timestamp: int) -> "SchedulingState":
+    def initial(timestamp: int) -> "SchedulingState":
+        return SchedulingState(
+            SchedulingStep.UNMANAGED,
+            timestamp + DEFAULT_STEP_EXPIRATION_SECONDS * 1000,  # TODO max infinity
+            None,
+        )
+
+    def start_operation(self, timestamp: int, operation: FSMOperation) -> "SchedulingState":
         return SchedulingState(
             SchedulingStep.PENDING,
             timestamp + DEFAULT_STEP_EXPIRATION_SECONDS * 1000,
-            None,
+            operation,
         )
 
     @staticmethod

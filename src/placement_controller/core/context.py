@@ -8,7 +8,8 @@ from loguru import logger
 
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
-from placement_controller.core.scheduling_state import SchedulingState
+from placement_controller.core.scheduling_state import FSMOperation, SchedulingState
+from placement_controller.core.types import SchedulingStep
 from placement_controller.jobs.bid_action import BidResponseOrError
 from placement_controller.jobs.types import Action, ActionId, ActionResult
 from placement_controller.membership.types import PlacementZone
@@ -25,6 +26,7 @@ class SchedulingContext:
     action_nr: int
     timestamp: int
     state: SchedulingState
+
     available_zones: List[PlacementZone]
     retry_attempt: int = field(default=0)
     trace: TraceLog = field(default_factory=TraceLog)
@@ -34,6 +36,7 @@ class SchedulingContext:
     application_spec: Optional[models.ApplicationSpec] = field(default=None)
     bid_responses: Optional[Mapping[str, BidResponseOrError]] = field(default=None)
     decision: Optional[List[PlacementZone]] = field(default=None)
+
     previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
@@ -43,12 +46,21 @@ class SchedulingContext:
             seq_nr=0,
             action_nr=0,
             timestamp=timestamp,
-            state=SchedulingState.start(timestamp),
+            state=SchedulingState.initial(timestamp),
             available_zones=available_zones,
         )
 
-    def to_next(self, state: SchedulingState, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
-        return self.to_next_with_app(state, self.application, timestamp, msg)
+    # TODO remove application
+    def start_operation(
+        self, operation: FSMOperation, application: AnyApplication, timestamp: int
+    ) -> "SchedulingContext":
+        msg = f"Starting {operation.direction}. desired replica: {operation.required_replica}"
+        new_state = self.state.start_operation(timestamp, operation)
+        return self.to_next_with_app(new_state, application, timestamp, msg)
+
+    def to_next(self, step: SchedulingStep, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
+        new_state = self.state.to(step, timestamp)
+        return self.to_next_with_app(new_state, self.application, timestamp, msg)
 
     def retry(self, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)

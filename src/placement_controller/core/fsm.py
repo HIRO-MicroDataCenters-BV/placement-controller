@@ -10,7 +10,7 @@ from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication, GlobalState, PlacementStrategy
 from placement_controller.core.context import SchedulingContext
 from placement_controller.core.next_state_result import NextStateResult
-from placement_controller.core.scheduling_state import SchedulingState
+from placement_controller.core.scheduling_state import FSMOperation, ScaleDirection, SchedulingState
 from placement_controller.core.types import SchedulingStep
 from placement_controller.jobs.bid_action import BidAction, BidActionResult, BidResponseOrError, ZoneId
 from placement_controller.jobs.decision_action import DecisionAction, DecisionActionResult
@@ -69,16 +69,57 @@ class FSM:
     current_zone: str
     timestamp: int
 
-    def __init__(self, ctx: SchedulingContext, current_zone: str, timestamp: int, options: FSMOptions):
+    def __init__(
+        self,
+        ctx: SchedulingContext,
+        current_zone: str,
+        timestamp: int,
+        options: FSMOptions,
+    ):
         self.ctx = ctx
         self.timestamp = timestamp
         self.current_zone = current_zone
         self.options = options
 
     def on_tick(self) -> NextStateResult:
-        # TODO timeout
+        # if state does not exists treat it as application update
+        # check managed unmanaged
 
+        if self.ctx.state.is_expired(self.timestamp):
+            return self.retry("Action timeout.")
         return NextStateResult()
+
+    def determine_operation(self, application: AnyApplication) -> FSMOperation:
+        desired_replica = application.get_desired_replica()
+        current_placement_zones = set(application.get_placement_zones())
+        available_zones = {zone.id for zone in self.ctx.available_zones}
+
+        # TODO check zone failure
+
+        # underprovisioned
+        if desired_replica > len(current_placement_zones):
+            # check the posibility of upscaling
+            if len(available_zones) > len(current_placement_zones):
+                return FSMOperation(
+                    direction=ScaleDirection.UPSCALE,
+                    required_replica=desired_replica,
+                    current_zones=current_placement_zones,
+                    available_zones=available_zones,
+                )
+        # overprovisioned
+        elif desired_replica < len(current_placement_zones):
+            return FSMOperation(
+                direction=ScaleDirection.DOWNSCALE,
+                required_replica=desired_replica,
+                current_zones=current_placement_zones,
+                available_zones=available_zones,
+            )
+        return FSMOperation(
+            direction=ScaleDirection.NONE,
+            required_replica=desired_replica,
+            current_zones=current_placement_zones,
+            available_zones=available_zones,
+        )
 
     def on_update(self, application: AnyApplication) -> NextStateResult:
         placement_strategy = application.get_placement_strategy()
@@ -88,34 +129,48 @@ class FSM:
         # if current zone is not the owner -> ignore (or drop scheduling context if it is valid)
         if owner_zone != self.current_zone:
             if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
+                # TODO since it is update -> update application in context
+                # TODO update to unmanaged instead of remove
                 return NextStateResult(remove_and_drop_context=True)
             else:
+                # TODO since it is update -> update application in context
                 return NextStateResult()
 
         # Placement strategy is local -> ignore (or drop scheduling context if it is valid)
         if placement_strategy == PlacementStrategy.Local:
             if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
+                # TODO since it is update -> update application in context
+                # TODO update to unmanaged instead of remove
                 return NextStateResult(remove_and_drop_context=True)
             else:
+                # TODO since it is update -> update application in context
                 return NextStateResult()
 
         if global_state == GlobalState.PlacementGlobalState:
             return self.on_placement_action(application)
         elif global_state == GlobalState.FailureGlobalState:
             return self.on_global_failure(application)
-        else:
-            return NextStateResult()
+
+        # TODO since it is update -> update application in context
+        return NextStateResult()
 
     def on_placement_action(self, application: AnyApplication) -> NextStateResult:
         if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
             # no action is progress
             if self.ctx.inprogress_actions_count() == 0:
-                return self.new_get_spec(application)
+                operation = self.determine_operation(application)
+                if operation.direction != ScaleDirection.NONE:
 
+                    self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
+                    return self.new_get_spec(application)
+
+        # TODO update application in context
         return NextStateResult()
 
     def on_global_failure(self, application: AnyApplication) -> NextStateResult:
         # not implemented yet, skipping for now
+        # in case of failure put in a different zone
+        # TODO since it is update -> update application in context
         return NextStateResult()
 
     def on_action_result(self, result: ActionResult) -> NextStateResult:
@@ -139,15 +194,15 @@ class FSM:
         return NextStateResult()
 
     def new_get_spec(self, application: AnyApplication) -> NextStateResult:
+
         next_action: Action[ActionResult] = GetSpecAction(
             application.get_namespaced_name(),
             self.ctx.gen_action_id(),
         )  # type: ignore
 
         msg = "Getting application specification..."
-        next_context = self.ctx.to_next_with_app(
-            SchedulingState.new(SchedulingStep.FETCH_APPLICATION_SPEC, self.timestamp), application, self.timestamp, msg
-        ).with_action(next_action)
+        next_state = self.ctx.state.to(SchedulingStep.FETCH_APPLICATION_SPEC, self.timestamp)
+        next_context = self.ctx.to_next_with_app(next_state, application, self.timestamp, msg).with_action(next_action)
 
         return NextStateResult(actions=[next_action], context=next_context)
 
@@ -170,17 +225,16 @@ class FSM:
             return self.retry(f"Failure while getting application specification. {error.msg} ")
 
     def new_bid_action(self, spec: models.ApplicationSpec, name: NamespacedName, msg: str) -> NextStateResult:
+
         spec_str = json.dumps(spec.to_dict())
-        zones = [zone.id for zone in self.ctx.placement_zones]
+        zones = [zone.id for zone in self.ctx.available_zones]
         bid_criteria = [BidCriteria.cpu, BidCriteria.memory]
         metrics = {Metric.cost, Metric.energy}
 
         bid = BidRequestModel(id=self.ctx.gen_action_id(), spec=spec_str, bid_criteria=bid_criteria, metrics=metrics)
 
-        next_action: Action[ActionResult] = BidAction(set(zones), bid, name)  # type: ignore
-        next_context = self.ctx.to_next(
-            SchedulingState.new(SchedulingStep.BID_COLLECTION, self.timestamp), self.timestamp, msg
-        ).with_action(next_action)
+        next_action: Action[ActionResult] = BidAction(set(zones), self.ctx.operation, bid, name)  # type: ignore
+        next_context = self.ctx.to_next(SchedulingStep.BID_COLLECTION, self.timestamp, msg).with_action(next_action)
 
         return NextStateResult(actions=[next_action], context=next_context)
 
@@ -213,12 +267,8 @@ class FSM:
         name: NamespacedName,
         msg: str,
     ) -> NextStateResult:
-        next_action: Action[ActionResult] = DecisionAction(
-            bids, application, name, self.ctx.gen_action_id()
-        )  # type: ignore
-        next_context = self.ctx.to_next(
-            SchedulingState.new(SchedulingStep.DECISION, self.timestamp), self.timestamp, msg
-        ).with_action(next_action)
+        next_action: Action[ActionResult] = DecisionAction(bids, name, self.ctx.gen_action_id())  # type: ignore
+        next_context = self.ctx.to_next(SchedulingStep.DECISION, self.timestamp, msg).with_action(next_action)
         return NextStateResult(actions=[next_action], context=next_context)
 
     def on_decision_action_result(self, result: DecisionActionResult) -> NextStateResult:
@@ -253,9 +303,7 @@ class FSM:
         next_action: Action[ActionResult] = SetPlacementAction(
             placements, name, self.ctx.gen_action_id()
         )  # type: ignore
-        next_context = self.ctx.to_next(
-            SchedulingState.new(SchedulingStep.SET_PLACEMENT, self.timestamp), self.timestamp, msg
-        ).with_action(next_action)
+        next_context = self.ctx.to_next(SchedulingStep.SET_PLACEMENT, self.timestamp, msg).with_action(next_action)
         return NextStateResult(actions=[next_action], context=next_context)
 
     def on_set_placement_action_result(self, result: SetPlacementActionResult) -> NextStateResult:
@@ -269,15 +317,18 @@ class FSM:
                 return self.placement_failure(
                     "Application is not set in context. Invariant failure. Programmer mistake!"
                 )
+
+            # in the end we check if we should start operation again
+            operation = self.determine_operation(application)
+            if operation.direction != ScaleDirection.NONE:
+                self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
+                return self.new_get_spec(application)
+
+            # TODO check unmanaged
+            expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
+            next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
             msg = "Placement done."
-            next_context = self.ctx.to_next(
-                SchedulingState.new(
-                    SchedulingStep.PENDING,
-                    self.timestamp + self.options.reschedule_default_delay_seconds * 1000,
-                ),
-                self.timestamp,
-                msg,
-            )
+            next_context = self.ctx.to_next_with_app(next_state, None, self.timestamp, msg)
             return NextStateResult(context=next_context)
         else:
             error: ErrorResponse = result.result
@@ -291,20 +342,24 @@ class FSM:
             return self.placement_failure(msg + "All attempts exhausted.")
 
     def placement_failure(self, msg: str) -> NextStateResult:
-        delay_millis = self.timestamp + self.options.reschedule_failure_delay_seconds * 1000
-        next_context = self.ctx.to_next(
-            SchedulingState.new(SchedulingStep.PENDING, delay_millis),
-            self.timestamp,
-            msg,
-        )
+        expires_at = self.timestamp + self.options.reschedule_failure_delay_seconds * 1000
+        next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
+        next_context = self.ctx.to_next_with_app(next_state, None, self.timestamp, msg)
         return NextStateResult(context=next_context)
 
-    def on_membership_change(self, zones: List[PlacementZone]) -> NextStateResult:
-        # ignore membership updates for now, just change active zones
+    def on_membership_change(self, available_zones: List[PlacementZone]) -> NextStateResult:
 
-        zone_names = ",".join([zone.id for zone in zones])
-        next_context = self.ctx.to_next(
-            self.ctx.state, self.timestamp, f"Placement changed to '{zone_names}'"
-        ).with_placement_zones(zones)
+        zone_names = ",".join([zone.id for zone in available_zones])
+        msg = f"Placement changed to '{zone_names}'"
 
-        return NextStateResult(context=next_context)
+        self.ctx = self.ctx.to_next(self.ctx.state.step, self.timestamp, msg).with_available_zones(available_zones)
+
+        # check if zone is failed
+        application = self.ctx.application
+        if application is not None:
+            operation = self.determine_operation(application)
+            if operation.direction != ScaleDirection.NONE:
+                self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
+                return self.new_get_spec(application)
+
+        return NextStateResult(context=self.ctx)

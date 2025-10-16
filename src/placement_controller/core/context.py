@@ -62,6 +62,9 @@ class SchedulingContext:
         new_state = self.state.to(step, timestamp)
         return self.to_next_with_app(new_state, self.application, timestamp, msg)
 
+    def with_app(self, application: AnyApplication, timestamp: int) -> "SchedulingContext":
+        return self.to_next_with_app(self.state, application, timestamp, None)
+
     def retry(self, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)
         context.retry_attempt += 1

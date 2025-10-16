@@ -8,7 +8,7 @@ from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.context import SchedulingContext
 from placement_controller.core.fsm import FSM, FSMOptions
-from placement_controller.core.scheduling_state import SchedulingState
+from placement_controller.core.scheduling_state import FSMOperation, ScaleDirection, SchedulingState
 from placement_controller.core.types import SchedulingStep
 from placement_controller.jobs.bid_action import BidActionResult
 from placement_controller.jobs.decision_action import DecisionActionResult
@@ -62,16 +62,37 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         self.placements = [PlacementZone(id="zone1")]
 
     def test_ordinary_placement(self) -> None:
-        # NEW state
-        context = SchedulingContext.new(self.now, self.name, [])
+        # operation = FSMOperation(
+        #     direction = ScaleDirection.UPSCALE,
+        #     required_replica = 1,
+        #     current_zones = set(),
+        #     available_zones = {"zone1", "zone2"}
+        # )
+        self.application = AnyApplication(
+            self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone1", [])
+        )
 
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.PENDING, self.now))
+        # UNMANAGED state by default
+        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
-        # FETCH_APPLICATION_SPEC
+        # PENDING and FETCH_APPLICATION_SPEC
         result = FSM(context, self.current_zone, self.now, self.options).on_update(self.application)
-
+        operation = FSMOperation(
+            direction=ScaleDirection.UPSCALE,
+            required_replica=1,
+            current_zones=set(),
+            available_zones={"zone1", "zone2"},
+        )
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.FETCH_APPLICATION_SPEC, self.now))
+        self.assertEqual(
+            context.state,
+            SchedulingState(
+                SchedulingStep.FETCH_APPLICATION_SPEC,
+                60000,
+                operation,
+            ),
+        )
 
         get_spec = result.actions[0]
         self.assertEqual(get_spec.name, self.name)
@@ -81,7 +102,8 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         result = FSM(context, self.current_zone, self.now, self.options).on_action_result(get_spec_result)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.BID_COLLECTION, self.now))
+
+        self.assertEqual(context.state, SchedulingState(SchedulingStep.BID_COLLECTION, 60000, operation))
 
         bid_action = result.actions[0]
         self.assertEqual(bid_action.name, self.name)
@@ -92,7 +114,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         result = FSM(context, self.current_zone, self.now, self.options).on_action_result(bid_action_result)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.DECISION, self.now))
+        self.assertEqual(context.state, SchedulingState(SchedulingStep.DECISION, 60000, operation))
 
         decision_action = result.actions[0]
         self.assertEqual(decision_action.name, self.name)
@@ -102,7 +124,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         result = FSM(context, self.current_zone, self.now, self.options).on_action_result(decision_result)
 
         context = result.context  # type: ignore
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.SET_PLACEMENT, self.now))
+        self.assertEqual(context.state, SchedulingState(SchedulingStep.SET_PLACEMENT, 60000, operation))
 
         set_placement_action = result.actions[0]
         self.assertEqual(set_placement_action.name, self.name)
@@ -114,24 +136,27 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context = result.context  # type: ignore
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.PENDING, 10000))
 
-    def test_upscale(self) -> None:
-        pass
+    # def test_upscale(self) -> None:
+    #     pass
 
-    def test_downscale(self) -> None:
-        pass
+    # def test_downscale(self) -> None:
+    #     pass
 
-    def test_action_retries(self) -> None:
-        # TODO tests with retries
-        pass
+    # def test_action_retries(self) -> None:
+    #     # TODO tests with retries
+    #     pass
 
-    def test_action_timeouts(self) -> None:
-        pass
+    # def test_action_timeouts(self) -> None:
+    #     pass
 
-    def test_optimize_eventually(self) -> None:
-        pass
+    # def test_optimize_periodically(self) -> None:
+    #     pass
 
-    def test_zone_failure(self) -> None:
-        pass
+    # def test_zone_failure(self) -> None:
+    #     pass
 
-    def test_converge(self) -> None:
-        pass
+    # def test_converge_after_failure(self) -> None:
+    #     pass
+
+    # def test_unmanaged(self) -> None:
+    #     pass

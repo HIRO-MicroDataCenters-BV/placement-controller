@@ -126,33 +126,34 @@ class FSM:
         global_state = application.get_global_state()
         owner_zone = application.get_owner_zone()
 
-        # if current zone is not the owner -> ignore (or drop scheduling context if it is valid)
-        if owner_zone != self.current_zone:
-            if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
-                # TODO since it is update -> update application in context
-                # TODO update to unmanaged instead of remove
-                return NextStateResult(remove_and_drop_context=True)
+        is_global_placement = placement_strategy == PlacementStrategy.Global
+        is_owner_current_zone = owner_zone == self.current_zone
+
+        # switch to managed state
+        if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):
+
+            if is_owner_current_zone and is_global_placement:
+                msg = "Ownership changed. Application managed."
+                self.ctx = self.ctx.to_next(SchedulingStep.PENDING, self.timestamp, msg)
             else:
-                # TODO since it is update -> update application in context
+                # remaining unmanaged if zones are not
                 return NextStateResult()
 
-        # Placement strategy is local -> ignore (or drop scheduling context if it is valid)
-        if placement_strategy == PlacementStrategy.Local:
-            if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
-                # TODO since it is update -> update application in context
-                # TODO update to unmanaged instead of remove
-                return NextStateResult(remove_and_drop_context=True)
-            else:
-                # TODO since it is update -> update application in context
-                return NextStateResult()
+        # switch to unmanaged state
+        if not is_owner_current_zone or not is_global_placement:
+            placement_msg = "Local placement. " if not is_global_placement else ""
+            ownership_msg = f"Ownership is assigned to {owner_zone}. " if not is_owner_current_zone else ""
+            msg = placement_msg + ownership_msg + "Application unmanaged."
+            next_context = self.ctx.to_next(SchedulingStep.UNMANAGED, self.timestamp, msg)
+            return NextStateResult(context=next_context)
 
         if global_state == GlobalState.PlacementGlobalState:
             return self.on_placement_action(application)
         elif global_state == GlobalState.FailureGlobalState:
             return self.on_global_failure(application)
 
-        # TODO since it is update -> update application in context
-        return NextStateResult()
+        next_context = self.ctx.with_app(application, self.timestamp)
+        return NextStateResult(context=next_context)
 
     def on_placement_action(self, application: AnyApplication) -> NextStateResult:
         if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
@@ -164,16 +165,21 @@ class FSM:
                     self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
                     return self.new_get_spec(application)
 
-        # TODO update application in context
-        return NextStateResult()
+        next_context = self.ctx.with_app(application, self.timestamp)
+        return NextStateResult(context=next_context)
 
     def on_global_failure(self, application: AnyApplication) -> NextStateResult:
         # not implemented yet, skipping for now
         # in case of failure put in a different zone
-        # TODO since it is update -> update application in context
-        return NextStateResult()
+        next_context = self.ctx.with_app(application, self.timestamp)
+        return NextStateResult(context=next_context)
 
     def on_action_result(self, result: ActionResult) -> NextStateResult:
+        if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):
+            msg = f"Application is unmanaged. Ignoring action result {type(result).__name__}"
+            next_context = self.ctx.to_next(SchedulingStep.UNMANAGED, self.timestamp, msg)
+            return NextStateResult(context=next_context)
+
         if self.ctx.state.is_valid_at(SchedulingStep.FETCH_APPLICATION_SPEC, self.timestamp) and isinstance(
             result, GetSpecResult
         ):
@@ -225,15 +231,17 @@ class FSM:
             return self.retry(f"Failure while getting application specification. {error.msg} ")
 
     def new_bid_action(self, spec: models.ApplicationSpec, name: NamespacedName, msg: str) -> NextStateResult:
+        operation = self.ctx.state.operation
+        if not operation:
+            return self.placement_failure("FSMOperation is not set in context. Invariant failure. Programmer mistake!")
 
         spec_str = json.dumps(spec.to_dict())
-        zones = [zone.id for zone in self.ctx.available_zones]
         bid_criteria = [BidCriteria.cpu, BidCriteria.memory]
         metrics = {Metric.cost, Metric.energy}
 
         bid = BidRequestModel(id=self.ctx.gen_action_id(), spec=spec_str, bid_criteria=bid_criteria, metrics=metrics)
 
-        next_action: Action[ActionResult] = BidAction(set(zones), self.ctx.operation, bid, name)  # type: ignore
+        next_action: Action[ActionResult] = BidAction(operation, bid, name)  # type: ignore
         next_context = self.ctx.to_next(SchedulingStep.BID_COLLECTION, self.timestamp, msg).with_action(next_action)
 
         return NextStateResult(actions=[next_action], context=next_context)
@@ -256,18 +264,23 @@ class FSM:
                 "Bids received.",
             )
             msg = "Making decision..."
-            return self.new_decision_action(application, result.response, result.get_application_name(), msg)
+            return self.new_decision_action(result.response, result.get_application_name(), msg)
         else:
             return self.retry(f"Failure while receiving bids. {result.response} ")  # TODO stringify error
 
     def new_decision_action(
         self,
-        application: AnyApplication,
         bids: Mapping[ZoneId, BidResponseOrError],
         name: NamespacedName,
         msg: str,
     ) -> NextStateResult:
-        next_action: Action[ActionResult] = DecisionAction(bids, name, self.ctx.gen_action_id())  # type: ignore
+        operation = self.ctx.state.operation
+        if not operation:
+            return self.placement_failure("FSMOperation is not set in context. Invariant failure. Programmer mistake!")
+
+        next_action: Action[ActionResult] = DecisionAction(
+            bids, operation, name, self.ctx.gen_action_id()
+        )  # type: ignore
         next_context = self.ctx.to_next(SchedulingStep.DECISION, self.timestamp, msg).with_action(next_action)
         return NextStateResult(actions=[next_action], context=next_context)
 
@@ -319,12 +332,11 @@ class FSM:
                 )
 
             # in the end we check if we should start operation again
-            operation = self.determine_operation(application)
-            if operation.direction != ScaleDirection.NONE:
-                self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
-                return self.new_get_spec(application)
+            # operation = self.determine_operation(application)
+            # if operation.direction != ScaleDirection.NONE:
+            #     self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
+            #     return self.new_get_spec(application)
 
-            # TODO check unmanaged
             expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
             next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
             msg = "Placement done."

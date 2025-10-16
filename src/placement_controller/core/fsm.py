@@ -95,12 +95,14 @@ class FSM:
         current_placement_zones = set(application.get_placement_zones())
         available_zones = {zone.id for zone in self.ctx.available_zones}
 
-        # TODO check zone failure
+        current_active_zones = set(current_placement_zones)
+        unavailable_zones = current_placement_zones - available_zones
+        active_zones = current_active_zones - unavailable_zones
 
         # underprovisioned
-        if desired_replica > len(current_placement_zones):
+        if desired_replica > len(active_zones):
             # check the posibility of upscaling
-            if len(available_zones) > len(current_placement_zones):
+            if len(available_zones) > len(active_zones):
                 return FSMOperation(
                     direction=ScaleDirection.UPSCALE,
                     required_replica=desired_replica,
@@ -108,7 +110,7 @@ class FSM:
                     available_zones=available_zones,
                 )
         # overprovisioned
-        elif desired_replica < len(current_placement_zones):
+        elif desired_replica < len(active_zones):
             return FSMOperation(
                 direction=ScaleDirection.DOWNSCALE,
                 required_replica=desired_replica,

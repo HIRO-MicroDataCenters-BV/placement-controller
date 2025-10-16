@@ -32,11 +32,16 @@ class SchedulingContext:
     trace: TraceLog = field(default_factory=TraceLog)
     msg: Optional[str] = field(default=None)
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
+
+    # TODO make application mandatory for simplicity
     application: Optional[AnyApplication] = field(default=None)
+
+    # lifecycle action arguments
     application_spec: Optional[models.ApplicationSpec] = field(default=None)
     bid_responses: Optional[Mapping[str, BidResponseOrError]] = field(default=None)
     decision: Optional[List[PlacementZone]] = field(default=None)
 
+    # history tracking
     previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
@@ -66,7 +71,8 @@ class SchedulingContext:
         return self.to_next_with_app(self.state, application, timestamp, None)
 
     def retry(self, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
-        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        retry_state = self.state.to(self.state.step, timestamp)
+        context = self.to_next_with_app(retry_state, self.application, timestamp, msg)
         context.retry_attempt += 1
         return context
 
@@ -115,6 +121,7 @@ class SchedulingContext:
     ) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)
         context.application_spec = application_spec
+        context.retry_attempt = 0
         del context.inprogress_actions[action_id]
         return context
 
@@ -123,6 +130,7 @@ class SchedulingContext:
     ) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)
         context.bid_responses = bid_responses
+        context.retry_attempt = 0
         del context.inprogress_actions[action_id]
         return context
 
@@ -131,6 +139,7 @@ class SchedulingContext:
     ) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)
         context.decision = decision
+        context.retry_attempt = 0
         del context.inprogress_actions[action_id]
         return context
 

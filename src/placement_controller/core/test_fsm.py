@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List, Type
 
 import unittest
 from decimal import Decimal
@@ -8,7 +8,7 @@ from application_client import models
 from placement_controller.api.model import BidResponseModel, BidStatus, Metric, MetricUnit, MetricValue
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
-from placement_controller.core.context import SchedulingContext
+from placement_controller.core.context import DEFAULT_ACTION_TIMEOUT_SECONDS, SchedulingContext
 from placement_controller.core.fsm import FSM, FSMOptions
 from placement_controller.core.scheduling_state import FSMOperation, ScaleDirection, SchedulingState
 from placement_controller.core.types import SchedulingStep
@@ -89,18 +89,18 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context = self.assert_fetch_application_spec(context, operation)
 
         # BID_COLLECTION
-        context = self.assert_get_spec_to_bid_collection(context, operation)
+        context = self.assert_get_spec_to_bid_collection(context, operation, 60000)
 
         # DECISION
         context = self.assert_bid_collection_to_decision(
-            context, operation, {"zone1": self.response1, "zone2": self.response2}
+            context, operation, {"zone1": self.response1, "zone2": self.response2}, 60000
         )
 
         # SET_PLACEMENT
-        context = self.assert_decision_to_placement(context, operation, [PlacementZone(id="zone1")])
+        context = self.assert_decision_to_placement(context, operation, [PlacementZone(id="zone1")], 60000)
 
         # PENDING
-        self.assert_placements_done(context)
+        self.assert_placements_done(context, 10000)
 
     def test_upscale(self) -> None:
         self.application = AnyApplication(
@@ -121,20 +121,20 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context = self.assert_fetch_application_spec(context, operation)
 
         # BID_COLLECTION
-        context = self.assert_get_spec_to_bid_collection(context, operation)
+        context = self.assert_get_spec_to_bid_collection(context, operation, 60000)
 
         # DECISION
         context = self.assert_bid_collection_to_decision(
-            context, operation, {"zone1": self.response1, "zone2": self.response2}
+            context, operation, {"zone1": self.response1, "zone2": self.response2}, 60000
         )
 
         # SET_PLACEMENT
         context = self.assert_decision_to_placement(
-            context, operation, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            context, operation, [PlacementZone(id="zone1"), PlacementZone(id="zone2")], 60000
         )
 
         # PENDING
-        self.assert_placements_done(context)
+        self.assert_placements_done(context, 10000)
 
     def test_downscale(self) -> None:
         self.application = AnyApplication(
@@ -155,18 +155,18 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context = self.assert_fetch_application_spec(context, operation)
 
         # BID_COLLECTION
-        context = self.assert_get_spec_to_bid_collection(context, operation)
+        context = self.assert_get_spec_to_bid_collection(context, operation, 60000)
 
         # DECISION
         context = self.assert_bid_collection_to_decision(
-            context, operation, {"zone1": self.response1, "zone2": self.response2}
+            context, operation, {"zone1": self.response1, "zone2": self.response2}, 60000
         )
 
         # SET_PLACEMENT
-        context = self.assert_decision_to_placement(context, operation, [PlacementZone(id="zone1")])
+        context = self.assert_decision_to_placement(context, operation, [PlacementZone(id="zone1")], 60000)
 
         # PENDING
-        self.assert_placements_done(context)
+        self.assert_placements_done(context, 10000)
 
     def test_zone_failure(self) -> None:
         self.application = AnyApplication(
@@ -187,20 +187,20 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context = self.assert_fetch_application_spec(context, operation)
 
         # BID_COLLECTION
-        context = self.assert_get_spec_to_bid_collection(context, operation)
+        context = self.assert_get_spec_to_bid_collection(context, operation, 60000)
 
         # DECISION
         context = self.assert_bid_collection_to_decision(
-            context, operation, {"zone2": self.response2, "zone3": self.response3}
+            context, operation, {"zone2": self.response2, "zone3": self.response3}, 60000
         )
 
         # SET_PLACEMENT
         context = self.assert_decision_to_placement(
-            context, operation, [PlacementZone(id="zone2"), PlacementZone(id="zone3")]
+            context, operation, [PlacementZone(id="zone2"), PlacementZone(id="zone3")], 60000
         )
 
         # PENDING
-        self.assert_placements_done(context)
+        self.assert_placements_done(context, 10000)
 
     def test_converge_after_failure(self) -> None:
         self.application = AnyApplication(
@@ -221,60 +221,67 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context = self.assert_fetch_application_spec(context, operation)
 
         # BID_COLLECTION
-        context = self.assert_get_spec_to_bid_collection(context, operation)
+        context = self.assert_get_spec_to_bid_collection(context, operation, 60000)
 
         # DECISION
         context = self.assert_bid_collection_to_decision(
-            context, operation, {"zone1": self.response2, "zone2": self.response3}
+            context, operation, {"zone1": self.response2, "zone2": self.response3}, 60000
         )
 
         # SET_PLACEMENT
         context = self.assert_decision_to_placement(
-            context, operation, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            context, operation, [PlacementZone(id="zone1"), PlacementZone(id="zone2")], 60000
         )
 
         # PENDING
-        self.assert_placements_done(context)
+        self.assert_placements_done(context, 10000)
 
-    # def test_action_retries(self) -> None:
-    #     self.application = AnyApplication(
-    #         self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone1", [])
-    #     )
-    #     operation = FSMOperation(
-    #         direction=ScaleDirection.UPSCALE,
-    #         required_replica=1,
-    #         current_zones=set(),
-    #         available_zones={"zone1", "zone2"},
-    #     )
+    def test_action_timeouts_and_retries(self) -> None:
+        self.application = AnyApplication(
+            self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone1", [])
+        )
+        operation = FSMOperation(
+            direction=ScaleDirection.UPSCALE,
+            required_replica=1,
+            current_zones=set(),
+            available_zones={"zone1", "zone2"},
+        )
 
-    #     # UNMANAGED state by default
-    #     context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
-    #     self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+        # UNMANAGED state by default
+        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
-    #     # PENDING and FETCH_APPLICATION_SPEC
-    #     context = self.assert_fetch_application_spec(context, operation)
+        # PENDING and FETCH_APPLICATION_SPEC
+        context = self.assert_fetch_application_spec(context, operation)
+        context = self.assert_retry(context, SchedulingStep.FETCH_APPLICATION_SPEC, operation, GetSpecAction)
 
-    #     # BID_COLLECTION
-    #     context = self.assert_get_spec_to_bid_collection(context, operation)
+        # BID_COLLECTION
+        context = self.assert_get_spec_to_bid_collection(context, operation, 120001)
+        context = self.assert_retry(context, SchedulingStep.BID_COLLECTION, operation, BidAction)
 
-    #     # DECISION
-    #     context = self.assert_bid_collection_to_decision(
-    #         context, operation, {"zone1": self.response1, "zone2": self.response2}
-    #     )
+        # DECISION
+        context = self.assert_bid_collection_to_decision(
+            context, operation, {"zone1": self.response1, "zone2": self.response2}, 180002
+        )
+        context = self.assert_retry(context, SchedulingStep.DECISION, operation, DecisionAction)
 
-    #     # SET_PLACEMENT
-    #     context = self.assert_decision_to_placement(context, operation, [PlacementZone(id="zone1")])
+        # SET_PLACEMENT
+        context = self.assert_decision_to_placement(context, operation, [PlacementZone(id="zone1")], 240003)
+        context = self.assert_retry(context, SchedulingStep.SET_PLACEMENT, operation, SetPlacementAction)
 
-    #     # PENDING
-    #     self.assert_placements_done(context)
+        # PENDING
+        self.assert_placements_done(context, 250004)
 
-    # def test_action_timeouts(self) -> None:
+    # def test_action_retries_and_failures(self) -> None:
     #     pass
 
     # def test_optimize_periodically(self) -> None:
     #     pass
 
     # def test_unmanaged(self) -> None:
+    #     pass
+
+    # def test_update_during_operation(self) -> None:
     #     pass
 
     def assert_fetch_application_spec(
@@ -288,7 +295,6 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
             self.fail("context expected")
 
         context = result.context
-        print(context.state)
         self.assertEqual(
             context.state,
             SchedulingState(
@@ -303,7 +309,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         return context
 
     def assert_get_spec_to_bid_collection(
-        self, context: SchedulingContext, operation: FSMOperation
+        self, context: SchedulingContext, operation: FSMOperation, state_ts: int
     ) -> SchedulingContext:
         action = context.get_action_by_type(GetSpecAction)  # type: ignore
         if action is None:
@@ -316,7 +322,12 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
             self.fail("context expected")
 
         context = result.context
-        self.assertEqual(context.state, SchedulingState(SchedulingStep.BID_COLLECTION, 60000, operation))
+        expected_state = SchedulingState(SchedulingStep.BID_COLLECTION, state_ts, operation)
+        self.assertEqual(
+            context.state,
+            expected_state,
+            f"expected state {expected_state} actual {context.state}",
+        )
 
         bid_action = result.actions[0]
         self.assertEqual(bid_action.name, self.name)
@@ -328,6 +339,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context: SchedulingContext,
         operation: FSMOperation,
         bid_responses: Dict[str, BidResponseModel],
+        state_ts: int,
     ) -> SchedulingContext:
         action = context.get_action_by_type(BidAction)  # type: ignore
         if action is None:
@@ -340,7 +352,13 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
             self.fail("context expected")
 
         context = result.context
-        self.assertEqual(context.state, SchedulingState(SchedulingStep.DECISION, 60000, operation))
+
+        expected_state = SchedulingState(SchedulingStep.DECISION, state_ts, operation)
+        self.assertEqual(
+            context.state,
+            expected_state,
+            f"expected state {expected_state} actual {context.state}",
+        )
 
         decision_action = result.actions[0]
         self.assertEqual(decision_action.name, self.name)
@@ -352,6 +370,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         context: SchedulingContext,
         operation: FSMOperation,
         placements: List[PlacementZone],
+        state_ts: int,
     ) -> SchedulingContext:
         action = context.get_action_by_type(DecisionAction)  # type: ignore
         if action is None:
@@ -363,7 +382,12 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         if result.context is None:
             self.fail("context expected")
         context = result.context
-        self.assertEqual(context.state, SchedulingState(SchedulingStep.SET_PLACEMENT, 60000, operation))
+        expected_state = SchedulingState(SchedulingStep.SET_PLACEMENT, state_ts, operation)
+        self.assertEqual(
+            context.state,
+            expected_state,
+            f"expected state {expected_state} actual {context.state}",
+        )
 
         set_placement_action: SetPlacementAction = result.actions[0]  # type: ignore
         self.assertEqual(set_placement_action.name, self.name)
@@ -371,7 +395,7 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
 
         return context
 
-    def assert_placements_done(self, context: SchedulingContext) -> SchedulingContext:
+    def assert_placements_done(self, context: SchedulingContext, state_ts: int) -> SchedulingContext:
         action = context.get_action_by_type(SetPlacementAction)  # type: ignore
         if action is None:
             self.fail("action expected")
@@ -383,5 +407,30 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
             self.fail("context expected")
 
         context = result.context
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.PENDING, 10000))
+
+        expected_state = SchedulingState.new(SchedulingStep.PENDING, state_ts)
+        self.assertEqual(
+            context.state,
+            expected_state,
+            f"expected state {expected_state} actual {context.state}",
+        )
+        return context
+
+    def assert_retry(
+        self,
+        context: SchedulingContext,
+        step: SchedulingStep,
+        operation: FSMOperation,
+        action_type: Type[Any],
+    ) -> SchedulingContext:
+        self.now += DEFAULT_ACTION_TIMEOUT_SECONDS * 1000 + 1
+        result = FSM(context, self.current_zone, self.now, self.options).on_tick()
+
+        if result.context is None:
+            self.fail("context expected")
+
+        context = result.context
+        self.assertEqual(context.state.step, step)
+        self.assertEqual(context.state.operation, operation)
+        self.assertEqual(type(result.actions.pop()), action_type)
         return context

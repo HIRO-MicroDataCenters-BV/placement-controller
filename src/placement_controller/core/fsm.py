@@ -39,13 +39,6 @@ from placement_controller.membership.types import PlacementZone
 #       - bid zones
 #       - drop the worst
 
-# TODO: spec update partial schedule
-#   - upscale:
-#       - bid zones
-#       - add the best
-#   - downscale:
-#       - drop the worst
-
 # TODO: zone failure (membership change) and convergence
 #   - failure
 #       - upscale
@@ -83,46 +76,21 @@ class FSM:
         self.options = options
 
     def on_tick(self) -> NextStateResult:
-        # if state does not exists treat it as application update
-        # check managed unmanaged
+        # unmanaged state should never expire, therefore we just ignore it
+        if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):
+            return NextStateResult()
 
+        # start over if pending is expired (optimization flow)
+        if self.ctx.state.is_expired_state(SchedulingStep.PENDING, self.timestamp):
+            application = self.ctx.application
+            if application:
+                return self.on_placement_action(application)
+
+        # if any other step is expired retry
         if self.ctx.state.is_expired(self.timestamp):
             return self.retry("Action timeout.")
+
         return NextStateResult()
-
-    def determine_operation(self, application: AnyApplication) -> FSMOperation:
-        desired_replica = application.get_desired_replica()
-        current_placement_zones = set(application.get_placement_zones())
-        available_zones = {zone.id for zone in self.ctx.available_zones}
-
-        current_active_zones = set(current_placement_zones)
-        unavailable_zones = current_placement_zones - available_zones
-        active_zones = current_active_zones - unavailable_zones
-
-        # underprovisioned
-        if desired_replica > len(active_zones):
-            # check the posibility of upscaling
-            if len(available_zones) > len(active_zones):
-                return FSMOperation(
-                    direction=ScaleDirection.UPSCALE,
-                    required_replica=desired_replica,
-                    current_zones=current_placement_zones,
-                    available_zones=available_zones,
-                )
-        # overprovisioned
-        elif desired_replica < len(active_zones):
-            return FSMOperation(
-                direction=ScaleDirection.DOWNSCALE,
-                required_replica=desired_replica,
-                current_zones=current_placement_zones,
-                available_zones=available_zones,
-            )
-        return FSMOperation(
-            direction=ScaleDirection.NONE,
-            required_replica=desired_replica,
-            current_zones=current_placement_zones,
-            available_zones=available_zones,
-        )
 
     def on_update(self, application: AnyApplication) -> NextStateResult:
         placement_strategy = application.get_placement_strategy()
@@ -150,10 +118,11 @@ class FSM:
             next_context = self.ctx.to_next(SchedulingStep.UNMANAGED, self.timestamp, msg)
             return NextStateResult(context=next_context)
 
-        if global_state == GlobalState.PlacementGlobalState:
-            return self.on_placement_action(application)
-        elif global_state == GlobalState.FailureGlobalState:
-            return self.on_global_failure(application)
+        if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
+            if global_state == GlobalState.PlacementGlobalState:
+                return self.on_placement_action(application)
+            elif global_state == GlobalState.FailureGlobalState:
+                return self.on_global_failure(application)
 
         next_context = self.ctx.with_app(application, self.timestamp)
         return NextStateResult(context=next_context)
@@ -334,12 +303,6 @@ class FSM:
                     "Application is not set in context. Invariant failure. Programmer mistake!"
                 )
 
-            # in the end we check if we should start operation again
-            # operation = self.determine_operation(application)
-            # if operation.direction != ScaleDirection.NONE:
-            #     self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
-            #     return self.new_get_spec(application)
-
             expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
             next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
             msg = "Placement done."
@@ -352,7 +315,8 @@ class FSM:
     def retry(self, msg: str) -> NextStateResult:
         if not self.ctx.is_attempts_exhausted():
             next_context = self.ctx.retry(self.timestamp, msg + "Retrying...")
-            return NextStateResult(context=next_context)
+            actions = list(self.ctx.inprogress_actions.values())
+            return NextStateResult(context=next_context, actions=actions)
         else:
             return self.placement_failure(msg + "All attempts exhausted.")
 
@@ -378,3 +342,37 @@ class FSM:
                 return self.new_get_spec(application)
 
         return NextStateResult(context=self.ctx)
+
+    def determine_operation(self, application: AnyApplication) -> FSMOperation:
+        desired_replica = application.get_desired_replica()
+        current_placement_zones = set(application.get_placement_zones())
+        available_zones = {zone.id for zone in self.ctx.available_zones}
+
+        current_active_zones = set(current_placement_zones)
+        unavailable_zones = current_placement_zones - available_zones
+        active_zones = current_active_zones - unavailable_zones
+
+        # underprovisioned
+        if desired_replica > len(active_zones):
+            # check the posibility of upscaling
+            if len(available_zones) > len(active_zones):
+                return FSMOperation(
+                    direction=ScaleDirection.UPSCALE,
+                    required_replica=desired_replica,
+                    current_zones=current_placement_zones,
+                    available_zones=available_zones,
+                )
+        # overprovisioned
+        elif desired_replica < len(active_zones):
+            return FSMOperation(
+                direction=ScaleDirection.DOWNSCALE,
+                required_replica=desired_replica,
+                current_zones=current_placement_zones,
+                available_zones=available_zones,
+            )
+        return FSMOperation(
+            direction=ScaleDirection.NONE,
+            required_replica=desired_replica,
+            current_zones=current_placement_zones,
+            available_zones=available_zones,
+        )

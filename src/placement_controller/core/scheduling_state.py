@@ -57,7 +57,10 @@ class SchedulingState:
         return SchedulingState(step, now_timestamp + DEFAULT_STEP_EXPIRATION_SECONDS * 1000, self.operation)
 
     def is_expired(self, now_timestamp: int) -> bool:
-        return self.expires_at > now_timestamp
+        return self.expires_at < now_timestamp
+
+    def is_expired_state(self, step: SchedulingStep, now_timestamp: int) -> bool:
+        return self.step == step and self.expires_at > now_timestamp
 
     def is_valid_at(self, step: SchedulingStep, now_timestamp: int) -> bool:
         return self.step == step and now_timestamp < self.expires_at

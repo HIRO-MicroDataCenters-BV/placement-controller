@@ -129,8 +129,37 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         # PENDING
         self.assert_placements_done(context)
 
-    # def test_downscale(self) -> None:
-    #     pass
+    def test_downscale(self) -> None:
+        self.application = AnyApplication(
+            self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone1", ["zone1", "zone2"])
+        )
+        operation = FSMOperation(
+            direction=ScaleDirection.DOWNSCALE,
+            required_replica=1,
+            current_zones={"zone1", "zone2"},
+            available_zones={"zone1", "zone2"},
+        )
+
+        # UNMANAGED state by default
+        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+
+        # PENDING and FETCH_APPLICATION_SPEC
+        context = self.assert_fetch_application_spec(context, operation)
+
+        # BID_COLLECTION
+        context = self.assert_get_spec_to_bid_collection(context, operation)
+
+        # DECISION
+        context = self.assert_bid_collection_to_decision(
+            context, operation, {"zone1": self.response1, "zone2": self.response2}
+        )
+
+        # SET_PLACEMENT
+        context = self.assert_decision_to_placement(context, operation, [PlacementZone(id="zone1")])
+
+        # PENDING
+        self.assert_placements_done(context)
 
     # def test_action_retries(self) -> None:
     #     # TODO tests with retries

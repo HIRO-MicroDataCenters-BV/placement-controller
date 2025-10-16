@@ -72,6 +72,7 @@ class FSM:
     def __init__(
         self,
         ctx: SchedulingContext,
+        # TODO: current zone can be in the context
         current_zone: str,
         timestamp: int,
         options: FSMOptions,

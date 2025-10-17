@@ -143,6 +143,12 @@ class SchedulingContext:
         del context.inprogress_actions[action_id]
         return context
 
+    def with_placements_done(self, action_id: ActionId, timestamp: int, msg: str) -> "SchedulingContext":
+        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        context.retry_attempt = 0
+        del context.inprogress_actions[action_id]
+        return context
+
     def is_attempts_exhausted(self) -> bool:
         return self.retry_attempt >= DEFAULT_MAX_ACTION_ATTEMPTS
 

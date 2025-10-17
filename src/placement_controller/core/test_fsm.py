@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Optional, Type
 
+import copy
 import unittest
 from decimal import Decimal
 
@@ -281,8 +282,46 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
     # def test_unmanaged(self) -> None:
     #     pass
 
-    # def test_update_during_operation(self) -> None:
-    #     pass
+    def test_update_during_operation(self) -> None:
+        self.application = AnyApplication(
+            self.make_anyapp(self.name.name, 2) | self.make_anyapp_status("Placement", "zone1", ["zone1"])
+        )
+        operation = FSMOperation(
+            direction=ScaleDirection.UPSCALE,
+            required_replica=2,
+            current_zones={"zone1"},
+            available_zones={"zone1", "zone2"},
+        )
+
+        # UNMANAGED state by default
+        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+
+        # PENDING and FETCH_APPLICATION_SPEC
+        context = self.assert_fetch_application_spec(context, operation)
+        self.assert_application_update(context, SchedulingStep.FETCH_APPLICATION_SPEC, operation)
+
+        # BID_COLLECTION
+        context = self.assert_get_spec_to_bid_collection(context, operation, 60000)
+        self.assert_application_update(context, SchedulingStep.BID_COLLECTION, operation)
+
+        # DECISION
+        context = self.assert_bid_collection_to_decision(
+            context, operation, {"zone1": self.response1, "zone2": self.response2}, 60000
+        )
+        self.assert_application_update(context, SchedulingStep.DECISION, operation)
+
+        # SET_PLACEMENT
+        context = self.assert_decision_to_placement(
+            context, operation, [PlacementZone(id="zone1"), PlacementZone(id="zone2")], 60000
+        )
+        self.assert_application_update(context, SchedulingStep.SET_PLACEMENT, operation)
+
+        # PENDING
+        context = self.assert_placements_done(context, 10000)
+
+        operation.required_replica = 3
+        self.assert_application_update(context, SchedulingStep.FETCH_APPLICATION_SPEC, operation)
 
     def assert_fetch_application_spec(
         self,
@@ -433,4 +472,30 @@ class FSMTest(unittest.TestCase, ResourceTestFixture):
         self.assertEqual(context.state.step, step)
         self.assertEqual(context.state.operation, operation)
         self.assertEqual(type(result.actions.pop()), action_type)
+        return context
+
+    def assert_application_update(
+        self,
+        context: SchedulingContext,
+        step: SchedulingStep,
+        operation: Optional[FSMOperation],
+    ) -> SchedulingContext:
+        if context.application is None:
+            self.fail("application expected")
+
+        updated_app = copy.deepcopy(context.application)
+        updated_app.object["spec"]["zones"] += 1
+
+        result = FSM(context, self.current_zone, self.now, self.options).on_update(updated_app)
+
+        if result.context is None:
+            self.fail("context expected")
+        context = result.context
+
+        if context.application is None:
+            self.fail("application expected")
+
+        self.assertEqual(context.application.object, updated_app.object)
+        self.assertEqual(context.state.step, step)
+        self.assertEqual(context.state.operation, operation)
         return context

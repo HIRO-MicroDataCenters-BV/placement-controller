@@ -77,6 +77,7 @@ class FSM:
 
     def on_tick(self) -> NextStateResult:
         # unmanaged state should never expire, therefore we just ignore it
+
         if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):
             return NextStateResult()
 
@@ -128,17 +129,14 @@ class FSM:
         return NextStateResult(context=next_context)
 
     def on_placement_action(self, application: AnyApplication) -> NextStateResult:
-        if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
-            # no action is progress
-            if self.ctx.inprogress_actions_count() == 0:
-                operation = self.determine_operation(application)
-                if operation.direction != ScaleDirection.NONE:
+        # no action is progress
+        if self.ctx.inprogress_actions_count() == 0:
+            operation = self.determine_operation(application)
+            if operation.direction != ScaleDirection.NONE:
 
-                    self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
-                    return self.new_get_spec(application)
-
-        next_context = self.ctx.with_app(application, self.timestamp)
-        return NextStateResult(context=next_context)
+                self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
+                return self.new_get_spec(application)
+        return NextStateResult()
 
     def on_global_failure(self, application: AnyApplication) -> NextStateResult:
         # not implemented yet, skipping for now
@@ -303,10 +301,13 @@ class FSM:
                     "Application is not set in context. Invariant failure. Programmer mistake!"
                 )
 
+            self.ctx = self.ctx.with_placements_done(action.action_id, self.timestamp, "Placements done.")
+
             expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
+            print("expires_at ", expires_at)
             next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
             msg = "Placement done."
-            next_context = self.ctx.to_next_with_app(next_state, None, self.timestamp, msg)
+            next_context = self.ctx.to_next_with_app(next_state, self.ctx.application, self.timestamp, msg)
             return NextStateResult(context=next_context)
         else:
             error: ErrorResponse = result.result
@@ -324,6 +325,7 @@ class FSM:
         expires_at = self.timestamp + self.options.reschedule_failure_delay_seconds * 1000
         next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
         next_context = self.ctx.to_next_with_app(next_state, None, self.timestamp, msg)
+        next_context.inprogress_actions = dict()
         return NextStateResult(context=next_context)
 
     def on_membership_change(self, available_zones: List[PlacementZone]) -> NextStateResult:

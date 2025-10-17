@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Set
 
+from loguru import logger
+
 from placement_controller.api.model import ApplicationState, SchedulingEntry
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
@@ -57,7 +59,7 @@ class SchedulingQueue:
 
     def on_application_update(self, application: AnyApplication, timestamp: int) -> List[Action[ActionResult]]:
         name = application.get_namespaced_name()
-        context = self.get_context(name, timestamp)
+        context = self.get_or_create_context(name, timestamp, application)
         next_state = self.new_fsm(context, timestamp).on_update(application)
         self.apply_next_state(name, next_state)
         return next_state.actions
@@ -69,10 +71,14 @@ class SchedulingQueue:
 
     def on_action_result(self, result: ActionResult, timestamp: int) -> List[Action[ActionResult]]:
         name = result.get_application_name()
-        context = self.get_context(name, timestamp)
-        next_state = self.new_fsm(context, timestamp).on_action_result(result)
-        self.apply_next_state(name, next_state)
-        return next_state.actions
+        context = self.get_context(name)
+        if context:
+            next_state = self.new_fsm(context, timestamp).on_action_result(result)
+            self.apply_next_state(name, next_state)
+            return next_state.actions
+        else:
+            logger.info(f"{name}: no context found while handling action result {type(result).__name__}. Ignoring.")
+            return []
 
     def new_fsm(self, context: SchedulingContext, timestamp: int) -> FSM:
         options = FSMOptions(
@@ -81,11 +87,19 @@ class SchedulingQueue:
         )
         return FSM(context, self.current_zone, timestamp, options)
 
-    def get_context(self, name: NamespacedName, timestamp: int) -> SchedulingContext:
+    def get_or_create_context(
+        self,
+        name: NamespacedName,
+        timestamp: int,
+        application: AnyApplication,
+    ) -> SchedulingContext:
         if name not in self.contexts:
-            self.contexts[name] = SchedulingContext.new(timestamp, name, list(self.zones))
+            self.contexts[name] = SchedulingContext.new(application, timestamp, name, list(self.zones))
 
         return self.contexts[name]
+
+    def get_context(self, name: NamespacedName) -> Optional[SchedulingContext]:
+        return self.contexts.get(name)
 
     def apply_next_state(self, name: NamespacedName, next_state: NextStateResult) -> None:
         if next_state.remove_and_drop_context:

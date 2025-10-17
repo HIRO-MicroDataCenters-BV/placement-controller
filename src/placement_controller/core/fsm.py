@@ -84,8 +84,7 @@ class FSM:
         # start over if pending is expired (optimization flow)
         if self.ctx.state.is_expired_state(SchedulingStep.PENDING, self.timestamp):
             application = self.ctx.application
-            if application:
-                return self.on_placement_action(application)
+            return self.on_placement_action(application)
 
         # if any other step is expired retry
         if self.ctx.state.is_expired(self.timestamp):
@@ -134,8 +133,8 @@ class FSM:
         if self.ctx.inprogress_actions_count() == 0:
             operation = self.determine_operation(application)
             if operation.direction != ScaleDirection.NONE:
-
-                self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
+                self.ctx = self.ctx.update_application(application)
+                self.ctx = self.ctx.start_operation(operation, self.timestamp)
                 return self.new_get_spec(application)
         return NextStateResult()
 
@@ -223,11 +222,6 @@ class FSM:
             return self.placement_failure("Failure while receiving bids. Action is not found. ")
 
         if result.is_success():
-            application = self.ctx.application
-            if not application:
-                return self.placement_failure(
-                    "Application is not set in context. Invariant failure. Programmer mistake!"
-                )
             self.ctx = self.ctx.with_bid_responses(
                 action.action_id,
                 result.response,
@@ -261,11 +255,6 @@ class FSM:
             return self.placement_failure("Failure while making placements decision. Action is not found. ")
 
         if isinstance(result.result, list):
-            application = self.ctx.application
-            if not application:
-                return self.placement_failure(
-                    "Application is not set in context. Invariant failure. Programmer mistake!"
-                )
             self.ctx = self.ctx.with_placement_decision(
                 action.action_id,
                 result.result,
@@ -296,12 +285,6 @@ class FSM:
             return self.placement_failure("Failure while setting placements. Action is not found. ")
 
         if isinstance(result.result, bool):
-            application = self.ctx.application
-            if not application:
-                return self.placement_failure(
-                    "Application is not set in context. Invariant failure. Programmer mistake!"
-                )
-
             self.ctx = self.ctx.with_placements_done(action.action_id, self.timestamp, "Placements done.")
 
             expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
@@ -338,11 +321,10 @@ class FSM:
 
         # check if zone is failed
         application = self.ctx.application
-        if application is not None:
-            operation = self.determine_operation(application)
-            if operation.direction != ScaleDirection.NONE:
-                self.ctx = self.ctx.start_operation(operation, application, self.timestamp)
-                return self.new_get_spec(application)
+        operation = self.determine_operation(application)
+        if operation.direction != ScaleDirection.NONE:
+            self.ctx = self.ctx.start_operation(operation, self.timestamp)
+            return self.new_get_spec(application)
 
         return NextStateResult(context=self.ctx)
 

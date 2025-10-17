@@ -28,13 +28,12 @@ class SchedulingContext:
     state: SchedulingState
 
     available_zones: List[PlacementZone]
+    application: AnyApplication
+
     retry_attempt: int = field(default=0)
     trace: TraceLog = field(default_factory=TraceLog)
     msg: Optional[str] = field(default=None)
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
-
-    # TODO make application mandatory for simplicity
-    application: Optional[AnyApplication] = field(default=None)
 
     # lifecycle action arguments
     application_spec: Optional[models.ApplicationSpec] = field(default=None)
@@ -45,7 +44,12 @@ class SchedulingContext:
     previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
-    def new(timestamp: int, name: NamespacedName, available_zones: List[PlacementZone]) -> "SchedulingContext":
+    def new(
+        application: AnyApplication,
+        timestamp: int,
+        name: NamespacedName,
+        available_zones: List[PlacementZone],
+    ) -> "SchedulingContext":
         return SchedulingContext(
             name=name,
             seq_nr=0,
@@ -53,15 +57,13 @@ class SchedulingContext:
             timestamp=timestamp,
             state=SchedulingState.initial(timestamp),
             available_zones=available_zones,
+            application=application,
         )
 
-    # TODO remove application
-    def start_operation(
-        self, operation: FSMOperation, application: AnyApplication, timestamp: int
-    ) -> "SchedulingContext":
+    def start_operation(self, operation: FSMOperation, timestamp: int) -> "SchedulingContext":
         msg = f"Starting {operation.direction}. desired replica: {operation.required_replica}"
         new_state = self.state.start_operation(timestamp, operation)
-        return self.to_next_with_app(new_state, application, timestamp, msg)
+        return self.to_next_with_app(new_state, self.application, timestamp, msg)
 
     def to_next(self, step: SchedulingStep, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
         new_state = self.state.to(step, timestamp)
@@ -88,7 +90,7 @@ class SchedulingContext:
             retry_attempt=self.retry_attempt,
             msg=msg,
             inprogress_actions=copy.deepcopy(self.inprogress_actions),
-            application=copy.deepcopy(application),
+            application=copy.deepcopy(application) if application else self.application,
             application_spec=copy.deepcopy(self.application_spec),
             bid_responses=copy.deepcopy(self.bid_responses),
             decision=copy.deepcopy(self.decision),

@@ -23,7 +23,9 @@ class FSMScaleTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # PENDING and FETCH_APPLICATION_SPEC
@@ -55,7 +57,9 @@ class FSMScaleTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # PENDING and FETCH_APPLICATION_SPEC
@@ -89,7 +93,9 @@ class FSMScaleTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # PENDING and FETCH_APPLICATION_SPEC
@@ -121,7 +127,9 @@ class FSMScaleTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone2"), PlacementZone(id="zone3")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone2"), PlacementZone(id="zone3")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # PENDING and FETCH_APPLICATION_SPEC
@@ -155,7 +163,9 @@ class FSMScaleTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # PENDING and FETCH_APPLICATION_SPEC

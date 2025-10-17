@@ -28,7 +28,9 @@ class FSMFailureTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # PENDING and FETCH_APPLICATION_SPEC
@@ -61,7 +63,9 @@ class FSMFailureTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # Application register
@@ -71,7 +75,7 @@ class FSMFailureTest(FSMTestBase):
         context = result.context
 
         self.assertEqual(context.state.step, SchedulingStep.UNMANAGED)
-        self.assertEqual(context.application.object, self.application.object)  # type: ignore
+        self.assertEqual(context.application.object, self.application.object)
 
         # application update to managed
 
@@ -85,7 +89,7 @@ class FSMFailureTest(FSMTestBase):
 
         # starting placement lifecycle
         self.assertEqual(context.state.step, SchedulingStep.FETCH_APPLICATION_SPEC)
-        self.assertEqual(context.application.object, self.application.object)  # type: ignore
+        self.assertEqual(context.application.object, self.application.object)
 
     def test_update_during_operation(self) -> None:
         self.application = AnyApplication(
@@ -99,7 +103,9 @@ class FSMFailureTest(FSMTestBase):
         )
 
         # UNMANAGED state by default
-        context = SchedulingContext.new(self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # PENDING and FETCH_APPLICATION_SPEC

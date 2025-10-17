@@ -109,7 +109,8 @@ class FSM:
                 self.ctx = self.ctx.to_next(SchedulingStep.PENDING, self.timestamp, msg)
             else:
                 # remaining unmanaged if zones are not
-                return NextStateResult()
+                next_context = self.ctx.update_application(application)
+                return NextStateResult(context=next_context)
 
         # switch to unmanaged state
         if not is_owner_current_zone or not is_global_placement:
@@ -125,7 +126,7 @@ class FSM:
             elif global_state == GlobalState.FailureGlobalState:
                 return self.on_global_failure(application)
 
-        next_context = self.ctx.with_app(application, self.timestamp)
+        next_context = self.ctx.update_application(application)
         return NextStateResult(context=next_context)
 
     def on_placement_action(self, application: AnyApplication) -> NextStateResult:
@@ -141,7 +142,7 @@ class FSM:
     def on_global_failure(self, application: AnyApplication) -> NextStateResult:
         # not implemented yet, skipping for now
         # in case of failure put in a different zone
-        next_context = self.ctx.with_app(application, self.timestamp)
+        next_context = self.ctx.update_application(application)
         return NextStateResult(context=next_context)
 
     def on_action_result(self, result: ActionResult) -> NextStateResult:

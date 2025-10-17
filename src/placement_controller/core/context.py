@@ -67,9 +67,6 @@ class SchedulingContext:
         new_state = self.state.to(step, timestamp)
         return self.to_next_with_app(new_state, self.application, timestamp, msg)
 
-    def with_app(self, application: AnyApplication, timestamp: int) -> "SchedulingContext":
-        return self.to_next_with_app(self.state, application, timestamp, None)
-
     def retry(self, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
         retry_state = self.state.to(self.state.step, timestamp)
         context = self.to_next_with_app(retry_state, self.application, timestamp, msg)
@@ -98,6 +95,10 @@ class SchedulingContext:
             previous=self,
             trace=self.trace,
         )
+
+    def update_application(self, application: AnyApplication) -> "SchedulingContext":
+        self.application = application
+        return self
 
     def with_action(self, action: Action[ActionResult]) -> "SchedulingContext":
         self.inprogress_actions[action.action_id] = action

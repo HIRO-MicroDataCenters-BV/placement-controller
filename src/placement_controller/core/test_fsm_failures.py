@@ -54,9 +54,6 @@ class FSMFailureTest(FSMTestBase):
         # PENDING
         self.assert_placements_done(context, 250004)
 
-    def test_action_retries_and_failures(self) -> None:
-        pass
-
     def test_unmanaged_managed(self) -> None:
         self.application = AnyApplication(
             self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone2", ["zone2"])

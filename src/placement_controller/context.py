@@ -53,6 +53,7 @@ class Context:
             application_controller_client=app_client,
             zone_api_factory=zone_api_factory,
             kube_client=kube_client,
+            clock=clock,
         )
 
         self.applications = Applications(clock, self.executor_context, kube_client, self.terminated, settings.placement)

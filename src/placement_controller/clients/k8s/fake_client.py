@@ -4,6 +4,8 @@ import asyncio
 import copy
 from dataclasses import dataclass
 
+from kubernetes_asyncio.client import ApiClient
+
 from placement_controller.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
 from placement_controller.clients.k8s.event import EventType, KubeEvent
 from placement_controller.core.async_queue import AsyncQueue
@@ -150,5 +152,6 @@ class FakeClient(KubeClient):
         timestamp: int,
     ) -> Optional[Dict[str, Any]]:
         event = KubeClient.new_event(gvk, name, uid, reason, action, message, event_type, timestamp)
-        event_gvk = GroupVersionKind("", "v1", event.kind)
-        return await self.patch(event_gvk, event.to_dict())
+        event_gvk = GroupVersionKind("events.k8s.io", "v1", "Event")
+        body = ApiClient().sanitize_for_serialization(event)
+        return await self.patch(event_gvk, body)

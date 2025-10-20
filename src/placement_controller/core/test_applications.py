@@ -73,6 +73,7 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
             application_controller_client=self.app_client,
             zone_api_factory=self.api_factory,
             kube_client=self.client,
+            clock=self.clock,
         )
         self.applications = Applications(self.clock, self.executor_context, self.client, self.terminated, self.settings)
         self.task = self.loop.create_task(self.applications.run())

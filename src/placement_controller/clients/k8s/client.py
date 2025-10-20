@@ -99,6 +99,8 @@ class KubeClient:
         dt = datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
         event_time = dt.isoformat(timespec="microseconds").replace("+00:00", "Z")
         return client.EventsV1Event(
+            api_version="events.k8s.io/v1",
+            kind="Event",
             metadata=client.V1ObjectMeta(name=f"{name.name}-{uuid.uuid4()}", namespace=name.namespace),
             regarding=client.V1ObjectReference(
                 api_version=f"{gvk.group}/{gvk.version}",

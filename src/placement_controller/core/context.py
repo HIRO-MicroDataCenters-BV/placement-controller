@@ -1,5 +1,6 @@
 from typing import Dict, List, Mapping, Optional, Type
 
+import copy
 from dataclasses import dataclass, field
 
 from application_client import models
@@ -7,7 +8,8 @@ from loguru import logger
 
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
-from placement_controller.core.types import SchedulingState
+from placement_controller.core.scheduling_state import FSMOperation, SchedulingState
+from placement_controller.core.types import SchedulingStep
 from placement_controller.jobs.bid_action import BidResponseOrError
 from placement_controller.jobs.types import Action, ActionId, ActionResult
 from placement_controller.membership.types import PlacementZone
@@ -24,33 +26,52 @@ class SchedulingContext:
     action_nr: int
     timestamp: int
     state: SchedulingState
-    placement_zones: List[PlacementZone]
+
+    available_zones: List[PlacementZone]
+    application: AnyApplication
+
     retry_attempt: int = field(default=0)
     trace: TraceLog = field(default_factory=TraceLog)
     msg: Optional[str] = field(default=None)
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
-    application: Optional[AnyApplication] = field(default=None)
+
+    # lifecycle action arguments
     application_spec: Optional[models.ApplicationSpec] = field(default=None)
     bid_responses: Optional[Mapping[str, BidResponseOrError]] = field(default=None)
     decision: Optional[List[PlacementZone]] = field(default=None)
+
+    # history tracking
     previous: Optional["SchedulingContext"] = field(default=None)
 
     @staticmethod
-    def new(timestamp: int, name: NamespacedName, placement_zones: List[PlacementZone]) -> "SchedulingContext":
+    def new(
+        application: AnyApplication,
+        timestamp: int,
+        name: NamespacedName,
+        available_zones: List[PlacementZone],
+    ) -> "SchedulingContext":
         return SchedulingContext(
             name=name,
             seq_nr=0,
             action_nr=0,
             timestamp=timestamp,
-            state=SchedulingState.NEW,
-            placement_zones=placement_zones,
+            state=SchedulingState.initial(timestamp),
+            available_zones=available_zones,
+            application=application,
         )
 
-    def to_next(self, state: SchedulingState, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
-        return self.to_next_with_app(state, self.application, timestamp, msg)
+    def start_operation(self, operation: FSMOperation, timestamp: int) -> "SchedulingContext":
+        msg = f"Starting {operation.direction}. desired replica: {operation.required_replica}"
+        new_state = self.state.start_operation(timestamp, operation)
+        return self.to_next_with_app(new_state, self.application, timestamp, msg)
+
+    def to_next(self, step: SchedulingStep, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
+        new_state = self.state.to(step, timestamp)
+        return self.to_next_with_app(new_state, self.application, timestamp, msg)
 
     def retry(self, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
-        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        retry_state = self.state.to(self.state.step, timestamp)
+        context = self.to_next_with_app(retry_state, self.application, timestamp, msg)
         context.retry_attempt += 1
         return context
 
@@ -65,24 +86,28 @@ class SchedulingContext:
             action_nr=self.action_nr,
             timestamp=timestamp,
             state=state,
-            placement_zones=self.placement_zones,
+            available_zones=copy.deepcopy(self.available_zones),
             retry_attempt=self.retry_attempt,
             msg=msg,
-            inprogress_actions=self.inprogress_actions,
-            application=application,
-            application_spec=self.application_spec,
-            bid_responses=self.bid_responses,
-            decision=self.decision,
+            inprogress_actions=copy.deepcopy(self.inprogress_actions),
+            application=copy.deepcopy(application) if application else self.application,
+            application_spec=copy.deepcopy(self.application_spec),
+            bid_responses=copy.deepcopy(self.bid_responses),
+            decision=copy.deepcopy(self.decision),
             previous=self,
             trace=self.trace,
         )
+
+    def update_application(self, application: AnyApplication) -> "SchedulingContext":
+        self.application = application
+        return self
 
     def with_action(self, action: Action[ActionResult]) -> "SchedulingContext":
         self.inprogress_actions[action.action_id] = action
         return self
 
-    def with_placement_zones(self, placement_zones: List[PlacementZone]) -> "SchedulingContext":
-        self.placement_zones = placement_zones
+    def with_available_zones(self, available_zones: List[PlacementZone]) -> "SchedulingContext":
+        self.available_zones = available_zones
         return self
 
     def get_action_by_id(self, action_id: ActionId) -> Optional[Action[ActionResult]]:
@@ -99,6 +124,7 @@ class SchedulingContext:
     ) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)
         context.application_spec = application_spec
+        context.retry_attempt = 0
         del context.inprogress_actions[action_id]
         return context
 
@@ -107,6 +133,7 @@ class SchedulingContext:
     ) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)
         context.bid_responses = bid_responses
+        context.retry_attempt = 0
         del context.inprogress_actions[action_id]
         return context
 
@@ -115,6 +142,13 @@ class SchedulingContext:
     ) -> "SchedulingContext":
         context = self.to_next_with_app(self.state, self.application, timestamp, msg)
         context.decision = decision
+        context.retry_attempt = 0
+        del context.inprogress_actions[action_id]
+        return context
+
+    def with_placements_done(self, action_id: ActionId, timestamp: int, msg: str) -> "SchedulingContext":
+        context = self.to_next_with_app(self.state, self.application, timestamp, msg)
+        context.retry_attempt = 0
         del context.inprogress_actions[action_id]
         return context
 

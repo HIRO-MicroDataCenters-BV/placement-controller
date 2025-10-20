@@ -1,10 +1,14 @@
 from typing import Dict, List, Optional, Set
 
+from loguru import logger
+
 from placement_controller.api.model import ApplicationState, SchedulingEntry
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.context import SchedulingContext
-from placement_controller.core.fsm import FSM
+from placement_controller.core.fsm import FSM, FSMOptions
+from placement_controller.core.next_state_result import NextStateResult
+from placement_controller.core.scheduling_state import DEFAULT_FAILURE_DELAY_SECONDS, DEFAULT_RESCHEDULE_DELAY_SECONDS
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import Membership, PlacementZone
 from placement_controller.util.clock import Clock
@@ -22,15 +26,18 @@ class SchedulingQueue:
         self.clock = clock
         self.current_zone = current_zone
 
+    def load_state(self, applications: List[AnyApplication]) -> None:
+        # TODO load application state from anyapplication zone conditions
+        pass
+
     def on_tick(self, timestamp: int) -> List[Action[ActionResult]]:
         actions = []
         for name in self.contexts.keys():
             context = self.contexts[name]
-            next_state = FSM(context, self.current_zone, timestamp).on_tick()
-            if next_state.remove_and_drop_context:
-                del self.contexts[name]
-            if next_state.context:
-                self.contexts[name] = next_state.context
+            next_state = self.new_fsm(context, timestamp).on_tick()
+
+            self.apply_next_state(name, next_state)
+
             if next_state.actions:
                 actions.extend(next_state.actions)
 
@@ -42,21 +49,19 @@ class SchedulingQueue:
         actions = []
         for name in self.contexts.keys():
             context = self.contexts[name]
-            next_state = FSM(context, self.current_zone, timestamp).on_membership_change(list(self.zones))
-            if next_state.remove_and_drop_context:
-                del self.contexts[name]
-            if next_state.context:
-                self.contexts[name] = next_state.context
+            next_state = self.new_fsm(context, timestamp).on_membership_change(list(self.zones))
+            self.apply_next_state(name, next_state)
+
             if next_state.actions:
                 actions.extend(next_state.actions)
 
         return actions
 
     def on_application_update(self, application: AnyApplication, timestamp: int) -> List[Action[ActionResult]]:
-        context = self.get_context(application.get_namespaced_name(), timestamp)
-        next_state = FSM(context, self.current_zone, timestamp).next_state(application)
-        if next_state.context:
-            self.contexts[application.get_namespaced_name()] = next_state.context
+        name = application.get_namespaced_name()
+        context = self.get_or_create_context(name, timestamp, application)
+        next_state = self.new_fsm(context, timestamp).on_update(application)
+        self.apply_next_state(name, next_state)
         return next_state.actions
 
     def on_application_delete(self, application: AnyApplication, timestamp: int) -> List[Action[ActionResult]]:
@@ -65,19 +70,42 @@ class SchedulingQueue:
         return []
 
     def on_action_result(self, result: ActionResult, timestamp: int) -> List[Action[ActionResult]]:
-        context = self.get_context(result.get_application_name(), timestamp)
-        next_state = FSM(context, self.current_zone, timestamp).on_action_result(result)
-        if next_state.remove_and_drop_context:
-            del self.contexts[result.get_application_name()]
-        if next_state.context:
-            self.contexts[result.get_application_name()] = next_state.context
-        return next_state.actions
+        name = result.get_application_name()
+        context = self.get_context(name)
+        if context:
+            next_state = self.new_fsm(context, timestamp).on_action_result(result)
+            self.apply_next_state(name, next_state)
+            return next_state.actions
+        else:
+            logger.info(f"{name}: no context found while handling action result {type(result).__name__}. Ignoring.")
+            return []
 
-    def get_context(self, name: NamespacedName, timestamp: int) -> SchedulingContext:
+    def new_fsm(self, context: SchedulingContext, timestamp: int) -> FSM:
+        options = FSMOptions(
+            reschedule_default_delay_seconds=DEFAULT_RESCHEDULE_DELAY_SECONDS,
+            reschedule_failure_delay_seconds=DEFAULT_FAILURE_DELAY_SECONDS,
+        )
+        return FSM(context, self.current_zone, timestamp, options)
+
+    def get_or_create_context(
+        self,
+        name: NamespacedName,
+        timestamp: int,
+        application: AnyApplication,
+    ) -> SchedulingContext:
         if name not in self.contexts:
-            self.contexts[name] = SchedulingContext.new(timestamp, name, list(self.zones))
+            self.contexts[name] = SchedulingContext.new(application, timestamp, name, list(self.zones))
 
         return self.contexts[name]
+
+    def get_context(self, name: NamespacedName) -> Optional[SchedulingContext]:
+        return self.contexts.get(name)
+
+    def apply_next_state(self, name: NamespacedName, next_state: NextStateResult) -> None:
+        if next_state.remove_and_drop_context:
+            del self.contexts[name]
+        if next_state.context:
+            self.contexts[name] = next_state.context
 
     def get_scheduling_states(self) -> List[ApplicationState]:
         results = []

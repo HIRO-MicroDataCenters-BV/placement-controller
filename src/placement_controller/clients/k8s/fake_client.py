@@ -39,10 +39,32 @@ class FakeClient(KubeClient):
         self, gvk: GroupVersionKind, namespace: Optional[str], version_since: int, is_terminated: asyncio.Event
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         queue = AsyncQueue[KubeEvent]()
+
         subscription = Subscription(gvk=gvk, queue=queue, namespace=namespace)
         self.subscriber_ids += 1
+
+        self.send_initial_snapshot(subscription, version_since)
         self.subscriptions[self.subscriber_ids] = subscription
+
         return self.subscriber_ids, queue
+
+    def send_initial_snapshot(self, subscription: Subscription, version_since: int) -> None:
+        initial_snapshot = []
+        max_version = 0
+        namespaced_objects = self.objects.get(subscription.gvk) or {}
+        for object in namespaced_objects.values():
+            object_gvk = GroupVersionKind.from_object(object)
+            object_namespace = object["metadata"].get("namespace")
+            version = int(object["metadata"].get("resourceVersion") or "0")
+
+            is_gvk_match = subscription.gvk == object_gvk
+            is_namespace_match = subscription.namespace == object_namespace or subscription.namespace is None
+            is_version_since = version_since <= version
+            if is_namespace_match and is_gvk_match and is_version_since:
+                initial_snapshot.append(object)
+                max_version = max(max_version, version)
+        event = KubeEvent(event=EventType.SNAPSHOT, version=max_version, object=initial_snapshot)
+        subscription.queue.put_nowait(event)
 
     @override
     def stop_watch(self, subscriber_id: SubscriberId) -> None:
@@ -130,6 +152,8 @@ class FakeClient(KubeClient):
 
     def send_event(self, event: KubeEvent) -> None:
         self.events.append(event)
+        if isinstance(event.object, list) or event.event == EventType.SNAPSHOT:
+            raise Exception("Invalid use of send_event. Cannot send snapshot event via send event.")
 
         gvk = GroupVersionKind.from_event(event)
         namespace = event.object["metadata"].get("namespace") or "default"

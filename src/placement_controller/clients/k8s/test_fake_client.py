@@ -58,6 +58,10 @@ class FakeClientTest(AsyncTestFixture, ResourceTestFixture):
     def test_lifecycle(self):
         sub_id, queue = self.client.watch(self.gvk, "test", 0, asyncio.Event())
 
+        actual_event = self.loop.run_until_complete(queue.get())
+        expected_event = KubeEvent(event=EventType.SNAPSHOT, version=0, object=[])
+        self.assertEqual(actual_event, expected_event)
+
         # create
         object = self.make_object()
         self.loop.run_until_complete(self.client.patch(self.gvk, object))

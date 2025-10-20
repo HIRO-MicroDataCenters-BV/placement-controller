@@ -80,23 +80,41 @@ class Applications:
         while not self.is_terminated.is_set():
             event = await queue.get()
             try:
-                logger.info(f"incoming event {event.event}")
+                logger.info(f"{AnyApplication.GVK.to_string()} incoming event {event.event}")
                 await self.handle_event(event)
             except Exception as e:
-                logger.error(f"error while handling event {e}")
+                logger.error(f"{AnyApplication.GVK.to_string()} error while handling event {e}")
         self.client.stop_watch(subscriber_id)
 
     async def handle_event(self, event: KubeEvent) -> None:
-        if event.event == EventType.ADDED or event.event == EventType.MODIFIED:
+        if event.event == EventType.SNAPSHOT:
+            if not isinstance(event.object, list):
+                logger.warning(f"{AnyApplication.GVK.to_string()} Skipping Snapshot event. List expected.")
+                return
+
+            applications = [AnyApplication(event_object) for event_object in event.object]
+            self.scheduling_queue.load_state(applications)
+
+        elif event.event == EventType.ADDED or event.event == EventType.MODIFIED:
+            if not isinstance(event.object, dict):
+                logger.warning(f"{AnyApplication.GVK.to_string()} Skipping Update event. Dict expected.")
+                return
+
             application = AnyApplication(event.object)
             action_result = self.scheduling_queue.on_application_update(application, self.clock.now_seconds())
             self.handle_actions(action_result)
+
         elif event.event == EventType.DELETED:
+            if not isinstance(event.object, dict):
+                logger.warning(f"{AnyApplication.GVK.to_string()} Skipping Update event. Dict expected.")
+                return
+
             application = AnyApplication(event.object)
             action_result = self.scheduling_queue.on_application_delete(application, self.clock.now_seconds())
             self.handle_actions(action_result)
+
         else:
-            raise NotImplementedError(f"Unknown event type {event.event}")
+            raise NotImplementedError(f"{AnyApplication.GVK.to_string()} Unknown event type {event.event}")
 
     async def run_result_listener(self) -> None:
         logger.info("JobExecutor result listener started.")

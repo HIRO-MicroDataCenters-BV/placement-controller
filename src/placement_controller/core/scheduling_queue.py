@@ -19,16 +19,24 @@ class SchedulingQueue:
     contexts: Dict[NamespacedName, SchedulingContext]
     zones: Set[PlacementZone]
     current_zone: str
+    initialized: bool
 
     def __init__(self, clock: Clock, current_zone: str):
         self.contexts = dict()
         self.zones = set()
         self.clock = clock
         self.current_zone = current_zone
+        self.initialized = False
 
     def load_state(self, applications: List[AnyApplication]) -> None:
-        # TODO load application state from anyapplication zone conditions
-        pass
+        if self.initialized:
+            return
+        timestamp = self.clock.now_seconds()
+        for application in applications:
+            name = application.get_namespaced_name()
+            context = self.get_or_create_context(name, timestamp, application)
+            self.contexts[name] = context
+        self.initialized = True
 
     def on_tick(self, timestamp: int) -> List[Action[ActionResult]]:
         actions = []

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from application_client.client import Client
 
 from placement_controller.clients.k8s.client import KubeClient, NamespacedName
+from placement_controller.util.clock import Clock
 from placement_controller.zone.types import ZoneApiFactory
 
 ActionId = str
@@ -35,6 +36,7 @@ class ExecutorContext:
     application_controller_client: Client
     zone_api_factory: ZoneApiFactory
     kube_client: KubeClient
+    clock: Clock
 
 
 T = TypeVar("T", bound="ActionResult")

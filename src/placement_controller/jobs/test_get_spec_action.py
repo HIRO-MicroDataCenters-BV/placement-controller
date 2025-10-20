@@ -1,5 +1,3 @@
-import asyncio
-
 from application_client import models
 from application_client.client import Client
 
@@ -10,14 +8,14 @@ from placement_controller.jobs.fake_application_controller import FakeApplicatio
 from placement_controller.jobs.get_spec_action import GetSpecAction
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.types import ZoneApiFactory
 
 
 class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
 
-    terminated: asyncio.Event
-    loop: asyncio.AbstractEventLoop
     server: FakeApplicationController
+    clock: MockClock
 
     name: NamespacedName
     client: Client
@@ -26,6 +24,7 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
 
     def setUp(self) -> None:
         super().setUp()
+        self.clock = MockClock()
         self.name = NamespacedName(name="test", namespace="testns")
         self.spec = models.ApplicationSpec(
             id=models.ResourceId(name="test", namespace="test"),
@@ -41,6 +40,7 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
             application_controller_client=self.client,
             zone_api_factory=ZoneApiFactory(),
             kube_client=FakeClient(),
+            clock=self.clock,
         )
         self.action = GetSpecAction(self.name, "test")
         self.wait_for_condition(2, lambda: self.server.is_available())

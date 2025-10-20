@@ -6,6 +6,7 @@ from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.core.async_queue import AsyncQueue
 from placement_controller.jobs.executor import JobExecutor
 from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
+from placement_controller.util.mock_clock import MockClock
 
 
 class FakeActionResult(ActionResult):
@@ -38,17 +39,21 @@ class JobExecutorTest(AsyncTestFixture):
     loop: asyncio.AbstractEventLoop
 
     name: NamespacedName
+    clock: MockClock
 
     def setUp(self) -> None:
         super().setUp()
         self.actions = AsyncQueue[Action[FakeActionResult]]()
         self.results = AsyncQueue[FakeActionResult]()
+
+        self.clock = MockClock()
         self.name = NamespacedName(name="test", namespace="testns")
 
         self.executor_context = ExecutorContext(
             application_controller_client=None,  # type: ignore
             zone_api_factory=None,  # type: ignore
             kube_client=FakeClient(),
+            clock=self.clock,
         )
         self.executor = JobExecutor(self.executor_context, self.actions, self.results, self.terminated)  # type: ignore
 

@@ -1,4 +1,3 @@
-import asyncio
 import json
 from decimal import Decimal
 
@@ -26,13 +25,13 @@ from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.fake_resource_management import FakeResourceManagement
 from placement_controller.settings import PlacementSettings
+from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
 
 class BidActionTest(AsyncTestFixture, ResourceTestFixture):
 
-    terminated: asyncio.Event
-    loop: asyncio.AbstractEventLoop
+    clock: MockClock
     server1: FakePlacementController
     server2: FakePlacementController
     resource_management: FakeResourceManagement
@@ -48,6 +47,9 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
     def setUp(self) -> None:
         super().setUp()
         self.maxDiff = None
+
+        self.clock = MockClock()
+
         self.name = NamespacedName(name="test", namespace="testns")
         self.spec = ApplicationSpec(
             id=ResourceId(name="test", namespace="test"),
@@ -104,6 +106,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
             zone_api_factory=self.api_factory,
             application_controller_client=Client(base_url=""),
             kube_client=FakeClient(),
+            clock=self.clock,
         )
         self.wait_for_condition(2, lambda: self.server1.is_available() and self.server2.is_available())
 

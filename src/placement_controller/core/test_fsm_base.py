@@ -96,7 +96,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
         return context
 
     def assert_get_spec_to_bid_collection(
-        self, context: SchedulingContext, operation: FSMOperation, state_ts: int
+        self, context: SchedulingContext, operation: FSMOperation, state_expiration_ts: int
     ) -> SchedulingContext:
         action = context.get_action_by_type(GetSpecAction)  # type: ignore
         if action is None:
@@ -109,7 +109,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
             self.fail("context expected")
 
         context = result.context
-        expected_state = SchedulingState(SchedulingStep.BID_COLLECTION, state_ts, operation)
+        expected_state = SchedulingState(SchedulingStep.BID_COLLECTION, state_expiration_ts, operation)
         self.assertEqual(
             context.state,
             expected_state,
@@ -126,7 +126,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
         context: SchedulingContext,
         operation: FSMOperation,
         bid_responses: Dict[str, BidResponseModel],
-        state_ts: int,
+        state_expiration_ts: int,
     ) -> SchedulingContext:
         action = context.get_action_by_type(BidAction)  # type: ignore
         if action is None:
@@ -140,7 +140,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
 
         context = result.context
 
-        expected_state = SchedulingState(SchedulingStep.DECISION, state_ts, operation)
+        expected_state = SchedulingState(SchedulingStep.DECISION, state_expiration_ts, operation)
         self.assertEqual(
             context.state,
             expected_state,
@@ -157,7 +157,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
         context: SchedulingContext,
         operation: FSMOperation,
         placements: List[PlacementZone],
-        state_ts: int,
+        state_expiration_ts: int,
     ) -> SchedulingContext:
         action = context.get_action_by_type(DecisionAction)  # type: ignore
         if action is None:
@@ -169,7 +169,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
         if result.context is None:
             self.fail("context expected")
         context = result.context
-        expected_state = SchedulingState(SchedulingStep.SET_PLACEMENT, state_ts, operation)
+        expected_state = SchedulingState(SchedulingStep.SET_PLACEMENT, state_expiration_ts, operation)
         self.assertEqual(
             context.state,
             expected_state,
@@ -182,7 +182,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
 
         return context
 
-    def assert_placements_done(self, context: SchedulingContext, state_ts: int) -> SchedulingContext:
+    def assert_placements_done(self, context: SchedulingContext, state_expiration_ts: int) -> SchedulingContext:
         action = context.get_action_by_type(SetPlacementAction)  # type: ignore
         if action is None:
             self.fail("action expected")
@@ -195,7 +195,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
 
         context = result.context
 
-        expected_state = SchedulingState.new(SchedulingStep.PENDING, state_ts)
+        expected_state = SchedulingState.new(SchedulingStep.PENDING, state_expiration_ts)
         self.assertEqual(
             context.state,
             expected_state,

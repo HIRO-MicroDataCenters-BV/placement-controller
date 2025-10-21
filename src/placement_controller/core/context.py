@@ -102,6 +102,10 @@ class SchedulingContext:
             trace=self.trace,
         )
 
+    def update_timestamp(self, expires_at: int) -> "SchedulingContext":
+        self.state.expires_at = expires_at
+        return self
+
     def update_application(self, application: AnyApplication) -> "SchedulingContext":
         self.application = application
         return self

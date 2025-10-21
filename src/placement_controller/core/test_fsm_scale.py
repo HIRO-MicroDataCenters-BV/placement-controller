@@ -2,6 +2,7 @@ import sys
 
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.context import SchedulingContext
+from placement_controller.core.fsm import FSM
 from placement_controller.core.scheduling_state import FSMOperation, ScaleDirection, SchedulingState
 from placement_controller.core.test_fsm_base import FSMTestBase
 from placement_controller.core.types import SchedulingStep
@@ -188,3 +189,68 @@ class FSMScaleTest(FSMTestBase):
 
         # PENDING
         self.assert_placements_done(context, 10000)
+
+    def test_ignore_placement_if_pending_is_not_expired(self) -> None:
+        self.application = AnyApplication(
+            self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Operational", "zone1", ["zone1"])
+        )
+
+        self.now = 0
+        # PENDING state
+        context = SchedulingContext.new(
+            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+        )
+        context.state = SchedulingState(
+            SchedulingStep.PENDING, self.options.reschedule_default_delay_seconds * 1000, None
+        )
+
+        # tick does not expire pending state
+        result = FSM(context, self.now, self.options).on_tick()
+        self.assertIsNone(result.context)
+        self.assertEqual(result.actions, [])
+
+        self.now += 5000
+        result = FSM(context, self.now, self.options).on_tick()
+        self.assertIsNone(result.context)
+        self.assertEqual(result.actions, [])
+
+        # expired pending state
+        self.now += 10001
+        result = FSM(context, self.now, self.options).on_tick()
+
+        operation = FSMOperation(
+            direction=ScaleDirection.NONE,
+            required_replica=1,
+            current_zones={"zone1"},
+            available_zones={"zone1", "zone2"},
+        )
+
+        if not result.context:
+            raise self.fail("context expected")
+        context = result.context
+        action = result.actions[0]
+
+        self.assertEqual(result.context.state, SchedulingState(SchedulingStep.FETCH_APPLICATION_SPEC, 75001, operation))
+        self.assertEqual(action.name, self.name)
+
+        # BID_COLLECTION
+        context = self.assert_get_spec_to_bid_collection(context, operation, 75001)
+
+        # DECISION
+        context = self.assert_bid_collection_to_decision(
+            context, operation, {"zone1": self.response1, "zone2": self.response2}, 75001
+        )
+
+        # SET_PLACEMENT
+        context = self.assert_decision_to_placement(
+            context, operation, [PlacementZone(id="zone1"), PlacementZone(id="zone2")], 75001
+        )
+
+        # PENDING
+        self.assert_placements_done(context, 25001)
+
+        # next tick - not expired
+        self.now += 5000
+        result = FSM(context, self.now, self.options).on_tick()
+        self.assertIsNone(result.context)
+        self.assertEqual(result.actions, [])

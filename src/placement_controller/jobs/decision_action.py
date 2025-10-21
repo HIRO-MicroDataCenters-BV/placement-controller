@@ -54,10 +54,8 @@ class DecisionAction(Action[DecisionActionResult]):
             result = self.upscale_decision(accepted_responses)
         elif self.operation.direction == ScaleDirection.DOWNSCALE:
             result = self.downscale_decision(accepted_responses)
-        else:
-            result = ErrorResponse(
-                status=500, code="APPLICATION_ERROR", msg=f"Invalid operation direction {self.operation.direction}."
-            )
+        elif self.operation.direction == ScaleDirection.NONE:
+            result = self.optimize_decision(accepted_responses)
         return DecisionActionResult(result, self.name, self.action_id)
 
     def upscale_decision(
@@ -84,7 +82,7 @@ class DecisionAction(Action[DecisionActionResult]):
 
             upscale_zones = [PlacementZone(id=response[0]) for response in chosen_responses]
             result = current_zones + upscale_zones
-            logger.info(f"{self.name.to_string()}: placements decided: {result}")
+            logger.info(f"{self.name.to_string()}: upscale placements decided: {result}")
         return result
 
     def downscale_decision(
@@ -118,6 +116,58 @@ class DecisionAction(Action[DecisionActionResult]):
             else:
                 current_zones.pop()
         result = [PlacementZone(id=zone_id) for zone_id in current_zones]
+        logger.info(f"{self.name.to_string()}: downscale placements decided: {result}")
+        return result
+
+    def optimize_decision(
+        self, responses: List[Tuple[ZoneId, BidResponseModel]]
+    ) -> Union[List[PlacementZone], ErrorResponse]:
+        result: Union[List[PlacementZone], ErrorResponse]
+        if len(responses) == 0:
+            logger.error(f"{self.name.to_string()}:  No valid and accepted bid responses for application.")
+            result = ErrorResponse(status=500, code="APPLICATION_ERROR", msg="No valid bid responses for application.")
+        else:
+            sorted_responses = sorted(
+                responses,
+                key=functools.cmp_to_key(bid_response_comparator(self.criteria_priority)),
+            )
+
+            if len(self.operation.current_zones) > len(sorted_responses):
+                logger.warning(
+                    f"{self.name.to_string()}: Current placement contains number of zones more than "
+                    + "valid bid responses. Keeping current placement."
+                )
+                result = [PlacementZone(id=zone_id) for zone_id in self.operation.current_zones]
+            else:
+                current_zones = self.operation.current_zones
+                desired_replica = self.operation.required_replica
+
+                all_zones = {response[0] for response in sorted_responses}
+
+                # if we have not received valid response we cannot compare such zone
+                # such zones remain in the list
+                new_placement_zones = [zone for zone in current_zones if zone not in all_zones]
+
+                replica = desired_replica - len(new_placement_zones)
+                new_placement_zones = []
+                for top_zone, _ in sorted_responses:
+                    if replica == 0:
+                        break
+
+                    if top_zone not in new_placement_zones:
+                        new_placement_zones.append(top_zone)
+                        replica -= 1
+                if len(new_placement_zones) < len(self.operation.current_zones):
+                    logger.warning(
+                        f"{self.name.to_string()}: Not enough new placement zones "
+                        + f"({len(new_placement_zones)}). "
+                        + f" Keeping current placement ({self.operation.current_zones})."
+                    )
+                    result = [PlacementZone(id=zone_id) for zone_id in self.operation.current_zones]
+                    logger.info(f"{self.name.to_string()}: placements remaining unchanged: {result}")
+                else:
+                    result = [PlacementZone(id=zone_id) for zone_id in new_placement_zones]
+                    logger.info(f"{self.name.to_string()}: optimal placements decided: {result}")
         return result
 
 

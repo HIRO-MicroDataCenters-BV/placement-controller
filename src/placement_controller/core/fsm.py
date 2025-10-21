@@ -57,7 +57,7 @@ class FSM:
         # start over if pending is expired (optimization flow)
         if self.ctx.state.is_expired_state(SchedulingStep.PENDING, self.timestamp):
             application = self.ctx.application
-            return self.on_placement_action(application)
+            return self.on_optimize_bids(application)
 
         # if any other step is expired retry
         if self.ctx.state.is_expired(self.timestamp):
@@ -110,6 +110,14 @@ class FSM:
                 self.ctx = self.ctx.start_operation(operation, self.timestamp)
                 return self.new_get_spec(application)
         return NextStateResult()
+
+    def on_optimize_bids(self, application: AnyApplication) -> NextStateResult:
+        operation = self.determine_operation(application)
+        if operation.direction == ScaleDirection.UPSCALE or operation.direction == ScaleDirection.DOWNSCALE:
+            return self.on_placement_action(application)
+        elif operation.direction == ScaleDirection.NONE:
+            self.ctx = self.ctx.start_operation(operation, self.timestamp)
+            return self.new_get_spec(application)
 
     def on_global_failure(self, application: AnyApplication) -> NextStateResult:
         # not implemented yet, skipping for now

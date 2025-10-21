@@ -1,3 +1,5 @@
+import sys
+
 from placement_controller.core.application import AnyApplication
 from placement_controller.core.context import SchedulingContext
 from placement_controller.core.scheduling_state import FSMOperation, ScaleDirection, SchedulingState
@@ -26,7 +28,7 @@ class FSMScaleTest(FSMTestBase):
         context = SchedulingContext.new(
             self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
         )
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
         # PENDING and FETCH_APPLICATION_SPEC
         context = self.assert_fetch_application_spec(context, operation)
@@ -60,7 +62,7 @@ class FSMScaleTest(FSMTestBase):
         context = SchedulingContext.new(
             self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
         )
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
         # PENDING and FETCH_APPLICATION_SPEC
         context = self.assert_fetch_application_spec(context, operation)
@@ -96,7 +98,7 @@ class FSMScaleTest(FSMTestBase):
         context = SchedulingContext.new(
             self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
         )
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
         # PENDING and FETCH_APPLICATION_SPEC
         context = self.assert_fetch_application_spec(context, operation)
@@ -130,7 +132,7 @@ class FSMScaleTest(FSMTestBase):
         context = SchedulingContext.new(
             self.application, self.now, self.name, "zone1", [PlacementZone(id="zone2"), PlacementZone(id="zone3")]
         )
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
         # PENDING and FETCH_APPLICATION_SPEC
         context = self.assert_fetch_application_spec(context, operation)
@@ -166,7 +168,7 @@ class FSMScaleTest(FSMTestBase):
         context = SchedulingContext.new(
             self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
         )
-        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
+        self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
         # PENDING and FETCH_APPLICATION_SPEC
         context = self.assert_fetch_application_spec(context, operation)

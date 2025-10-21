@@ -9,7 +9,14 @@ from placement_controller.clients.k8s.settings import K8SSettings
 from placement_controller.clients.placement.types import PlacementClient
 from placement_controller.context import Context
 from placement_controller.resources.resource_metrics import EstimateMethod, MetricDefinition, MetricSettings
-from placement_controller.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
+from placement_controller.settings import (
+    ApiSettings,
+    OrchestrationLibSettings,
+    PlacementSettings,
+    PrometheusSettings,
+    Settings,
+)
+from placement_controller.store.fake_decision_store import FakeDecisionStore
 from placement_controller.util.clock import Clock
 from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
@@ -26,12 +33,19 @@ class ContextTest(AsyncTestFixture):
     def setUp(self) -> None:
         super().setUp()
         self.clock = MockClock()
+        self.decision_store = FakeDecisionStore()
         self.k8s_client = FakeClient()
         self.app_client = Client(base_url="http://127.0.0.1/")
         self.settings = self.make_settings()
         self.zone_api_client = ZoneApiFactoryImpl(self.settings.placement, PlacementClient())
         self.context = Context(
-            self.clock, self.app_client, self.zone_api_client, self.k8s_client, self.settings, self.loop
+            self.clock,
+            self.app_client,
+            self.decision_store,
+            self.zone_api_client,
+            self.k8s_client,
+            self.settings,
+            self.loop,
         )
 
     def tearDown(self) -> None:
@@ -54,6 +68,10 @@ class ContextTest(AsyncTestFixture):
                 static_controller_endpoints={
                     "zone1": "fake: not used",
                 },
+            ),
+            orchestrationlib=OrchestrationLibSettings(
+                enabled=False,
+                base_url="http://127.0.0.1",
             ),
             prometheus=PrometheusSettings(endpoint_port=8080),
             metrics=MetricSettings(

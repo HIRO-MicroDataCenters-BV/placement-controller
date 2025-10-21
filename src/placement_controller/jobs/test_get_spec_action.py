@@ -8,6 +8,7 @@ from placement_controller.jobs.fake_application_controller import FakeApplicatio
 from placement_controller.jobs.get_spec_action import GetSpecAction
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.store.fake_decision_store import FakeDecisionStore
 from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.types import ZoneApiFactory
 
@@ -16,6 +17,7 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
 
     server: FakeApplicationController
     clock: MockClock
+    decision_store: FakeDecisionStore
 
     name: NamespacedName
     client: Client
@@ -25,6 +27,7 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
     def setUp(self) -> None:
         super().setUp()
         self.clock = MockClock()
+        self.decision_store = FakeDecisionStore()
         self.name = NamespacedName(name="test", namespace="testns")
         self.spec = models.ApplicationSpec(
             id=models.ResourceId(name="test", namespace="test"),
@@ -41,6 +44,7 @@ class GetSpecActionTest(AsyncTestFixture, ResourceTestFixture):
             zone_api_factory=ZoneApiFactory(),
             kube_client=FakeClient(),
             clock=self.clock,
+            decision_store=self.decision_store,
         )
         self.action = GetSpecAction(self.name, "test")
         self.wait_for_condition(2, lambda: self.server.is_available())

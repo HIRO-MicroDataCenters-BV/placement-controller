@@ -25,6 +25,7 @@ from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.fake_resource_management import FakeResourceManagement
 from placement_controller.settings import PlacementSettings
+from placement_controller.store.fake_decision_store import FakeDecisionStore
 from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
@@ -32,6 +33,7 @@ from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 class BidActionTest(AsyncTestFixture, ResourceTestFixture):
 
     clock: MockClock
+    decision_store: FakeDecisionStore
     server1: FakePlacementController
     server2: FakePlacementController
     resource_management: FakeResourceManagement
@@ -49,6 +51,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
         self.maxDiff = None
 
         self.clock = MockClock()
+        self.decision_store = FakeDecisionStore()
 
         self.name = NamespacedName(name="test", namespace="testns")
         self.spec = ApplicationSpec(
@@ -107,6 +110,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
             application_controller_client=Client(base_url=""),
             kube_client=FakeClient(),
             clock=self.clock,
+            decision_store=self.decision_store,
         )
         self.wait_for_condition(2, lambda: self.server1.is_available() and self.server2.is_available())
 

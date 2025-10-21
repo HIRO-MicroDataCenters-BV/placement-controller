@@ -8,11 +8,13 @@ from placement_controller.jobs.placement_action import SetPlacementAction
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.membership.types import PlacementZone
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.store.fake_decision_store import FakeDecisionStore
 from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.types import ZoneApiFactory
 
 
 class SetPlacementActionTest(AsyncTestFixture, ResourceTestFixture):
+    decision_store: FakeDecisionStore
     client: FakeClient
     name: NamespacedName
     action: SetPlacementAction
@@ -23,6 +25,7 @@ class SetPlacementActionTest(AsyncTestFixture, ResourceTestFixture):
     def setUp(self) -> None:
         super().setUp()
         self.clock = MockClock()
+        self.decision_store = FakeDecisionStore()
         self.client = FakeClient()
         self.name = NamespacedName(name="test", namespace="test")
 
@@ -34,6 +37,7 @@ class SetPlacementActionTest(AsyncTestFixture, ResourceTestFixture):
             zone_api_factory=ZoneApiFactory(),
             kube_client=self.client,
             clock=self.clock,
+            decision_store=self.decision_store,
         )
         self.action = SetPlacementAction(self.zones, self.name, "test")
 

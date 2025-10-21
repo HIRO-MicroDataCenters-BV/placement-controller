@@ -19,6 +19,7 @@ from placement_controller.membership.types import MeshPeer
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.fake_resource_management import FakeResourceManagement
 from placement_controller.settings import PlacementSettings
+from placement_controller.store.fake_decision_store import FakeDecisionStore
 from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
@@ -68,6 +69,7 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
 
         self.clock = MockClock()
         self.client = FakeClient()
+        self.decision_store = FakeDecisionStore()
         self.name = NamespacedName(name="test", namespace="test")
 
         self.executor_context = ExecutorContext(
@@ -75,6 +77,7 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
             zone_api_factory=self.api_factory,
             kube_client=self.client,
             clock=self.clock,
+            decision_store=self.decision_store,
         )
         self.applications = Applications(self.clock, self.executor_context, self.client, self.terminated, self.settings)
         self.task = self.loop.create_task(self.applications.run())

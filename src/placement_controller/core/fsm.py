@@ -261,7 +261,6 @@ class FSM:
             self.ctx = self.ctx.with_placements_done(action.action_id, self.timestamp, "Placements done.")
 
             expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
-            print("expires_at ", expires_at)
             next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
             msg = "Placement done."
             next_context = self.ctx.to_next_with_app(next_state, self.ctx.application, self.timestamp, msg)

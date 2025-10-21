@@ -29,7 +29,7 @@ class FSMFailureTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
@@ -61,12 +61,12 @@ class FSMFailureTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 
         # Application register
-        result = FSM(context, self.current_zone, self.now, self.options).on_update(self.application)
+        result = FSM(context, self.now, self.options).on_update(self.application)
         if result.context is None:
             self.fail("context expected")
         context = result.context
@@ -79,7 +79,7 @@ class FSMFailureTest(FSMTestBase):
         self.application.set_owner_zone("zone1")
         self.application.object["spec"]["zones"] = 2
 
-        result = FSM(context, self.current_zone, self.now, self.options).on_update(self.application)
+        result = FSM(context, self.now, self.options).on_update(self.application)
         if result.context is None:
             self.fail("context expected")
         context = result.context
@@ -101,7 +101,7 @@ class FSMFailureTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, self.now))
 

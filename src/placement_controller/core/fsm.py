@@ -36,20 +36,16 @@ class FSMOptions:
 class FSM:
     ctx: SchedulingContext
     options: FSMOptions
-    current_zone: str
     timestamp: int
 
     def __init__(
         self,
         ctx: SchedulingContext,
-        # TODO: current zone can be in the context
-        current_zone: str,
         timestamp: int,
         options: FSMOptions,
     ):
         self.ctx = ctx
         self.timestamp = timestamp
-        self.current_zone = current_zone
         self.options = options
 
     def on_tick(self) -> NextStateResult:
@@ -75,7 +71,7 @@ class FSM:
         owner_zone = application.get_owner_zone()
 
         is_global_placement = placement_strategy == PlacementStrategy.Global
-        is_owner_current_zone = owner_zone == self.current_zone
+        is_owner_current_zone = owner_zone == self.ctx.current_zone
 
         # switch to managed state
         if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):

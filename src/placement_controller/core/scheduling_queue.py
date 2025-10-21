@@ -93,7 +93,7 @@ class SchedulingQueue:
             reschedule_default_delay_seconds=DEFAULT_RESCHEDULE_DELAY_SECONDS,
             reschedule_failure_delay_seconds=DEFAULT_FAILURE_DELAY_SECONDS,
         )
-        return FSM(context, self.current_zone, timestamp, options)
+        return FSM(context, timestamp, options)
 
     def get_or_create_context(
         self,
@@ -102,7 +102,9 @@ class SchedulingQueue:
         application: AnyApplication,
     ) -> SchedulingContext:
         if name not in self.contexts:
-            self.contexts[name] = SchedulingContext.new(application, timestamp, name, list(self.zones))
+            self.contexts[name] = SchedulingContext.new(
+                application, timestamp, name, self.current_zone, list(self.zones)
+            )
 
         return self.contexts[name]
 

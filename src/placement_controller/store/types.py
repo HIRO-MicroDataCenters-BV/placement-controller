@@ -8,6 +8,7 @@ class DecisionStore:
     async def save(
         self,
         name: NamespacedName,
+        spec: str,
         placement: List[str],
         reason: str,
         trace: str,

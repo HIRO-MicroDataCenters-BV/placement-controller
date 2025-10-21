@@ -19,35 +19,12 @@ from placement_controller.jobs.placement_action import SetPlacementAction, SetPl
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import PlacementZone
 
-# TODO: ticker timeout
-#   - retry after timeout
-#       - drop context
-#       - set retry timeout
-
 # TODO: optimization bids
 #   - confirm bids periodically and change placements
 #       - bid zones
 #       - upscale and downscale
 #           - drop the worst, add the best
 #           - set retry timeout
-
-# TODO: membership change partial schedule
-#   - upscale:
-#       - bid zones
-#       - add the best
-#   - downscale:
-#       - bid zones
-#       - drop the worst
-
-# TODO: zone failure (membership change) and convergence
-#   - failure
-#       - upscale
-#           - bid zones
-#           - add the best
-#   - convergence:
-#       - downscale
-#           - bid zones
-#           - drop the worst
 
 
 @dataclass

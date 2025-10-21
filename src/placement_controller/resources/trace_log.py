@@ -1,12 +1,11 @@
 from typing import List
 
+from dataclasses import dataclass, field
 
-# TODO dataclass
+
+@dataclass
 class TraceLog:
-    data: List[str]
-
-    def __init__(self):
-        self.data = []
+    data: List[str] = field(default_factory=list)
 
     def log(self, msg: str) -> None:
         self.data.append(msg)

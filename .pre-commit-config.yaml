@@ -16,9 +16,9 @@ repos:
   rev: v6.0.0
   hooks:
   - id: trailing-whitespace
-    exclude: packages/placement-client/.*|packages/application-client/.*|.*\.md|README.md
+    exclude: packages/placement-client/.*|packages/application-client/.*|packages/orchestrationlib-client/.*|.*\.md|README.md
   - id: end-of-file-fixer
-    exclude: packages/placement-client/.*|packages/application-client/.*
+    exclude: packages/placement-client/.*|packages/application-client/.*|packages/orchestrationlib-client/.*
   - id: check-yaml
     exclude: ./charts
   - id: check-added-large-files
@@ -53,6 +53,15 @@ repos:
       name: generate application_client
       files: ^packages/application-api/openapi\.yaml
       entry: openapi-python-client generate --overwrite --path ./packages/application-api/openapi.yaml --meta=uv --output-path ./packages/application-client --config=./tools/application-client.yaml --custom-template-path=./tools/templates
+      language: system
+      pass_filenames: false
+
+- repo: local
+  hooks:
+    - id: generate_orchestrationlib_client
+      name: generate orchestrationlib_client
+      files: ^packages/orchestrationlib-api/openapi\.json
+      entry: openapi-python-client generate --overwrite --path ./packages/orchestrationlib-api/openapi.json --meta=uv --output-path ./packages/orchestrationlib-client --config=./tools/orchestrationlib-client.yaml --custom-template-path=./tools/templates
       language: system
       pass_filenames: false
 

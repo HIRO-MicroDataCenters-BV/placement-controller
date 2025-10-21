@@ -6,6 +6,8 @@ requires-python = ">=3.12.11"
 members = [
     "application-api",
     "application-client",
+    "orchestrationlib-api",
+    "orchestrationlib-client",
     "placement-api",
     "placement-client",
     "placement-controller",
@@ -754,6 +756,28 @@ wheels = [
 ]
 
 [[package]]
+name = "orchestrationlib-api"
+version = "0.1.0"
+source = { editable = "packages/orchestrationlib-api" }
+
+[[package]]
+name = "orchestrationlib-client"
+version = "1.0.0"
+source = { editable = "packages/orchestrationlib-client" }
+dependencies = [
+    { name = "attrs" },
+    { name = "httpx" },
+    { name = "python-dateutil" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "attrs", specifier = ">=22.2.0" },
+    { name = "httpx", specifier = ">=0.23.0,<0.29.0" },
+    { name = "python-dateutil", specifier = ">=2.8.0,<3" },
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 source = { registry = "https://pypi.org/simple" }
@@ -808,6 +832,8 @@ dependencies = [
     { name = "kubernetes" },
     { name = "kubernetes-asyncio" },
     { name = "loguru" },
+    { name = "orchestrationlib-api" },
+    { name = "orchestrationlib-client" },
     { name = "placement-api" },
     { name = "placement-client" },
     { name = "prometheus-async" },
@@ -844,6 +870,8 @@ requires-dist = [
     { name = "kubernetes", specifier = "==32.0.0" },
     { name = "kubernetes-asyncio", specifier = "==33.3.0" },
     { name = "loguru", specifier = "==0.7.3" },
+    { name = "orchestrationlib-api", editable = "packages/orchestrationlib-api" },
+    { name = "orchestrationlib-client", editable = "packages/orchestrationlib-client" },
     { name = "placement-api", editable = "packages/placement-api" },
     { name = "placement-client", editable = "packages/placement-client" },
     { name = "prometheus-async", specifier = "==25.1.0" },

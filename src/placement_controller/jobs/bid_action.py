@@ -64,8 +64,8 @@ class BidAction(Action[BidActionResult]):
             return self.operation.available_zones - self.operation.current_zones
         elif self.operation.direction == ScaleDirection.DOWNSCALE:
             return self.operation.current_zones
-        logger.error(f"determine_bid_zones: unexpected direction {self.operation.direction}")
-        return set()
+        elif self.operation.direction == ScaleDirection.NONE:
+            return self.operation.available_zones
 
     async def query_one(self, client: PlacementClient) -> BidResponseOrError:
         try:

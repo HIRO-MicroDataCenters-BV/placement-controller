@@ -43,11 +43,16 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
     async def set_placement_zones(self, client: KubeClient, clock: Clock) -> Union[bool, ErrorResponse]:
         result: Union[bool, ErrorResponse]
         try:
+            new_placement_zones = [zone.id for zone in self.zones]
             latest = await client.get(AnyApplication.GVK, self.name)
             if latest:
                 app = AnyApplication(latest)
                 uid = app.get_uid()
-                app.set_placement_zones([zone.id for zone in self.zones])
+                current_zones = set(app.get_placement_zones())
+                if current_zones == set(new_placement_zones):
+                    logger.info("Current placement equals to new placement. Keeping placement unchanged.")
+                    return True
+                app.set_placement_zones(new_placement_zones)
                 await client.patch_status(AnyApplication.GVK, self.name, app.get_status_or_fail())
                 result = True
                 logger.info(f"{self.name.to_string()}: setting placement zones done")

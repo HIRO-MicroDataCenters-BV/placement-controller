@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from kubernetes_asyncio import client
 
-from placement_controller.clients.k8s.event import KubeEvent
+from placement_controller.clients.k8s.event import KubeEvent, KubeObject
 from placement_controller.core.async_queue import AsyncQueue
 
 SubscriberId = int
@@ -36,14 +36,27 @@ class GroupVersionKind:
 
     @staticmethod
     def from_event(event: KubeEvent) -> "GroupVersionKind":
-        groupVersion = event.object["apiVersion"]
+        if isinstance(event.object, list):
+            raise Exception("Error calling GroupVersionKind.from_event with list")
+        kube_object: KubeObject = event.object
+        return GroupVersionKind.from_object(kube_object)
+
+    @staticmethod
+    def from_object(kube_object: Dict[str, Any]) -> "GroupVersionKind":
+        groupVersion = kube_object["apiVersion"]
         tokens = groupVersion.split("/")
         if len(tokens) != 2:
             group = ""
             version = groupVersion
         else:
             group, version = tokens[0], tokens[1]
-        return GroupVersionKind(group, version, event.object["kind"])
+        return GroupVersionKind(group, version, kube_object["kind"])
+
+    def to_string(self) -> str:
+        if self.group != "":
+            return f"{self.group}/{self.version}/{self.kind}"
+        else:
+            return f"{self.version}/{self.kind}"
 
 
 class KubeClient:

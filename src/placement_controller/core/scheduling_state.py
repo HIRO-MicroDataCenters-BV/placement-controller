@@ -1,5 +1,6 @@
 from typing import Any, Optional, Set
 
+import sys
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -36,11 +37,7 @@ class SchedulingState:
 
     @staticmethod
     def initial(timestamp: int) -> "SchedulingState":
-        return SchedulingState(
-            SchedulingStep.UNMANAGED,
-            timestamp + DEFAULT_STEP_EXPIRATION_SECONDS * 1000,  # TODO max infinity
-            None,
-        )
+        return SchedulingState(SchedulingStep.UNMANAGED, sys.maxsize, None)
 
     def start_operation(self, timestamp: int, operation: FSMOperation) -> "SchedulingState":
         return SchedulingState(
@@ -60,7 +57,7 @@ class SchedulingState:
         return self.expires_at < now_timestamp
 
     def is_expired_state(self, step: SchedulingStep, now_timestamp: int) -> bool:
-        return self.step == step and self.expires_at > now_timestamp
+        return self.step == step and self.expires_at < now_timestamp
 
     def is_valid_at(self, step: SchedulingStep, now_timestamp: int) -> bool:
         return self.step == step and now_timestamp < self.expires_at

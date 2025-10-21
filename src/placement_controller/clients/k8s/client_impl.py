@@ -11,11 +11,13 @@ from kubernetes_asyncio.watch import Watch
 from loguru import logger
 
 from placement_controller.clients.k8s.client import GroupVersionKind, KubeClient, NamespacedName, SubscriberId
-from placement_controller.clients.k8s.event import EventType, KubeEvent
+from placement_controller.clients.k8s.event import EventType, KubeEvent, KubeObject
 from placement_controller.clients.k8s.settings import K8SSettings
 from placement_controller.core.async_queue import AsyncQueue
 
 T = TypeVar("T")
+
+DEFAULT_LIST_BATCH_LIMIT: int = 50
 
 
 @dataclass
@@ -84,6 +86,41 @@ class KubeClientImpl(KubeClient):
         queue: AsyncQueue[KubeEvent],
     ) -> None:
         w = Watch()
+        api_func = KubeClientImpl.get_api_func(api_client, gvk, namespace)
+
+        initial_snapshot, max_version = await KubeClientImpl.fetch_initial_snapshot(
+            api_func,
+            version_since,
+            DEFAULT_LIST_BATCH_LIMIT,
+        )
+        event = KubeEvent(event=EventType.SNAPSHOT, object=initial_snapshot, version=max_version)
+        queue.put_nowait(event)
+        logger.info(f"{gvk.to_string()} initial snapshot size = {len(initial_snapshot)}, version = {max_version} ")
+
+        async for watch_event in w.stream(
+            api_func,
+            resource_version=str(max_version),
+            timeout_seconds=timeout_seconds,
+        ):
+            if "type" not in watch_event:
+                raise Exception(f"unexpected event {watch_event}, for watch {str(gvk)}")
+
+            logger.info(f"incoming event {gvk.to_string()}: {watch_event['type']}")
+            try:
+                event_type = watch_event["type"]
+                object = watch_event["object"]
+                version = object["metadata"]["resourceVersion"]
+                event = KubeEvent(event=EventType[event_type], object=object, version=version)
+                queue.put_nowait(event)
+            except Exception as e:
+                logger.error("error parsing error {exception}", exception=str(e))
+
+    @staticmethod
+    def get_api_func(
+        api_client: ApiClient,
+        gvk: GroupVersionKind,
+        namespace: Optional[str],
+    ) -> Callable[..., Any]:
         plural = kind_to_plural(gvk.kind)
         if namespace:
             if plural == "pods":
@@ -134,26 +171,43 @@ class KubeClientImpl(KubeClient):
                         **kwargs,
                     )
 
-        async for watch_event in w.stream(
-            api_func,
-            resource_version=str(version_since),
-            timeout_seconds=timeout_seconds,
-        ):
-            if "type" not in watch_event:
-                raise Exception(f"unexpected event {watch_event}, for watch {str(gvk)}")
-            logger.info("incoming event ", watch_event["type"])
+        return api_func
+
+    @staticmethod
+    async def fetch_initial_snapshot(
+        func: Callable[..., Any], version_since: int, batch_size: int
+    ) -> Tuple[List[KubeObject], int]:
+        max_iterations: int = 100
+        iteration: int = 0
+        results: List[KubeObject] = []
+        max_version = 0
+        continue_token = ""
+        batch_size = 10
+        while iteration < max_iterations:
             try:
-                type = watch_event["type"]
-                object = watch_event["object"]
-                version = object["metadata"]["resourceVersion"]
-                event = KubeEvent(
-                    event=EventType[type],
-                    object=object,
-                    version=version,
-                )
-                queue.put_nowait(event)
+                if len(continue_token) > 0:
+                    result = await func(limit=batch_size, resource_version=str(version_since), _continue=continue_token)
+                else:
+                    result = await func(limit=batch_size, resource_version=str(version_since))
+                if not isinstance(result, dict):
+                    result = result.to_dict()
+                metadata = result.get("metadata") or {}
+                if not isinstance(metadata, dict):
+                    metadata = metadata.to_dict()
+
+                continue_token = metadata.get("continue") or metadata.get("_continue") or ""
+                resource_version = metadata.get("resourceVersion") or metadata.get("resource_version") or "0"
+                max_version = max(int(resource_version), max_version)
+
+                results.extend(result.get("items") or [])
+
+                iteration += 1
+                if len(continue_token) == 0:
+                    break
             except Exception as e:
-                logger.error("error parsing error {exception}", exception=str(e))
+                logger.error(f"Exception while loading initial snapshot {e}")
+                break
+        return results, max_version
 
     @override
     def stop_watch(self, subscriber_id: SubscriberId) -> None:

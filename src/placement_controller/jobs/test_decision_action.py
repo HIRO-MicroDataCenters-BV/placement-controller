@@ -106,3 +106,16 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
 
         result = self.loop.run_until_complete(action.run(self.context))
         self.assertEqual(result.result, [PlacementZone(id="zone1")])
+
+    def test_decide_optimize(self) -> None:
+        operation = FSMOperation(
+            direction=ScaleDirection.NONE,
+            required_replica=1,
+            current_zones={"zone2"},
+            available_zones={"zone1", "zone2", "zone3"},
+        )
+
+        action = DecisionAction(self.bids, operation, self.name, "test")
+
+        result = self.loop.run_until_complete(action.run(self.context))
+        self.assertEqual(result.result, [PlacementZone(id="zone1")])

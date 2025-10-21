@@ -27,6 +27,7 @@ class SchedulingContext:
     timestamp: int
     state: SchedulingState
 
+    current_zone: str
     available_zones: List[PlacementZone]
     application: AnyApplication
 
@@ -48,6 +49,7 @@ class SchedulingContext:
         application: AnyApplication,
         timestamp: int,
         name: NamespacedName,
+        current_zone: str,
         available_zones: List[PlacementZone],
     ) -> "SchedulingContext":
         return SchedulingContext(
@@ -56,6 +58,7 @@ class SchedulingContext:
             action_nr=0,
             timestamp=timestamp,
             state=SchedulingState.initial(timestamp),
+            current_zone=current_zone,
             available_zones=available_zones,
             application=application,
         )
@@ -86,6 +89,7 @@ class SchedulingContext:
             action_nr=self.action_nr,
             timestamp=timestamp,
             state=state,
+            current_zone=self.current_zone,
             available_zones=copy.deepcopy(self.available_zones),
             retry_attempt=self.retry_attempt,
             msg=msg,
@@ -97,6 +101,10 @@ class SchedulingContext:
             previous=self,
             trace=self.trace,
         )
+
+    def update_timestamp(self, expires_at: int) -> "SchedulingContext":
+        self.state.expires_at = expires_at
+        return self
 
     def update_application(self, application: AnyApplication) -> "SchedulingContext":
         self.application = application

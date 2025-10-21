@@ -183,3 +183,40 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                 ),
             },
         )
+
+    def test_bid_optimize(self) -> None:
+        operation = FSMOperation(
+            direction=ScaleDirection.NONE,
+            required_replica=2,
+            current_zones={"zone1", "zone2"},
+            available_zones={"zone1", "zone2", "zone3"},
+        )
+        action = BidAction(operation, self.request, self.name)
+
+        result = self.loop.run_until_complete(action.run(self.context))
+        self.assertEqual(
+            result.response,
+            {
+                "zone1": BidResponseModel(
+                    id="test",
+                    status=BidStatus.accepted,
+                    reason=None,
+                    msg="OK",
+                    metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
+                ),
+                "zone2": BidResponseModel(
+                    id="test",
+                    status=BidStatus.accepted,
+                    reason=None,
+                    msg="OK",
+                    metrics=[MetricValue(id=Metric.cost, value=Decimal("1.03"), unit=MetricUnit.eur)],
+                ),
+                "zone3": BidResponseModel(
+                    id="test",
+                    status=BidStatus.accepted,
+                    reason=None,
+                    msg="OK",
+                    metrics=[MetricValue(id=Metric.cost, value=Decimal("1.00"), unit=MetricUnit.eur)],
+                ),
+            },
+        )

@@ -19,35 +19,12 @@ from placement_controller.jobs.placement_action import SetPlacementAction, SetPl
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import PlacementZone
 
-# TODO: ticker timeout
-#   - retry after timeout
-#       - drop context
-#       - set retry timeout
-
 # TODO: optimization bids
 #   - confirm bids periodically and change placements
 #       - bid zones
 #       - upscale and downscale
 #           - drop the worst, add the best
 #           - set retry timeout
-
-# TODO: membership change partial schedule
-#   - upscale:
-#       - bid zones
-#       - add the best
-#   - downscale:
-#       - bid zones
-#       - drop the worst
-
-# TODO: zone failure (membership change) and convergence
-#   - failure
-#       - upscale
-#           - bid zones
-#           - add the best
-#   - convergence:
-#       - downscale
-#           - bid zones
-#           - drop the worst
 
 
 @dataclass
@@ -59,20 +36,16 @@ class FSMOptions:
 class FSM:
     ctx: SchedulingContext
     options: FSMOptions
-    current_zone: str
     timestamp: int
 
     def __init__(
         self,
         ctx: SchedulingContext,
-        # TODO: current zone can be in the context
-        current_zone: str,
         timestamp: int,
         options: FSMOptions,
     ):
         self.ctx = ctx
         self.timestamp = timestamp
-        self.current_zone = current_zone
         self.options = options
 
     def on_tick(self) -> NextStateResult:
@@ -84,7 +57,7 @@ class FSM:
         # start over if pending is expired (optimization flow)
         if self.ctx.state.is_expired_state(SchedulingStep.PENDING, self.timestamp):
             application = self.ctx.application
-            return self.on_placement_action(application)
+            return self.on_optimize_bids(application)
 
         # if any other step is expired retry
         if self.ctx.state.is_expired(self.timestamp):
@@ -98,7 +71,7 @@ class FSM:
         owner_zone = application.get_owner_zone()
 
         is_global_placement = placement_strategy == PlacementStrategy.Global
-        is_owner_current_zone = owner_zone == self.current_zone
+        is_owner_current_zone = owner_zone == self.ctx.current_zone
 
         # switch to managed state
         if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):
@@ -137,6 +110,14 @@ class FSM:
                 self.ctx = self.ctx.start_operation(operation, self.timestamp)
                 return self.new_get_spec(application)
         return NextStateResult()
+
+    def on_optimize_bids(self, application: AnyApplication) -> NextStateResult:
+        operation = self.determine_operation(application)
+        if operation.direction == ScaleDirection.UPSCALE or operation.direction == ScaleDirection.DOWNSCALE:
+            return self.on_placement_action(application)
+        elif operation.direction == ScaleDirection.NONE:
+            self.ctx = self.ctx.start_operation(operation, self.timestamp)
+            return self.new_get_spec(application)
 
     def on_global_failure(self, application: AnyApplication) -> NextStateResult:
         # not implemented yet, skipping for now
@@ -288,7 +269,6 @@ class FSM:
             self.ctx = self.ctx.with_placements_done(action.action_id, self.timestamp, "Placements done.")
 
             expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
-            print("expires_at ", expires_at)
             next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
             msg = "Placement done."
             next_context = self.ctx.to_next_with_app(next_state, self.ctx.application, self.timestamp, msg)

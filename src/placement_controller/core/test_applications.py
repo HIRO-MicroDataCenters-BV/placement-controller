@@ -15,6 +15,7 @@ from placement_controller.core.applications import Applications
 from placement_controller.jobs.fake_application_controller import FakeApplicationController
 from placement_controller.jobs.fake_placement_server import FakePlacementController
 from placement_controller.jobs.types import ExecutorContext
+from placement_controller.membership.types import MeshPeer
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.fake_resource_management import FakeResourceManagement
 from placement_controller.settings import PlacementSettings
@@ -114,6 +115,9 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         self.resource_management.mock_response(self.local_bid_response)
         self.zone2_placement_controller.mock_response(self.bid_response)
 
+        self.zone1_peer = self.mesh_peer("zone1")
+        self.zone2_peer = self.mesh_peer("zone1")
+
     def tearDown(self) -> None:
         self.task.cancel()
         self.app_server.stop()
@@ -121,6 +125,9 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         super().tearDown()
 
     def test_ordinary_placement_flow(self) -> None:
+        # peers updated
+        self.loop.run_until_complete(self.client.patch(MeshPeer.GVK, self.zone1_peer))
+        self.loop.run_until_complete(self.client.patch(MeshPeer.GVK, self.zone2_peer))
         # new application added
         self.loop.run_until_complete(self.client.patch(AnyApplication.GVK, self.application))
 

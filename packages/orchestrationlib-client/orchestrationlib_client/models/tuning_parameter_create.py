@@ -1,0 +1,101 @@
+from collections.abc import Mapping
+from typing import Any, TypeVar
+
+from attrs import define as _attrs_define
+from attrs import field as _attrs_field
+
+
+T = TypeVar("T", bound="TuningParameterCreate")
+
+
+@_attrs_define
+class TuningParameterCreate:
+    """Schema for creating a tuning parameter
+
+    Attributes:
+        output_1 (float):
+        output_2 (float):
+        output_3 (float):
+        alpha (float):
+        beta (float):
+        gamma (float):
+    """
+
+    output_1: float
+    output_2: float
+    output_3: float
+    alpha: float
+    beta: float
+    gamma: float
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        output_1 = self.output_1
+
+        output_2 = self.output_2
+
+        output_3 = self.output_3
+
+        alpha = self.alpha
+
+        beta = self.beta
+
+        gamma = self.gamma
+
+        field_dict: dict[str, Any] = {}
+        field_dict.update(self.additional_properties)
+        field_dict.update(
+            {
+                "output_1": output_1,
+                "output_2": output_2,
+                "output_3": output_3,
+                "alpha": alpha,
+                "beta": beta,
+                "gamma": gamma,
+            }
+        )
+
+        return field_dict
+
+    @classmethod
+    def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        d = dict(src_dict)
+        output_1 = d.pop("output_1")
+
+        output_2 = d.pop("output_2")
+
+        output_3 = d.pop("output_3")
+
+        alpha = d.pop("alpha")
+
+        beta = d.pop("beta")
+
+        gamma = d.pop("gamma")
+
+        tuning_parameter_create = cls(
+            output_1=output_1,
+            output_2=output_2,
+            output_3=output_3,
+            alpha=alpha,
+            beta=beta,
+            gamma=gamma,
+        )
+
+        tuning_parameter_create.additional_properties = d
+        return tuning_parameter_create
+
+    @property
+    def additional_keys(self) -> list[str]:
+        return list(self.additional_properties.keys())
+
+    def __getitem__(self, key: str) -> Any:
+        return self.additional_properties[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.additional_properties[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self.additional_properties[key]
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.additional_properties

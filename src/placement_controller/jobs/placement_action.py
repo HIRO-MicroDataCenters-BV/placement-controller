@@ -7,6 +7,7 @@ from placement_controller.clients.k8s.client import KubeClient, NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
 from placement_controller.membership.types import PlacementZone
+from placement_controller.store.types import DecisionStore
 from placement_controller.util.clock import Clock
 
 
@@ -36,12 +37,15 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
     async def run(self, ctx: ExecutorContext) -> SetPlacementActionResult:
         logger.info(f"{self.name.to_string()}: setting placement zones {self.zones}")
 
-        result = await self.set_placement_zones(ctx.kube_client, ctx.clock)
+        result = await self.set_placement_zones(ctx.kube_client, ctx.decision_store, ctx.clock)
 
         return SetPlacementActionResult(result, self.name, self.action_id)
 
-    async def set_placement_zones(self, client: KubeClient, clock: Clock) -> Union[bool, ErrorResponse]:
+    async def set_placement_zones(
+        self, client: KubeClient, store: DecisionStore, clock: Clock
+    ) -> Union[bool, ErrorResponse]:
         result: Union[bool, ErrorResponse]
+        timestamp = clock.now_seconds() * 1000
         try:
             new_placement_zones = [zone.id for zone in self.zones]
             latest = await client.get(AnyApplication.GVK, self.name)
@@ -56,7 +60,8 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
                 await client.patch_status(AnyApplication.GVK, self.name, app.get_status_or_fail())
                 result = True
                 logger.info(f"{self.name.to_string()}: setting placement zones done")
-                await self.emit_event_or_fail_silently(client, clock, uid)
+                await self.emit_event_or_fail_silently(client, timestamp, uid)
+                await self.store_decision(store, new_placement_zones, timestamp)
             else:
                 logger.error(
                     f"{self.name.to_string()}: setting placement zones failure. Empty response from kube client."
@@ -67,19 +72,31 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
             result = ErrorResponse(status=500, code="INTERNAL_ERROR", msg=str(e))
         return result
 
-    async def emit_event_or_fail_silently(self, client: KubeClient, clock: Clock, uid: Optional[str]) -> None:
+    async def emit_event_or_fail_silently(self, client: KubeClient, timestamp: int, uid: Optional[str]) -> None:
         if uid is None:
             logger.warning("Not emitting event since uid is None")
             return
-        timestamp = clock.now_seconds() * 1000
-        zones = ", ".join([zone.id for zone in self.zones])
-        await client.emit_event(
-            AnyApplication.GVK,
-            self.name,
-            uid,
-            "SetPlacement",
-            "SetPlacement",
-            f"Setting placement zones {zones}",
-            "Normal",
-            timestamp,
+        try:
+            zones = ", ".join([zone.id for zone in self.zones])
+            await client.emit_event(
+                AnyApplication.GVK,
+                self.name,
+                uid,
+                "SetPlacement",
+                "SetPlacement",
+                f"Setting placement zones {zones}",
+                "Normal",
+                timestamp,
+            )
+        except Exception as e:
+            logger.error(f"{self.get_application_name()}: Unable to emit event {e}")
+
+    async def store_decision(self, store: DecisionStore, zones: List[str], timestamp: int) -> None:
+        await store.save(
+            name=self.get_application_name(),
+            spec="",
+            placement=zones,
+            reason="",
+            trace="",
+            timestamp=timestamp,
         )

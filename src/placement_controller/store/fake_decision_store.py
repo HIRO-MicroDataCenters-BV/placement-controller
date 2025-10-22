@@ -1,11 +1,11 @@
-from typing import Any, List
+from typing import List, Tuple
 
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.store.types import DecisionStore
 
 
 class FakeDecisionStore(DecisionStore):
-    decisions: List[Any]
+    decisions: List[Tuple[NamespacedName, str, List[str], str, str, int]]
 
     def __init__(self):
         self.decisions = []
@@ -19,4 +19,4 @@ class FakeDecisionStore(DecisionStore):
         trace: str,
         timestamp: int,
     ) -> None:
-        pass
+        self.decisions.append((name, spec, placement, reason, trace, timestamp))

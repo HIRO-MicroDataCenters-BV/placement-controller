@@ -1,5 +1,7 @@
 from typing import List, Optional, Union
 
+from dataclasses import dataclass
+
 from loguru import logger
 
 from placement_controller.api.model import ErrorResponse
@@ -9,6 +11,14 @@ from placement_controller.jobs.types import Action, ActionId, ActionResult, Exec
 from placement_controller.membership.types import PlacementZone
 from placement_controller.store.types import DecisionStore
 from placement_controller.util.clock import Clock
+
+
+@dataclass
+class PlacementDecision:
+    spec: str
+    placements: List[PlacementZone]
+    reason: str
+    trace: str
 
 
 class SetPlacementActionResult(ActionResult):
@@ -23,19 +33,19 @@ class SetPlacementActionResult(ActionResult):
 
 
 class SetPlacementAction(Action[SetPlacementActionResult]):
-    zones: List[PlacementZone]
+    decision: PlacementDecision
 
     def __init__(
         self,
-        zones: List[PlacementZone],
+        decision: PlacementDecision,
         name: NamespacedName,
         action_id: ActionId,
     ):
         super().__init__(name, action_id)
-        self.zones = zones
+        self.decision = decision
 
     async def run(self, ctx: ExecutorContext) -> SetPlacementActionResult:
-        logger.info(f"{self.name.to_string()}: setting placement zones {self.zones}")
+        logger.info(f"{self.name.to_string()}: setting placement zones {self.decision.placements}")
 
         result = await self.set_placement_zones(ctx.kube_client, ctx.decision_store, ctx.clock)
 
@@ -47,7 +57,7 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
         result: Union[bool, ErrorResponse]
         timestamp = clock.now_seconds() * 1000
         try:
-            new_placement_zones = [zone.id for zone in self.zones]
+            new_placement_zones = [zone.id for zone in self.decision.placements]
             latest = await client.get(AnyApplication.GVK, self.name)
             if latest:
                 app = AnyApplication(latest)
@@ -58,9 +68,14 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
                     return True
                 app.set_placement_zones(new_placement_zones)
                 await client.patch_status(AnyApplication.GVK, self.name, app.get_status_or_fail())
+
                 result = True
                 logger.info(f"{self.name.to_string()}: setting placement zones done")
+
+                # adding kube event
                 await self.emit_event_or_fail_silently(client, timestamp, uid)
+
+                # saving to decision store
                 await self.store_decision(store, new_placement_zones, timestamp)
             else:
                 logger.error(
@@ -77,7 +92,7 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
             logger.warning("Not emitting event since uid is None")
             return
         try:
-            zones = ", ".join([zone.id for zone in self.zones])
+            zones = ", ".join([zone.id for zone in self.decision.placements])
             await client.emit_event(
                 AnyApplication.GVK,
                 self.name,
@@ -92,11 +107,14 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
             logger.error(f"{self.get_application_name()}: Unable to emit event {e}")
 
     async def store_decision(self, store: DecisionStore, zones: List[str], timestamp: int) -> None:
-        await store.save(
-            name=self.get_application_name(),
-            spec="",
-            placement=zones,
-            reason="",
-            trace="",
-            timestamp=timestamp,
-        )
+        try:
+            await store.save(
+                name=self.get_application_name(),
+                spec=self.decision.spec,
+                placement=zones,
+                reason=self.decision.reason,
+                trace=self.decision.trace,
+                timestamp=timestamp,
+            )
+        except Exception as e:
+            logger.error(f"{self.get_application_name()}: Error while saving the placement decision. {e}")

@@ -18,7 +18,9 @@ dependencies = [
   "placement-api",
   "placement-client",
   "application-api",
-  "application-client"
+  "application-client",
+  "orchestrationlib-api",
+  "orchestrationlib-client",
 ]
 
 [tool.uv.sources]
@@ -26,13 +28,17 @@ placement-api = { workspace = true }
 placement-client = { workspace = true }
 application-api = { workspace = true }
 application-client = { workspace = true }
+orchestrationlib-api = { workspace = true }
+orchestrationlib-client = { workspace = true }
 
 [tool.uv.workspace]
 members = [
   "packages/placement-api",
   "packages/placement-client",
   "packages/application-api",
-  "packages/application-client"
+  "packages/application-client",
+  "packages/orchestrationlib-api",
+  "packages/orchestrationlib-client",
 ]
 
 [build-system]

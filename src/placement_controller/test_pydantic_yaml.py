@@ -6,7 +6,13 @@ from placement_controller.api.model import Metric
 from placement_controller.clients.k8s.settings import K8SSettings
 from placement_controller.pydantic_yaml import from_yaml, to_yaml
 from placement_controller.resources.resource_metrics import EstimateMethod, MetricDefinition, MetricSettings
-from placement_controller.settings import ApiSettings, PlacementSettings, PrometheusSettings, Settings
+from placement_controller.settings import (
+    ApiSettings,
+    OrchestrationLibSettings,
+    PlacementSettings,
+    PrometheusSettings,
+    Settings,
+)
 
 
 class PyDanticYamlTest(TestCase):
@@ -23,6 +29,7 @@ class PyDanticYamlTest(TestCase):
                     "zone1": "fake: not used",
                 },
             ),
+            orchestrationlib=OrchestrationLibSettings(enabled=True, base_url="http://127.0.0.1/"),
             prometheus=PrometheusSettings(endpoint_port=8080),
             metrics=MetricSettings(
                 static_metrics=[

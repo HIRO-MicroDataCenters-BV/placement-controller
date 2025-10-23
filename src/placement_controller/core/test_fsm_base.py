@@ -178,7 +178,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
 
         set_placement_action: SetPlacementAction = result.actions[0]  # type: ignore
         self.assertEqual(set_placement_action.name, self.name)
-        self.assertEqual(set_placement_action.zones, placements)
+        self.assertEqual(set_placement_action.decision.placements, placements)
 
         return context
 

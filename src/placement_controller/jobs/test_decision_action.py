@@ -12,18 +12,21 @@ from placement_controller.jobs.decision_action import DecisionAction
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.membership.types import PlacementZone
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.store.fake_decision_store import FakeDecisionStore
 from placement_controller.util.mock_clock import MockClock
 from placement_controller.zone.types import ZoneApiFactory
 
 
 class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
     clock: MockClock
+    decision_store: FakeDecisionStore
     name: NamespacedName
     bids: Dict[ZoneId, BidResponseOrError]
 
     def setUp(self) -> None:
         super().setUp()
         self.clock = MockClock()
+        self.decision_store = FakeDecisionStore()
         self.name = NamespacedName(name="test", namespace="test")
 
         self.bids = {
@@ -64,6 +67,7 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
             zone_api_factory=ZoneApiFactory(),
             kube_client=FakeClient(),
             clock=self.clock,
+            decision_store=self.decision_store,
         )
 
     def tearDown(self) -> None:

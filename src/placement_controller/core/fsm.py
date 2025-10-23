@@ -15,16 +15,9 @@ from placement_controller.core.types import SchedulingStep
 from placement_controller.jobs.bid_action import BidAction, BidActionResult, BidResponseOrError, ZoneId
 from placement_controller.jobs.decision_action import DecisionAction, DecisionActionResult
 from placement_controller.jobs.get_spec_action import GetSpecAction, GetSpecResult
-from placement_controller.jobs.placement_action import SetPlacementAction, SetPlacementActionResult
+from placement_controller.jobs.placement_action import PlacementDecision, SetPlacementAction, SetPlacementActionResult
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import PlacementZone
-
-# TODO: optimization bids
-#   - confirm bids periodically and change placements
-#       - bid zones
-#       - upscale and downscale
-#           - drop the worst, add the best
-#           - set retry timeout
 
 
 @dataclass
@@ -254,9 +247,16 @@ class FSM:
         name: NamespacedName,
         msg: str,
     ) -> NextStateResult:
-        next_action: Action[ActionResult] = SetPlacementAction(
-            placements, name, self.ctx.gen_action_id()
-        )  # type: ignore
+        if not self.ctx.application_spec:
+            return self.placement_failure("Unable to create placement action. Lifecycle error. Programmer mistake!")
+        spec = json.dumps(self.ctx.application_spec.to_dict())
+        decision = PlacementDecision(
+            spec=spec,
+            placements=placements,
+            reason=self.ctx.reason or "reason is not set",
+            trace=self.ctx.trace.get_data(),
+        )
+        next_action: Action[ActionResult] = SetPlacementAction(decision, name, self.ctx.gen_action_id())  # type: ignore
         next_context = self.ctx.to_next(SchedulingStep.SET_PLACEMENT, self.timestamp, msg).with_action(next_action)
         return NextStateResult(actions=[next_action], context=next_context)
 
@@ -270,8 +270,10 @@ class FSM:
 
             expires_at = self.timestamp + self.options.reschedule_default_delay_seconds * 1000
             next_state = SchedulingState.new(SchedulingStep.PENDING, expires_at)
-            msg = "Placement done."
+
+            msg = "Switched to Pending."
             next_context = self.ctx.to_next_with_app(next_state, self.ctx.application, self.timestamp, msg)
+            next_context.reset()
             return NextStateResult(context=next_context)
         else:
             error: ErrorResponse = result.result

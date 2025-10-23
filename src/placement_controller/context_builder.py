@@ -6,12 +6,16 @@ from argparse import Namespace
 from io import StringIO
 
 from application_client.client import Client
+from orchestrationlib_client.client import Client as OrchestrationLibClient
 
 from placement_controller.clients.k8s.client_impl import KubeClientImpl
 from placement_controller.clients.placement.types import PlacementClient
 from placement_controller.context import Context
 from placement_controller.pydantic_yaml import from_yaml
 from placement_controller.settings import Settings
+from placement_controller.store.decision_store import DecisionStoreImpl
+from placement_controller.store.fake_decision_store import FakeDecisionStore
+from placement_controller.store.types import DecisionStore
 from placement_controller.util.clock_impl import ClockImpl
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
@@ -63,5 +67,12 @@ class ContextBuilder:
         app_client = Client(base_url=self.settings.placement.application_controller_endpoint)
         zone_api_factory = ZoneApiFactoryImpl(self.settings.placement, PlacementClient())
 
-        context = Context(clock, app_client, zone_api_factory, kube_client, self.settings, loop)
+        decision_store: DecisionStore
+        if self.settings.orchestrationlib.enabled:
+            orchestrationlib_client = OrchestrationLibClient(base_url=self.settings.orchestrationlib.base_url)
+            decision_store = DecisionStoreImpl(orchestrationlib_client)
+        else:
+            decision_store = FakeDecisionStore()
+
+        context = Context(clock, app_client, decision_store, zone_api_factory, kube_client, self.settings, loop)
         return context

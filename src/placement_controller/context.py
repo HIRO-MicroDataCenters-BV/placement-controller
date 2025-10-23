@@ -15,6 +15,7 @@ from placement_controller.resources.resource_managment import ResourceManagement
 from placement_controller.resources.resource_metrics import ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
 from placement_controller.settings import Settings
+from placement_controller.store.types import DecisionStore
 from placement_controller.util.clock import Clock
 from placement_controller.zone.zone_api_factory import ZoneApiFactoryImpl
 
@@ -35,6 +36,7 @@ class Context:
         self,
         clock: Clock,
         app_client: Client,
+        decision_store: DecisionStore,
         zone_api_factory: ZoneApiFactoryImpl,
         kube_client: KubeClient,
         settings: Settings,
@@ -54,6 +56,7 @@ class Context:
             zone_api_factory=zone_api_factory,
             kube_client=kube_client,
             clock=clock,
+            decision_store=decision_store,
         )
 
         self.applications = Applications(clock, self.executor_context, kube_client, self.terminated, settings.placement)

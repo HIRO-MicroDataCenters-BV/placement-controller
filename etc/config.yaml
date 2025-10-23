@@ -14,6 +14,10 @@ placement:
 
   application_controller_endpoint:
 
+orchestrationlib:
+  enabled: true
+  base_url: http://127.0.0.1/
+
 api:
   port: 8001
 

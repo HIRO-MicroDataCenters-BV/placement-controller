@@ -55,6 +55,8 @@ Placement controller for decentralized control plane.
 | settings.metrics.static_metrics[0].weight.gpu | float | `1` |  |
 | settings.metrics.static_metrics[0].weight.memory | float | `1` |  |
 | settings.metrics.static_metrics[0].weight.storage | float | `1` |  |
+| settings.orchestrationlib.base_url | string | `nil` |  |
+| settings.orchestrationlib.enabled | bool | `false` |  |
 | settings.placement.application_controller_endpoint | string | `nil` |  |
 | settings.placement.available_zones | list | `[]` |  |
 | settings.placement.current_zone | string | `nil` |  |

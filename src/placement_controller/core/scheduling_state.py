@@ -24,6 +24,14 @@ class FSMOperation:
     current_zones: Set[str]
     available_zones: Set[str]
 
+    def describe(self) -> str:
+        if self.direction == ScaleDirection.UPSCALE:
+            return f"Upscaling: replica: {len(self.current_zones)}, desired replica {self.required_replica}"
+        elif self.direction == ScaleDirection.DOWNSCALE:
+            return f"Downscaling: replica: {len(self.current_zones)}, desired replica {self.required_replica}"
+        else:
+            return f"Optimization: replica: {len(self.current_zones)}, desired replica {self.required_replica}"
+
 
 class SchedulingState:
     step: SchedulingStep

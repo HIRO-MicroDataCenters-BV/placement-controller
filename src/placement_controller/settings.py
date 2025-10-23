@@ -22,9 +22,15 @@ class PlacementSettings(BaseSettings):
     application_controller_endpoint: str
 
 
+class OrchestrationLibSettings(BaseSettings):
+    enabled: bool = False
+    base_url: str
+
+
 class Settings(BaseSettings):
     k8s: K8SSettings
     api: ApiSettings
     placement: PlacementSettings
+    orchestrationlib: OrchestrationLibSettings
     prometheus: PrometheusSettings
     metrics: MetricSettings

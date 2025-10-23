@@ -4,6 +4,7 @@ import datetime
 import json
 from datetime import timezone
 
+from loguru import logger
 from orchestrationlib_client.api.placement_decisions import save_decision_placement_decisions_post
 from orchestrationlib_client.client import Client
 from orchestrationlib_client.models.placement_decision_create import PlacementDecisionCreate
@@ -41,4 +42,7 @@ class DecisionStoreImpl(DecisionStore):
             timestamp=ts,
             trace=trace,
         )
-        await save_decision_placement_decisions_post.asyncio(client=self.client, body=request)
+        response = await save_decision_placement_decisions_post.asyncio(client=self.client, body=request)
+        if response is None:
+            raise Exception("Empty response received while saving decision.")
+        logger.info(f"{name}: Save decision response: {response}")

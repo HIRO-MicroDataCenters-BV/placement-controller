@@ -1,4 +1,10 @@
+import datetime
+
 from orchestrationlib_client.client import Client
+from orchestrationlib_client.models.placement_decision_create import PlacementDecisionCreate
+from orchestrationlib_client.models.placement_decision_create_spec import PlacementDecisionCreateSpec
+from orchestrationlib_client.models.placement_decision_field import PlacementDecisionField
+from orchestrationlib_client.models.placement_decision_id import PlacementDecisionID
 
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
@@ -31,7 +37,18 @@ class DecisionStoreImplTest(AsyncTestFixture, ResourceTestFixture):
         super().tearDown()
 
     def test_save_decision(self) -> None:
-        response = self.loop.run_until_complete(
-            self.store.save(self.name, self.spec, ["zone1", "zone2"], "reason", "trace", 0)
+        self.loop.run_until_complete(self.store.save(self.name, self.spec, ["zone1", "zone2"], "reason", "trace", 0))
+
+        requests = self.fake_server.get_save_requests()
+        self.assertEqual(
+            requests,
+            [
+                PlacementDecisionCreate(
+                    id=PlacementDecisionID(name=self.name.name, namespace=self.name.namespace),
+                    spec=PlacementDecisionCreateSpec.from_dict({"test": "test"}),
+                    decision=PlacementDecisionField(placement=["zone1", "zone2"], reason="reason"),
+                    timestamp=datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc),
+                    trace="trace",
+                )
+            ],
         )
-        print(response)

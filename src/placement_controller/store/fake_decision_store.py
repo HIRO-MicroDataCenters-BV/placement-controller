@@ -1,5 +1,7 @@
 from typing import List, Tuple
 
+from loguru import logger
+
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.store.types import DecisionStore
 
@@ -19,4 +21,8 @@ class FakeDecisionStore(DecisionStore):
         trace: str,
         timestamp: int,
     ) -> None:
+        logger.info(
+            f"{name}: Saving decision. placements={placement}, reason='{reason}',"
+            + f" trace='{trace}', timestamp={timestamp}",
+        )
         self.decisions.append((name, spec, placement, reason, trace, timestamp))

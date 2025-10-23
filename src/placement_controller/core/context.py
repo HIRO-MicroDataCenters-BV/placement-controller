@@ -160,6 +160,19 @@ class SchedulingContext:
         del context.inprogress_actions[action_id]
         return context
 
+    def reset(self) -> None:
+        self.retry_attempt = 0
+        self.trace = TraceLog()
+        self.msg = None
+        self.inprogress_actions = dict()
+
+        self.application_spec = None
+        self.bid_responses = None
+        self.decision = None
+        self.inprogress_actions = dict()
+
+        self.previous = None
+
     def is_attempts_exhausted(self) -> bool:
         return self.retry_attempt >= DEFAULT_MAX_ACTION_ATTEMPTS
 

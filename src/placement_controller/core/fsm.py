@@ -19,13 +19,6 @@ from placement_controller.jobs.placement_action import PlacementDecision, SetPla
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import PlacementZone
 
-# TODO: optimization bids
-#   - confirm bids periodically and change placements
-#       - bid zones
-#       - upscale and downscale
-#           - drop the worst, add the best
-#           - set retry timeout
-
 
 @dataclass
 class FSMOptions:
@@ -260,7 +253,7 @@ class FSM:
         decision = PlacementDecision(
             spec=spec,
             placements=placements,
-            reason="",  # self.ctx.state.description, # TODO
+            reason=self.ctx.reason or "reason is not set",
             trace=self.ctx.trace.get_data(),
         )
         next_action: Action[ActionResult] = SetPlacementAction(decision, name, self.ctx.gen_action_id())  # type: ignore

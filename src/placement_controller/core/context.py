@@ -37,6 +37,7 @@ class SchedulingContext:
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
 
     # lifecycle action arguments
+    reason: Optional[str] = field(default=None)
     application_spec: Optional[models.ApplicationSpec] = field(default=None)
     bid_responses: Optional[Mapping[str, BidResponseOrError]] = field(default=None)
     decision: Optional[List[PlacementZone]] = field(default=None)
@@ -66,7 +67,9 @@ class SchedulingContext:
     def start_operation(self, operation: FSMOperation, timestamp: int) -> "SchedulingContext":
         msg = f"Starting {operation.direction}. desired replica: {operation.required_replica}"
         new_state = self.state.start_operation(timestamp, operation)
-        return self.to_next_with_app(new_state, self.application, timestamp, msg)
+        next_context = self.to_next_with_app(new_state, self.application, timestamp, msg)
+        next_context.reason = operation.describe()
+        return next_context
 
     def to_next(self, step: SchedulingStep, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
         new_state = self.state.to(step, timestamp)
@@ -74,9 +77,9 @@ class SchedulingContext:
 
     def retry(self, timestamp: int, msg: Optional[str]) -> "SchedulingContext":
         retry_state = self.state.to(self.state.step, timestamp)
-        context = self.to_next_with_app(retry_state, self.application, timestamp, msg)
-        context.retry_attempt += 1
-        return context
+        next_context = self.to_next_with_app(retry_state, self.application, timestamp, msg)
+        next_context.retry_attempt += 1
+        return next_context
 
     def to_next_with_app(
         self, state: SchedulingState, application: Optional[AnyApplication], timestamp: int, msg: Optional[str]
@@ -98,8 +101,9 @@ class SchedulingContext:
             application_spec=copy.deepcopy(self.application_spec),
             bid_responses=copy.deepcopy(self.bid_responses),
             decision=copy.deepcopy(self.decision),
-            previous=self,
+            reason=self.reason,
             trace=self.trace,
+            previous=self,
         )
 
     def update_timestamp(self, expires_at: int) -> "SchedulingContext":
@@ -169,6 +173,7 @@ class SchedulingContext:
         self.application_spec = None
         self.bid_responses = None
         self.decision = None
+        self.reason = None
         self.inprogress_actions = dict()
 
         self.previous = None

@@ -28,15 +28,25 @@ class SchedulingQueue:
         self.current_zone = current_zone
         self.initialized = False
 
-    def load_state(self, applications: List[AnyApplication]) -> None:
+    def load_state(self, applications: List[AnyApplication]) -> List[Action[ActionResult]]:
         if self.initialized:
-            return
+            return []
         timestamp = self.clock.now_seconds()
+        actions = []
         for application in applications:
             name = application.get_namespaced_name()
             context = self.get_or_create_context(name, timestamp, application)
             self.contexts[name] = context
+
+            next_state = self.new_fsm(context, timestamp).on_update(application)
+
+            self.apply_next_state(name, next_state)
+
+            if next_state.actions:
+                actions.extend(next_state.actions)
+
         self.initialized = True
+        return actions
 
     def on_tick(self, timestamp: int) -> List[Action[ActionResult]]:
         actions = []

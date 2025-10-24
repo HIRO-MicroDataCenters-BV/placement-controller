@@ -18,7 +18,7 @@ placement:
   application_controller_endpoint: http://localhost:19092
 
 orchestrationlib:
-  enabled: true
+  enabled: false
   base_url: http://127.0.0.1/
 
 api:

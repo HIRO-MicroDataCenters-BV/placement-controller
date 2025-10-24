@@ -297,7 +297,7 @@ class FSM:
     def on_membership_change(self, available_zones: List[PlacementZone]) -> NextStateResult:
 
         zone_names = ",".join([zone.id for zone in available_zones])
-        msg = f"Placement changed to '{zone_names}'"
+        msg = f"Membership update: Available zones '{zone_names}'"
 
         self.ctx = self.ctx.to_next(self.ctx.state.step, self.timestamp, msg).with_available_zones(available_zones)
 

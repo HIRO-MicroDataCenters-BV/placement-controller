@@ -3,6 +3,20 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{ include "app.fullname" . }}-role
 rules:
+  - apiGroups: [""]
+    resources:
+      - "pods"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+  - apiGroups: [""]
+    resources:
+      - "nodes"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
   - apiGroups:
       - events.k8s.io
     resources:
@@ -15,11 +29,14 @@ rules:
     resources:
       - anyapplications
       - anyapplication
+      - meshpeers
+      - meshpeer
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups:
       - dcp.hiro.io
     resources:
       - anyapplications/status
+      - meshpeers/status
     verbs:
       - patch
       - update

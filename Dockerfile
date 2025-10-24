@@ -26,4 +26,4 @@ COPY --from=builder /app/.venv /app/.venv
 
 WORKDIR /app
 
-ENTRYPOINT [ "python", "-m", "placement_controller.main", "--config", "./config.yaml"]
+ENTRYPOINT [ "python", "-m", "placement_controller.main", "--config", "/app/config.yaml"]

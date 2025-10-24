@@ -93,7 +93,8 @@ class Applications:
                 return
 
             applications = [AnyApplication(event_object) for event_object in event.object]
-            self.scheduling_queue.load_state(applications)
+            action_result = self.scheduling_queue.load_state(applications)
+            self.handle_actions(action_result)
 
         elif event.event == EventType.ADDED or event.event == EventType.MODIFIED:
             if not isinstance(event.object, dict):

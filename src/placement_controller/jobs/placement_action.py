@@ -67,7 +67,9 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
                     logger.info("Current placement equals to new placement. Keeping placement unchanged.")
                     return True
                 app.set_placement_zones(new_placement_zones)
-                await client.patch_status(AnyApplication.GVK, self.name, app.get_status_or_fail())
+                patch_result = await client.patch_status(AnyApplication.GVK, self.name, app.get_status_or_fail())
+                if patch_result is None:
+                    logger.error(f"{self.name.to_string()}: kube patch result is empty")
 
                 result = True
                 logger.info(f"{self.name.to_string()}: setting placement zones done")

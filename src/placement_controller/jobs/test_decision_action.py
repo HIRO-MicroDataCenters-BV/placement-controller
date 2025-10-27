@@ -98,6 +98,18 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
         result = self.loop.run_until_complete(action.run(self.context))
         self.assertEqual(result.result, [PlacementZone(id="zone1"), PlacementZone(id="zone2")])
 
+    def test_decide_success_multiple_zones_upscale_excluding_unavaialble(self) -> None:
+        operation = FSMOperation(
+            direction=ScaleDirection.UPSCALE,
+            required_replica=2,
+            current_zones={"zone1"},
+            available_zones={"zone2", "zone3"},
+        )
+        action = DecisionAction(self.bids, operation, self.name, "test")
+
+        result = self.loop.run_until_complete(action.run(self.context))
+        self.assertEqual(result.result, [PlacementZone(id="zone2")])
+
     def test_decide_downscale(self) -> None:
         operation = FSMOperation(
             direction=ScaleDirection.DOWNSCALE,

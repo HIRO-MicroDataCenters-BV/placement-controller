@@ -43,9 +43,15 @@ class FSM:
 
     def on_tick(self) -> NextStateResult:
         # unmanaged state should never expire, therefore we just ignore it
-
         if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):
             return NextStateResult()
+
+        if self.ctx.state.is_valid_at(SchedulingStep.PENDING, self.timestamp):
+            # handling changes in the application or membership during update
+            operation = self.determine_operation(self.ctx.application)
+            if operation.direction == ScaleDirection.UPSCALE or operation.direction == ScaleDirection.DOWNSCALE:
+                self.ctx = self.ctx.start_operation(operation, self.timestamp)
+                return self.new_get_spec(self.ctx.application)
 
         # start over if pending is expired (optimization flow)
         if self.ctx.state.is_expired_state(SchedulingStep.PENDING, self.timestamp):
@@ -300,6 +306,9 @@ class FSM:
         msg = f"Membership update: Available zones '{zone_names}'"
 
         self.ctx = self.ctx.to_next(self.ctx.state.step, self.timestamp, msg).with_available_zones(available_zones)
+
+        if self.ctx.state.is_valid_at(SchedulingStep.UNMANAGED, self.timestamp):
+            return NextStateResult(context=self.ctx)
 
         # check if zone is failed
         application = self.ctx.application

@@ -75,7 +75,12 @@ class DecisionAction(Action[DecisionActionResult]):
             )
 
             desired_replica = self.operation.required_replica
-            current_zones = [PlacementZone(id=current_zone_id) for current_zone_id in self.operation.current_zones]
+            # current zones that are available
+            current_zones = [
+                PlacementZone(id=current_zone_id)
+                for current_zone_id in self.operation.current_zones
+                if current_zone_id in self.operation.available_zones
+            ]
             upscale_replica = desired_replica - len(current_zones)
 
             chosen_responses = sorted_responses[:upscale_replica]

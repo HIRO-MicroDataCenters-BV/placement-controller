@@ -139,10 +139,13 @@ class Applications:
 
     async def ticker(self) -> None:
         logger.info("Ticker started.")
-        while not self.is_terminated.is_set():
-            actions = self.scheduling_queue.on_tick(self.clock.now_seconds())
-            self.handle_actions(actions)
-            await asyncio.sleep(self.tick_interval_seconds)
+        try:
+            while not self.is_terminated.is_set():
+                actions = self.scheduling_queue.on_tick(self.clock.now_seconds())
+                self.handle_actions(actions)
+                await asyncio.sleep(self.tick_interval_seconds)
+        except Exception as e:
+            logger.error(f"Ticker loop error: {e}")
 
     async def list(self) -> List[AnyApplication]:
         applications = await self.client.list(AnyApplication.GVK)

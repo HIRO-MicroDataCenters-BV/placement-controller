@@ -26,6 +26,11 @@ service:
   type: ClusterIP
   port: 8080
 
+# service:
+#   type: LoadBalancer
+#   port: 8080
+#   loadBalancerIP: 127.0.0.1
+
 ingressHostName: placement-controller
 
 livenessProbe:

@@ -32,6 +32,10 @@ Placement controller for decentralized control plane.
 | readinessProbe.periodSeconds | int | `10` |  |
 | readinessProbe.timeoutSeconds | int | `5` |  |
 | replicaCount | int | `1` |  |
+| resources.limits.cpu | string | `"300m"` |  |
+| resources.limits.memory | string | `"300Mi"` |  |
+| resources.requests.cpu | string | `"300m"` |  |
+| resources.requests.memory | string | `"300Mi"` |  |
 | securityContext | object | `{}` |  |
 | service.port | int | `8080` |  |
 | service.type | string | `"ClusterIP"` |  |

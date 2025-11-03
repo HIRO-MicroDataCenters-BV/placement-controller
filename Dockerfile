@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS builder
+FROM python:3.13.9-slim AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.5.7 /uv /bin/uv
 
 ENV \
@@ -18,7 +18,7 @@ RUN uv sync \
         --no-editable \
         --no-dev
 
-FROM python:3.12-slim AS runtime
+FROM python:3.13.9-slim AS runtime
 
 ENV PATH="/app/.venv/bin:$PATH"
 

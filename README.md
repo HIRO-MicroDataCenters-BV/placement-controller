@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/HIRO-MicroDataCenters-BV/placement-controller)
+
 # Placement Controller
 
 Rudimentary Placement Controller for Decentralized Control Plane

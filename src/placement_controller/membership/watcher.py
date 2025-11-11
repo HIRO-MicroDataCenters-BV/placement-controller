@@ -34,6 +34,6 @@ class MembershipWatcher(ObjectPool[MeshPeer]):
         zones = set()
         for peer in self.get_objects():
             instance = peer.get_peer_instance()
-            if peer.get_state() == PeerStatus.Ready and instance is not None:
+            if peer.get_state() in [PeerStatus.Ready, PeerStatus.Unknown] and instance is not None:
                 zones.add(PlacementZone(id=instance.zone))
         return Membership(zones=zones)

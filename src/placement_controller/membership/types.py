@@ -23,6 +23,7 @@ class PeerStatus(StrEnum):
     Ready = "Ready"
     NotReady = "NotReady"
     Unavailable = "Unavailable"
+    Unknown = "Unknown"
 
 
 @dataclass

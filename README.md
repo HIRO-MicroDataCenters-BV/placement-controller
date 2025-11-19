@@ -16,32 +16,26 @@ Rudimentary Placement Controller for Decentralized Control Plane
 
 ## Table of Contents
 
-- [template-python](#template-python)
+- [Placement Controller](#placement-controller)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
     - [Development](#development)
     - [Deployment](#deployment)
   - [Development](#development-1)
-    - [Step 1: Update and Install Dependencies](#step-1-update-and-install-dependencies)
-    - [Step 2: Install Pyenv](#step-2-install-pyenv)
-    - [Step 3: Install Python 3.12](#step-3-install-python-312)
-    - [Step 4: Connect Poetry to it](#step-4-connect-poetry-to-it)
   - [Docker](#docker)
   - [Manual build and deployment on minikube](#manual-build-and-deployment-on-minikube)
   - [Package](#package)
   - [Helm chart](#helm-chart)
-  - [OpenaAPI schema](#openaapi-schema)
   - [Release](#release)
   - [Helm Chart Versioning](#helm-chart-versioning)
   - [GitHub Actions](#github-actions)
   - [Act](#act)
-- [Collaboration guidelines](#collaboration-guidelines)
+  - [Collaboration guidelines](#collaboration-guidelines)
 
 ## Prerequisites
 ### Development
-  - [Python 3.12](#step-2-install-pyenv) - look at detailed instructions below
-  - [pipx](https://pipx.pypa.io/stable/)
-  - [poetry](https://python-poetry.org/docs/)
+  - [Python 3.13](https://www.python.org/downloads/) - The project requires Python 3.13 or higher
+  - [uv](https://docs.astral.sh/uv/) - Fast Python package installer and resolver
   - [docker](https://docs.docker.com/get-docker/)
   - [Helm](https://helm.sh/en/docs/)
   - [minikube](https://minikube.sigs.k8s.io/docs/start/)
@@ -53,84 +47,45 @@ Rudimentary Placement Controller for Decentralized Control Plane
 
 
 ## Development
-<details>
-<h4><summary>Install Python 3.12 if it is not available in your package manager</summary></h4>
 
-These instructions are for Ubuntu 22.04 and may not work for other versions.
-
-Also, these instructions are about using Poetry with Pyenv-managed (non-system) Python.
- 
-### Step 1: Update and Install Dependencies
-Before we install pyenv, we need to update our package lists for upgrades and new package installations. We also need to install dependencies for pyenv. 
-
-Open your terminal and type:  
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you don't have it:
 ```bash
-sudo apt-get update
-sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
-libreadline-dev libsqlite3-dev wget curl llvm libncursesw5-dev xz-utils \
-tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
-```
+# On macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-### Step 2: Install Pyenv
-We will clone pyenv from the official GitHub repository and add it to our system path.
-```bash
-git clone https://github.com/pyenv/pyenv.git ~/.pyenv
-echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-echo 'eval "$(pyenv init -)"' >> ~/.bashrc
-exec "$SHELL"
-```
-For additional information visit official [docs](https://github.com/pyenv/pyenv?tab=readme-ov-file#installation)
+# On Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-### Step 3: Install Python 3.12
-Now that pyenv is installed, we can install different Python versions. To install Python 3.12, use the following command:
-```bash
-pyenv install 3.12
-```
-
-### Step 4: Connect Poetry to it
-Do this in the template dir. Pycharm will automatically connect to it later
-```bash
-poetry env use ~/.pyenv/versions/3.12.9/bin/python
-```
-(change the version number accordingly to what is installed)
-
-Finally, verify that Poetry indeed is connected to the proper version:
-```bash
-poetry env info
-```
-</details>  
-
-
-1. If you don't have `Poetry` installed run:
-```bash
-pipx install poetry
+# Or using pip
+pip install uv
 ```
 
 2. Install dependencies:
 ```bash
-poetry config virtualenvs.in-project true
-poetry install --no-root --with dev,test
+uv sync --locked --all-extras --dev
 ```
 
 3. Install `pre-commit` hooks:
 ```bash
-poetry run pre-commit install
+uv run pre-commit install
 ```
 
 4. Launch the project:
 ```bash
-python -m placement.main --config ./etc/config.yaml
+uv run python -m placement_controller.main --config ./etc/config.yaml
 ```
 
 5. Running tests:
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
-You can test the application for multiple versions of Python. To do this, you need to install the required Python versions on your operating system, specify these versions in the `tox.ini` file, and then run the tests:
+6. Running style checks:
 ```bash
-poetry run tox
+uv run mypy ./src
+uv run isort ./src --check --diff
+uv run flake8 ./src
+uv run black ./src --check --diff
 ```
 
 
@@ -168,14 +123,16 @@ helm upgrade --install <app_name> ./charts/app --set image.repository=<image_nam
 ```
 
 ## Package
-To generate and publish a package on pypi.org, execute the following commands:
+To build and publish a package on pypi.org, execute the following commands:
 ```bash
-poetry config pypi-token.pypi <pypi_token>
-poetry build
-poetry publish
+# Build the package
+uv build
+
+# Publish to PyPI (requires PyPI token to be set)
+uv publish --token <pypi_token>
 ```
 
-pypi_token - API token for authentication on [PyPI](https://pypi.org/help/#apitoken). 
+`pypi_token` - API token for authentication on [PyPI](https://pypi.org/help/#apitoken). 
 
 
 ## Helm chart

@@ -56,6 +56,8 @@ class BidAction(Action[BidActionResult]):
         zone_to_response = {zone: response for ((zone, _), response) in zip(zone_to_client, responses)}
 
         logger.info(f"{self.name.to_string()}: received responses {len(zone_to_response)}")
+        for zone, response in zone_to_response.items():
+            logger.info(f"{zone}: {response}")
 
         return BidActionResult(zone_to_response, self.name, self.action_id)
 

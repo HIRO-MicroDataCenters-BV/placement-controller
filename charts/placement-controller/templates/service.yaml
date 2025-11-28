@@ -10,9 +10,13 @@ spec:
   loadBalancerIP: {{ .Values.service.loadBalancerIP }}
   {{- end }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
+    - port: {{ .Values.service.metrics.port }}
+      targetPort: {{ .Values.service.metrics.port }}
       protocol: TCP
-      name: http
+      name: metrics
+    - port: {{ .Values.service.api.port }}
+      targetPort: {{ .Values.service.api.port }}
+      protocol: TCP
+      name: api
   selector:
     {{- include "app.selectorLabels" . | nindent 4 }}

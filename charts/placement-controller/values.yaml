@@ -32,14 +32,20 @@ resources:
     cpu: 300m
     memory: 300Mi
 
+
 service:
   type: ClusterIP
-  port: 8080
 
-# service:
 #   type: LoadBalancer
-#   port: 8080
 #   loadBalancerIP: 127.0.0.1
+
+  api:
+    # API port
+    port: 8000
+
+  metrics:
+    port: 8080
+
 
 ingressHostName: placement-controller
 

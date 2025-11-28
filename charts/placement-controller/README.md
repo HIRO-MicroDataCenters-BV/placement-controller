@@ -37,7 +37,8 @@ Placement controller for decentralized control plane.
 | resources.requests.cpu | string | `"300m"` |  |
 | resources.requests.memory | string | `"300Mi"` |  |
 | securityContext | object | `{}` |  |
-| service.port | int | `8080` |  |
+| service.api.port | int | `8000` |  |
+| service.metrics.port | int | `8080` |  |
 | service.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` |  |
 | serviceAccount.automount | bool | `true` |  |

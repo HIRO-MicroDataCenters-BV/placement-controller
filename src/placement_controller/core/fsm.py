@@ -200,18 +200,19 @@ class FSM:
         action = self.ctx.get_action_by_id(result.action_id)
         if not action:
             return self.placement_failure("Failure while receiving bids. Action is not found. ")
+        response_str = bid_response_to_human_readable(result.response)
 
         if result.is_success():
+            msg = f"Bids received. {response_str}"
             self.ctx = self.ctx.with_bid_responses(
                 action.action_id,
                 result.response,
                 self.timestamp,
-                "Bids received.",
+                msg,
             )
-            msg = "Making decision..."
             return self.new_decision_action(result.response, result.get_application_name(), msg)
         else:
-            return self.retry(f"Failure while receiving bids. {result.response} ")  # TODO stringify error
+            return self.retry(f"Failure while receiving bids. {response_str} ")
 
     def new_decision_action(
         self,
@@ -352,3 +353,12 @@ class FSM:
             current_zones=current_placement_zones,
             available_zones=available_zones,
         )
+
+
+def bid_response_to_human_readable(bid_response: Mapping[ZoneId, BidResponseOrError]) -> str:
+    response_str = ""
+    sep = ""
+    for zone, response in bid_response.items():
+        response_str += sep + f"zone {zone}: " + response.to_human_readable()
+        sep = ", "
+    return response_str

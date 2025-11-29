@@ -49,6 +49,14 @@ class Metric(StrEnum):
         else:
             raise Exception(f"We don't know the unit for metric {self}")
 
+    def is_minimize(self) -> bool:
+        if self == Metric.cost:
+            return True
+        elif self == Metric.energy:
+            return True
+        else:
+            raise Exception(f"We don't know the is_max_better for metric {self}")
+
 
 class BidRequestModel(BaseModel):
     id: str
@@ -79,11 +87,32 @@ class BidResponseModel(BaseModel):
         found = [m for m in self.metrics if m.id == metric]
         return next(iter(found), None)
 
+    def to_human_readable(self) -> str:
+        response_str = f"status={self.status}"
+        if self.reason is not None:
+            response_str = response_str + f", reason='{self.reason}'"
+        if self.msg is not None:
+            response_str = response_str + f", msg='{self.msg}'"
+        if len(self.metrics) > 0:
+            sep = ""
+            response_str = response_str + ", metrics{ "
+            for metric in self.metrics:
+                response_str = response_str + sep + f"{metric.id}={metric.value} ({metric.unit})"
+                sep = ", "
+            response_str = response_str + "}"
+        return response_str
+
 
 class ErrorResponse(BaseModel):
     status: int
     code: str
     msg: Optional[str] = None
+
+    def to_human_readable(self) -> str:
+        response_str = f"error: code={self.code}, status={self.status}'"
+        if self.msg is not None:
+            response_str = response_str + f", msg='{self.msg}'"
+        return response_str
 
 
 class SchedulingEntry(BaseModel):

@@ -109,6 +109,8 @@ class DecisionAction(Action[DecisionActionResult]):
         sorted_responses = sorted(
             responses_including_current_zones,
             key=functools.cmp_to_key(bid_response_comparator(self.criteria_priority)),
+            # we will iterate and throw the most unfavourable ones,
+            # therefore want to reverse and start throwing the worst
             reverse=True,
         )
         sorted_zones = [zone_id for zone_id, _ in sorted_responses]
@@ -199,7 +201,10 @@ def bid_response_comparator(
                 if m1_value == m2_value:
                     continue
                 else:
-                    return -1 if m1_value < m2_value else 1
+                    if criterio.is_minimize():
+                        return -1 if m1_value < m2_value else 1
+                    else:
+                        return 1 if m1_value < m2_value else -1
         return 0
 
     return cmp_func

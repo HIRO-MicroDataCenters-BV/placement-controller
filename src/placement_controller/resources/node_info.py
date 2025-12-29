@@ -68,7 +68,7 @@ class NodeInfo:
             free = free_resources.get(str(criterio), Decimal(0))
             consume = requests.get(criterio, limits.get(criterio, Decimal(0)))
             if free - consume < 0:
-                log.log(f"Node {self.name} placement rejected. Not enough {criterio}.")
+                log.log(msg=f"Node {self.name} placement rejected. Not enough {criterio}.")
                 return False
         return True
 

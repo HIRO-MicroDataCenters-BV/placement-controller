@@ -11,6 +11,7 @@ from placement_controller.core.next_state_result import NextStateResult
 from placement_controller.core.scheduling_state import DEFAULT_FAILURE_DELAY_SECONDS, DEFAULT_RESCHEDULE_DELAY_SECONDS
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import Membership, PlacementZone
+from placement_controller.resources.trace_log import TraceLog
 from placement_controller.util.clock import Clock
 
 
@@ -112,8 +113,9 @@ class SchedulingQueue:
         application: AnyApplication,
     ) -> SchedulingContext:
         if name not in self.contexts:
+            trace = TraceLog(self.current_zone, name, self.clock)
             self.contexts[name] = SchedulingContext.new(
-                application, timestamp, name, self.current_zone, list(self.zones)
+                application, trace, timestamp, name, self.current_zone, list(self.zones)
             )
 
         return self.contexts[name]

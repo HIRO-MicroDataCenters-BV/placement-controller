@@ -11,8 +11,8 @@ from typing import cast
 from typing import Union
 
 if TYPE_CHECKING:
-    from ..models.metric_value import MetricValue
     from ..models.trace_log_row_model import TraceLogRowModel
+    from ..models.metric_value import MetricValue
 
 
 T = TypeVar("T", bound="BidResponseModel")
@@ -84,8 +84,8 @@ class BidResponseModel:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.metric_value import MetricValue
         from ..models.trace_log_row_model import TraceLogRowModel
+        from ..models.metric_value import MetricValue
 
         d = dict(src_dict)
         id = d.pop("id")

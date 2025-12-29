@@ -48,7 +48,9 @@ class Context:
         self.tasks = []
         self.resource_metrics = ResourceMetricsImpl(config=self.settings.metrics)
         self.resource_tracking = ResourceTrackingImpl(kube_client, self.terminated)
-        self.resource_management = ResourceManagementImpl(kube_client, self.resource_tracking, self.resource_metrics)
+        self.resource_management = ResourceManagementImpl(
+            self.settings.placement.current_zone, clock, kube_client, self.resource_tracking, self.resource_metrics
+        )
         zone_api_factory.set_local_client(LocalPlacementClient(self.resource_management))
 
         self.executor_context = ExecutorContext(

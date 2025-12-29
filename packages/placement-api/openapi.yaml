@@ -242,16 +242,6 @@ components:
           title: Id
         status:
           $ref: '#/components/schemas/BidStatus'
-        reason:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Reason
-        msg:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Msg
         metrics:
           items:
             $ref: '#/components/schemas/MetricValue'
@@ -262,6 +252,16 @@ components:
             $ref: '#/components/schemas/TraceLogRowModel'
           type: array
           title: Trace
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        msg:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msg
       type: object
       required:
       - id

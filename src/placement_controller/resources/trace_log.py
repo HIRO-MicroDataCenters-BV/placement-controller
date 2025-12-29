@@ -32,8 +32,17 @@ class TraceLog:
         self.data.append(row)
 
     def log_state(self, msg: str, state: str) -> None:
-        row = TraceLogRow(timestamp=self.clock.now_seconds(), zone=self.zone, name=self.name, msg=msg, state=state)
+        row = TraceLogRow(
+            timestamp=self.clock.now_seconds(),
+            zone=self.zone,
+            name=self.name,
+            msg=msg,
+            state=state,
+        )
         self.data.append(row)
 
     def get_raw(self) -> List[TraceLogRow]:
         return self.data
+
+    def reset(self) -> None:
+        self.data = []

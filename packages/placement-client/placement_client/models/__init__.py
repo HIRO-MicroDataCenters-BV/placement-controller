@@ -11,7 +11,9 @@ from .http_validation_error import HTTPValidationError
 from .metric import Metric
 from .metric_unit import MetricUnit
 from .metric_value import MetricValue
+from .namespaced_name_model import NamespacedNameModel
 from .scheduling_entry import SchedulingEntry
+from .trace_log_row_model import TraceLogRowModel
 from .validation_error import ValidationError
 
 __all__ = (
@@ -26,6 +28,8 @@ __all__ = (
     "Metric",
     "MetricUnit",
     "MetricValue",
+    "NamespacedNameModel",
     "SchedulingEntry",
+    "TraceLogRowModel",
     "ValidationError",
 )

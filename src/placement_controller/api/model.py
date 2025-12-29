@@ -5,6 +5,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
+from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
 
 
@@ -58,8 +59,17 @@ class Metric(StrEnum):
             raise Exception(f"We don't know the is_max_better for metric {self}")
 
 
+class NamespacedNameModel(BaseModel):
+    name: str
+    namespace: str
+
+    def to_domain(self) -> NamespacedName:
+        return NamespacedName(name=self.name, namespace=self.namespace)
+
+
 class BidRequestModel(BaseModel):
     id: str
+    name: NamespacedNameModel
     spec: str
     bid_criteria: List[BidCriteria]
     metrics: Set[Metric]
@@ -76,12 +86,21 @@ class MetricValue(BaseModel):
     unit: MetricUnit
 
 
+class TraceLogRowModel(BaseModel):
+    timestamp: int
+    zone: str
+    name: NamespacedNameModel
+    msg: str
+    state: Optional[str] = None
+
+
 class BidResponseModel(BaseModel):
     id: str
     status: BidStatus
     reason: Optional[str] = None
     msg: Optional[str] = None
     metrics: List[MetricValue]
+    trace: List[TraceLogRowModel]
 
     def get_metric_value(self, metric: Metric) -> Optional[MetricValue]:
         found = [m for m in self.metrics if m.id == metric]

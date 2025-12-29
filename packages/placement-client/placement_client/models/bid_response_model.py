@@ -12,6 +12,7 @@ from typing import Union
 
 if TYPE_CHECKING:
     from ..models.metric_value import MetricValue
+    from ..models.trace_log_row_model import TraceLogRowModel
 
 
 T = TypeVar("T", bound="BidResponseModel")
@@ -24,6 +25,7 @@ class BidResponseModel:
         id (str):
         status (BidStatus):
         metrics (list['MetricValue']):
+        trace (list['TraceLogRowModel']):
         reason (Union[None, Unset, str]):
         msg (Union[None, Unset, str]):
     """
@@ -31,6 +33,7 @@ class BidResponseModel:
     id: str
     status: BidStatus
     metrics: list["MetricValue"]
+    trace: list["TraceLogRowModel"]
     reason: Union[None, Unset, str] = UNSET
     msg: Union[None, Unset, str] = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -44,6 +47,11 @@ class BidResponseModel:
         for metrics_item_data in self.metrics:
             metrics_item = metrics_item_data.to_dict()
             metrics.append(metrics_item)
+
+        trace = []
+        for trace_item_data in self.trace:
+            trace_item = trace_item_data.to_dict()
+            trace.append(trace_item)
 
         reason: Union[None, Unset, str]
         if isinstance(self.reason, Unset):
@@ -64,6 +72,7 @@ class BidResponseModel:
                 "id": id,
                 "status": status,
                 "metrics": metrics,
+                "trace": trace,
             }
         )
         if reason is not UNSET:
@@ -76,6 +85,7 @@ class BidResponseModel:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         from ..models.metric_value import MetricValue
+        from ..models.trace_log_row_model import TraceLogRowModel
 
         d = dict(src_dict)
         id = d.pop("id")
@@ -88,6 +98,13 @@ class BidResponseModel:
             metrics_item = MetricValue.from_dict(metrics_item_data)
 
             metrics.append(metrics_item)
+
+        trace = []
+        _trace = d.pop("trace")
+        for trace_item_data in _trace:
+            trace_item = TraceLogRowModel.from_dict(trace_item_data)
+
+            trace.append(trace_item)
 
         def _parse_reason(data: object) -> Union[None, Unset, str]:
             if data is None:
@@ -111,6 +128,7 @@ class BidResponseModel:
             id=id,
             status=status,
             metrics=metrics,
+            trace=trace,
             reason=reason,
             msg=msg,
         )

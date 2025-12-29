@@ -1,17 +1,39 @@
-from typing import List
+from typing import List, Optional
 
 from dataclasses import dataclass, field
+
+from placement_controller.clients.k8s.client import NamespacedName
+from placement_controller.util.clock import Clock
+
+
+@dataclass
+class TraceLogRow:
+    timestamp: int
+    zone: str
+    name: NamespacedName
+    msg: str
+    state: Optional[str] = None
 
 
 @dataclass
 class TraceLog:
-    data: List[str] = field(default_factory=list)
+    zone: str
+    name: NamespacedName
+    clock: Clock
+    data: List[TraceLogRow] = field(default_factory=list)
 
     def log(self, msg: str) -> None:
-        self.data.append(msg)
+        row = TraceLogRow(
+            timestamp=self.clock.now_seconds(),
+            zone=self.zone,
+            name=self.name,
+            msg=msg,
+        )
+        self.data.append(row)
 
-    def get_raw(self) -> List[str]:
+    def log_state(self, msg: str, state: str) -> None:
+        row = TraceLogRow(timestamp=self.clock.now_seconds(), zone=self.zone, name=self.name, msg=msg, state=state)
+        self.data.append(row)
+
+    def get_raw(self) -> List[TraceLogRow]:
         return self.data
-
-    def get_data(self) -> str:
-        return "\n".join(self.data)

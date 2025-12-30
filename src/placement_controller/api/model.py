@@ -108,6 +108,15 @@ class TraceLogRowModel(BaseModel):
             state=row.state,
         )
 
+    def to_domain(self) -> TraceLogRow:
+        return TraceLogRow(
+            timestamp=self.timestamp,
+            zone=self.zone,
+            name=NamespacedNameModel.to_domain(self.name),
+            msg=self.msg,
+            state=self.state,
+        )
+
 
 class BidResponseModel(BaseModel):
     id: str

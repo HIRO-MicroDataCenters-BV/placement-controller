@@ -171,7 +171,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
         if action is None:
             self.fail("action expected")
 
-        decision_result = DecisionActionResult(placements, self.name, action.get_id())
+        decision_result = DecisionActionResult(placements, [], self.name, action.get_id())
         result = FSM(context, self.now, self.options).on_action_result(decision_result)
 
         if result.context is None:

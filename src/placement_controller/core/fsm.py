@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from application_client import models
 
-from placement_controller.api.model import BidCriteria, BidRequestModel, ErrorResponse, Metric
+from placement_controller.api.model import BidCriteria, BidRequestModel, ErrorResponse, Metric, NamespacedNameModel
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication, GlobalState, PlacementStrategy
 from placement_controller.core.context import SchedulingContext
@@ -189,7 +189,13 @@ class FSM:
         bid_criteria = [BidCriteria.cpu, BidCriteria.memory]
         metrics = {Metric.cost, Metric.energy}
 
-        bid = BidRequestModel(id=self.ctx.gen_action_id(), spec=spec_str, bid_criteria=bid_criteria, metrics=metrics)
+        bid = BidRequestModel(
+            id=self.ctx.gen_action_id(),
+            name=NamespacedNameModel(name=name.name, namespace=name.namespace),
+            spec=spec_str,
+            bid_criteria=bid_criteria,
+            metrics=metrics,
+        )
 
         next_action: Action[ActionResult] = BidAction(operation, bid, name)  # type: ignore
         next_context = self.ctx.to_next(SchedulingStep.BID_COLLECTION, self.timestamp, msg).with_action(next_action)
@@ -261,7 +267,7 @@ class FSM:
             spec=spec,
             placements=placements,
             reason=self.ctx.reason or "reason is not set",
-            trace=self.ctx.trace.get_data(),
+            trace=self.ctx.trace.get_raw(),
         )
         next_action: Action[ActionResult] = SetPlacementAction(decision, name, self.ctx.gen_action_id())  # type: ignore
         next_context = self.ctx.to_next(SchedulingStep.SET_PLACEMENT, self.timestamp, msg).with_action(next_action)

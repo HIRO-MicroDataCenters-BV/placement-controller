@@ -14,6 +14,8 @@ from placement_controller.api.model import (
     BidStatus,
     Metric,
     MetricValue,
+    NamespacedNameModel,
+    TraceLogRowModel,
 )
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.fake_client import FakeClient
@@ -22,10 +24,12 @@ from placement_controller.resources.resource_managment import ResourceManagement
 from placement_controller.resources.resource_metrics import MetricSettings, ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
 from placement_controller.resources.types import ResourceManagement, ResourceTracking
+from placement_controller.util.mock_clock import MockClock
 
 
 class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
     client: FakeClient
+    clock: MockClock
     tracking: ResourceTracking
     resource_management: ResourceManagement
     task: Task[None]
@@ -35,6 +39,7 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
 
     def setUp(self) -> None:
         super().setUp()
+        self.clock = MockClock()
         self.client = FakeClient()
         self.tracking = ResourceTrackingImpl(self.client, self.terminated)
         self.task = self.loop.create_task(self.tracking.start())
@@ -42,7 +47,9 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
 
         resource_metrics = ResourceMetricsImpl(config=MetricSettings(static_metrics=[]))
 
-        self.resource_management = ResourceManagementImpl(self.client, self.tracking, resource_metrics)
+        self.resource_management = ResourceManagementImpl(
+            "zone", self.clock, self.client, self.tracking, resource_metrics
+        )
 
         self.node1 = self.make_node("node1", 2, 32 * self.GIGA, 512 * self.GIGA, 0)
         self.node2 = self.make_node("node2", 4, 16 * self.GIGA, 512 * self.GIGA, 1)
@@ -61,7 +68,11 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
         )
         spec_json = self.to_json_str(spec)
         bid = BidRequestModel(
-            id="id", spec=spec_json, bid_criteria=[BidCriteria.cpu, BidCriteria.memory], metrics={Metric.cost}
+            id="id",
+            name=NamespacedNameModel(name="test", namespace="test"),
+            spec=spec_json,
+            bid_criteria=[BidCriteria.cpu, BidCriteria.memory],
+            metrics={Metric.cost},
         )
         response = self.resource_management.application_bid(bid)
 
@@ -71,9 +82,27 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
                 id=bid.id,
                 status=BidStatus.accepted,
                 reason=None,
-                msg="Instance 0 of pod test/pod1 is assigned to node node1.\n"
-                + "-- result --"
-                + "\n - pod test/pod1 is bound to nodes: node1",
+                trace=[
+                    TraceLogRowModel(
+                        timestamp=1,
+                        zone="zone",
+                        name=NamespacedNameModel(name="test", namespace="test"),
+                        msg="Instance 0 of pod test/pod1 is assigned to node node1.",
+                    ),
+                    TraceLogRowModel(
+                        timestamp=1,
+                        zone="zone",
+                        name=NamespacedNameModel(name="test", namespace="test"),
+                        msg="-- placement result --",
+                    ),
+                    TraceLogRowModel(
+                        timestamp=1,
+                        zone="zone",
+                        name=NamespacedNameModel(name="test", namespace="test"),
+                        msg=" - pod test/pod1 is bound to nodes: node1",
+                    ),
+                ],
+                msg=None,
                 metrics=[MetricValue(id=Metric.cost, value=Decimal(0.0), unit=Metric.cost.unit())],
             ),
         )

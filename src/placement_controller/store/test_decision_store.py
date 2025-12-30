@@ -21,6 +21,7 @@ class DecisionStoreImplTest(AsyncTestFixture, ResourceTestFixture):
 
     def setUp(self) -> None:
         super().setUp()
+        self.maxDiff = None
 
         self.fake_server = FakeOrchestrationlibServer(host="127.0.0.1")
         self.fake_server.start()
@@ -37,7 +38,7 @@ class DecisionStoreImplTest(AsyncTestFixture, ResourceTestFixture):
         super().tearDown()
 
     def test_save_decision(self) -> None:
-        self.loop.run_until_complete(self.store.save(self.name, self.spec, ["zone1", "zone2"], "reason", "trace", 0))
+        self.loop.run_until_complete(self.store.save(self.name, self.spec, ["zone1", "zone2"], "reason", [], 0))
 
         requests = self.fake_server.get_save_requests()
         self.assertEqual(
@@ -48,7 +49,7 @@ class DecisionStoreImplTest(AsyncTestFixture, ResourceTestFixture):
                     spec=PlacementDecisionCreateSpec.from_dict({"test": "test"}),
                     decision=PlacementDecisionField(placement=["zone1", "zone2"], reason="reason"),
                     timestamp=datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc),
-                    trace="trace",
+                    trace="[]",
                 )
             ],
         )

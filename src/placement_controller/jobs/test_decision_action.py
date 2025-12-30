@@ -33,6 +33,7 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
             "zone1": BidResponseModel(
                 id="1",
                 status=BidStatus.accepted,
+                trace=[],
                 reason=None,
                 msg=None,
                 metrics=[
@@ -46,6 +47,7 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
             "zone2": BidResponseModel(
                 id="1",
                 status=BidStatus.accepted,
+                trace=[],
                 reason=None,
                 msg=None,
                 metrics=[
@@ -57,7 +59,7 @@ class DecisionActionTest(AsyncTestFixture, ResourceTestFixture):
                 ],
             ),
             "zone3": BidResponseModel(
-                id="1", status=BidStatus.rejected, reason="Not enough resources", msg=None, metrics=[]
+                id="1", trace=[], status=BidStatus.rejected, reason="Not enough resources", msg=None, metrics=[]
             ),
             "zone4": ErrorResponse(status=500, code="INTERNAL_ERROR", msg="failure"),
         }

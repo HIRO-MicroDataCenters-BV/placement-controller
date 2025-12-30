@@ -25,6 +25,7 @@ class BidResponseComparatorTest(TestCase, ResourceTestFixture):
         self.response1 = BidResponseModel(
             id="test",
             status=BidStatus.accepted,
+            trace=[],
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
             reason=None,
             msg="OK",
@@ -32,12 +33,14 @@ class BidResponseComparatorTest(TestCase, ResourceTestFixture):
         self.response2 = BidResponseModel(
             id="test",
             status=BidStatus.accepted,
+            trace=[],
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.03"), unit=MetricUnit.eur)],
             reason=None,
             msg="OK",
         )
         self.response3 = BidResponseModel(
             id="test",
+            trace=[],
             status=BidStatus.accepted,
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.00"), unit=MetricUnit.eur)],
             reason=None,

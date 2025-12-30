@@ -44,7 +44,7 @@ class SetPlacementActionTest(AsyncTestFixture, ResourceTestFixture):
             spec="{}",
             placements=self.zones,
             reason="reason",
-            trace="trace",
+            trace=[],
         )
         self.action = SetPlacementAction(self.decision, self.name, "test")
 

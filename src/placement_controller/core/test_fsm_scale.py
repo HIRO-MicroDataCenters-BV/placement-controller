@@ -27,7 +27,12 @@ class FSMScaleTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
@@ -61,7 +66,12 @@ class FSMScaleTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
@@ -97,7 +107,12 @@ class FSMScaleTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
@@ -131,7 +146,12 @@ class FSMScaleTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone2"), PlacementZone(id="zone3")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone2"), PlacementZone(id="zone3")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
@@ -167,7 +187,12 @@ class FSMScaleTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
@@ -198,7 +223,12 @@ class FSMScaleTest(FSMTestBase):
         self.now = 0
         # PENDING state
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         context.state = SchedulingState(
             SchedulingStep.PENDING, self.options.reschedule_default_delay_seconds * 1000, None

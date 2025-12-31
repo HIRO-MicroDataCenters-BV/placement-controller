@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import Any, TypeVar
+from typing import Any, TypeVar, TYPE_CHECKING
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -7,6 +7,9 @@ from attrs import field as _attrs_field
 
 from ..models.bid_criteria import BidCriteria
 from ..models.metric import Metric
+
+if TYPE_CHECKING:
+    from ..models.namespaced_name_model import NamespacedNameModel
 
 
 T = TypeVar("T", bound="BidRequestModel")
@@ -17,12 +20,14 @@ class BidRequestModel:
     """
     Attributes:
         id (str):
+        name (NamespacedNameModel):
         spec (str):
         bid_criteria (list[BidCriteria]):
         metrics (list[Metric]):
     """
 
     id: str
+    name: "NamespacedNameModel"
     spec: str
     bid_criteria: list[BidCriteria]
     metrics: list[Metric]
@@ -30,6 +35,8 @@ class BidRequestModel:
 
     def to_dict(self) -> dict[str, Any]:
         id = self.id
+
+        name = self.name.to_dict()
 
         spec = self.spec
 
@@ -48,6 +55,7 @@ class BidRequestModel:
         field_dict.update(
             {
                 "id": id,
+                "name": name,
                 "spec": spec,
                 "bid_criteria": bid_criteria,
                 "metrics": metrics,
@@ -58,8 +66,12 @@ class BidRequestModel:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.namespaced_name_model import NamespacedNameModel
+
         d = dict(src_dict)
         id = d.pop("id")
+
+        name = NamespacedNameModel.from_dict(d.pop("name"))
 
         spec = d.pop("spec")
 
@@ -79,6 +91,7 @@ class BidRequestModel:
 
         bid_request_model = cls(
             id=id,
+            name=name,
             spec=spec,
             bid_criteria=bid_criteria,
             metrics=metrics,

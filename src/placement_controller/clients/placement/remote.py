@@ -14,6 +14,8 @@ from placement_controller.api.model import (
     Metric,
     MetricUnit,
     MetricValue,
+    NamespacedNameModel,
+    TraceLogRowModel,
 )
 from placement_controller.clients.placement.types import PlacementClient
 
@@ -46,6 +48,7 @@ class RemotePlacementClient(PlacementClient):
     def to_client_request(bid: BidRequestModel) -> models.BidRequestModel:
         return models.BidRequestModel(
             id=bid.id,
+            name=models.NamespacedNameModel(name=bid.name.name, namespace=bid.name.namespace),
             spec=bid.spec,
             bid_criteria=[models.BidCriteria(criteria) for criteria in bid.bid_criteria],
             metrics=[models.Metric(metric) for metric in bid.metrics],
@@ -56,10 +59,20 @@ class RemotePlacementClient(PlacementClient):
         def to_metric_value(m: models.MetricValue) -> MetricValue:
             return MetricValue(id=Metric(m.id), value=Decimal(m.value), unit=MetricUnit(m.unit))
 
+        def to_trace_log_row(row: models.TraceLogRowModel) -> TraceLogRowModel:
+            return TraceLogRowModel(
+                timestamp=row.timestamp,
+                zone=row.zone,
+                name=NamespacedNameModel(name=row.name.name, namespace=row.name.namespace),
+                msg=row.msg,
+                state=row.state if row.state else None,
+            )
+
         return BidResponseModel(
             id=bid_response.id,
             status=BidStatus(bid_response.status),
             reason=bid_response.reason or None,
             msg=bid_response.msg or None,
+            trace=[to_trace_log_row(row) for row in bid_response.trace],
             metrics=[to_metric_value(m) for m in bid_response.metrics],
         )

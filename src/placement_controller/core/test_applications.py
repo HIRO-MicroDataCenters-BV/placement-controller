@@ -99,6 +99,7 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         self.bid_response = placement_client_models.BidResponseModel(
             id="test",
             status=placement_client_models.BidStatus.ACCEPTED,
+            trace=[],
             metrics=[
                 placement_client_models.MetricValue(
                     id=placement_client_models.Metric.COST, value="1.01", unit=placement_client_models.MetricUnit.EUR
@@ -110,6 +111,7 @@ class ApplicationsTest(AsyncTestFixture, ResourceTestFixture):
         self.local_bid_response = BidResponseModel(
             id="test",
             status=BidStatus.accepted,
+            trace=[],
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
             reason=None,
             msg="OK",

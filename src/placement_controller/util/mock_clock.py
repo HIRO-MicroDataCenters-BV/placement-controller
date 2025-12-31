@@ -2,13 +2,16 @@ from placement_controller.util.clock import Clock
 
 
 class MockClock(Clock):
-    seconds: int
+    millis: int
 
     def __init__(self):
-        self.seconds = 1
+        self.millis = 1000
 
     def set_seconds(self, seconds: int) -> None:
-        self.seconds = seconds
+        self.millis = seconds * 1000
 
     def now_seconds(self) -> int:
-        return self.seconds
+        return int(self.millis / 1000)
+
+    def now_millis(self) -> int:
+        return self.millis

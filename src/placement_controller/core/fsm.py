@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from application_client import models
 
-from placement_controller.api.model import BidCriteria, BidRequestModel, ErrorResponse, Metric
+from placement_controller.api.model import BidCriteria, BidRequestModel, ErrorResponse, Metric, NamespacedNameModel
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication, GlobalState, PlacementStrategy
 from placement_controller.core.context import SchedulingContext
@@ -18,6 +18,7 @@ from placement_controller.jobs.get_spec_action import GetSpecAction, GetSpecResu
 from placement_controller.jobs.placement_action import PlacementDecision, SetPlacementAction, SetPlacementActionResult
 from placement_controller.jobs.types import Action, ActionResult
 from placement_controller.membership.types import PlacementZone
+from placement_controller.resources.trace_log import TraceLogRow
 
 
 @dataclass
@@ -189,7 +190,13 @@ class FSM:
         bid_criteria = [BidCriteria.cpu, BidCriteria.memory]
         metrics = {Metric.cost, Metric.energy}
 
-        bid = BidRequestModel(id=self.ctx.gen_action_id(), spec=spec_str, bid_criteria=bid_criteria, metrics=metrics)
+        bid = BidRequestModel(
+            id=self.ctx.gen_action_id(),
+            name=NamespacedNameModel(name=name.name, namespace=name.namespace),
+            spec=spec_str,
+            bid_criteria=bid_criteria,
+            metrics=metrics,
+        )
 
         next_action: Action[ActionResult] = BidAction(operation, bid, name)  # type: ignore
         next_context = self.ctx.to_next(SchedulingStep.BID_COLLECTION, self.timestamp, msg).with_action(next_action)
@@ -243,7 +250,7 @@ class FSM:
                 "Decision is made.",
             )
             msg = "Setting placements..."
-            return self.new_set_placement_action(result.result, result.get_application_name(), msg)
+            return self.new_set_placement_action(result.result, result.trace, result.get_application_name(), msg)
         else:
             error: ErrorResponse = result.result
             return self.retry(f"Failure while setting placements. {error.msg} ")
@@ -251,17 +258,20 @@ class FSM:
     def new_set_placement_action(
         self,
         placements: List[PlacementZone],
+        remote_trace: List[TraceLogRow],
         name: NamespacedName,
         msg: str,
     ) -> NextStateResult:
         if not self.ctx.application_spec:
             return self.placement_failure("Unable to create placement action. Lifecycle error. Programmer mistake!")
         spec = json.dumps(self.ctx.application_spec.to_dict())
+        local_traces = self.ctx.trace.get_raw()
+        local_traces.extend(remote_trace)
         decision = PlacementDecision(
             spec=spec,
             placements=placements,
             reason=self.ctx.reason or "reason is not set",
-            trace=self.ctx.trace.get_data(),
+            trace=local_traces,
         )
         next_action: Action[ActionResult] = SetPlacementAction(decision, name, self.ctx.gen_action_id())  # type: ignore
         next_context = self.ctx.to_next(SchedulingStep.SET_PLACEMENT, self.timestamp, msg).with_action(next_action)

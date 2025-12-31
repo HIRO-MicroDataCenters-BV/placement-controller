@@ -10,14 +10,23 @@ from placement_controller.core.scheduling_state import FSMOperation, ScaleDirect
 from placement_controller.jobs.bid_action import BidResponseOrError, ZoneId
 from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
 from placement_controller.membership.types import PlacementZone
+from placement_controller.resources.trace_log import TraceLogRow
 
 
 class DecisionActionResult(ActionResult):
     result: Union[List[PlacementZone], ErrorResponse]
+    trace: List[TraceLogRow]
 
-    def __init__(self, result: Union[List[PlacementZone], ErrorResponse], name: NamespacedName, action_id: ActionId):
+    def __init__(
+        self,
+        result: Union[List[PlacementZone], ErrorResponse],
+        trace: List[TraceLogRow],
+        name: NamespacedName,
+        action_id: ActionId,
+    ):
         super().__init__(name, action_id)
         self.result = result
+        self.trace = trace
 
     def is_success(self) -> bool:
         return not isinstance(self.result, ErrorResponse)
@@ -56,7 +65,9 @@ class DecisionAction(Action[DecisionActionResult]):
             result = self.downscale_decision(accepted_responses)
         elif self.operation.direction == ScaleDirection.NONE:
             result = self.optimize_decision(accepted_responses)
-        return DecisionActionResult(result, self.name, self.action_id)
+
+        trace = self.collect_traces(valid_responses)
+        return DecisionActionResult(result, trace, self.name, self.action_id)
 
     def upscale_decision(
         self, responses: List[Tuple[ZoneId, BidResponseModel]]
@@ -175,6 +186,13 @@ class DecisionAction(Action[DecisionActionResult]):
                 else:
                     result = [PlacementZone(id=zone_id) for zone_id in new_placement_zones]
                     logger.info(f"{self.name.to_string()}: optimal placements decided: {result}")
+        return result
+
+    def collect_traces(self, responses: List[Tuple[ZoneId, BidResponseModel]]) -> List[TraceLogRow]:
+        result = []
+        for _, response in responses:
+            if isinstance(response, BidResponseModel):
+                result.extend([row.to_domain() for row in response.trace])
         return result
 
 

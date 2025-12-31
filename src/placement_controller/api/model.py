@@ -5,7 +5,9 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
+from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.core.application import AnyApplication
+from placement_controller.resources.trace_log import TraceLogRow
 
 
 class ApplicationModel(BaseModel):
@@ -58,8 +60,21 @@ class Metric(StrEnum):
             raise Exception(f"We don't know the is_max_better for metric {self}")
 
 
+class NamespacedNameModel(BaseModel):
+    name: str
+    namespace: str
+
+    def to_domain(self) -> NamespacedName:
+        return NamespacedName(name=self.name, namespace=self.namespace)
+
+    @staticmethod
+    def from_domain(name: NamespacedName) -> "NamespacedNameModel":
+        return NamespacedNameModel(name=name.name, namespace=name.namespace)
+
+
 class BidRequestModel(BaseModel):
     id: str
+    name: NamespacedNameModel
     spec: str
     bid_criteria: List[BidCriteria]
     metrics: Set[Metric]
@@ -76,12 +91,40 @@ class MetricValue(BaseModel):
     unit: MetricUnit
 
 
+class TraceLogRowModel(BaseModel):
+    timestamp: int
+    zone: str
+    name: NamespacedNameModel
+    msg: str
+    state: Optional[str] = None
+
+    @staticmethod
+    def from_domain(row: TraceLogRow) -> "TraceLogRowModel":
+        return TraceLogRowModel(
+            timestamp=row.timestamp,
+            zone=row.zone,
+            name=NamespacedNameModel.from_domain(row.name),
+            msg=row.msg,
+            state=row.state,
+        )
+
+    def to_domain(self) -> TraceLogRow:
+        return TraceLogRow(
+            timestamp=self.timestamp,
+            zone=self.zone,
+            name=NamespacedNameModel.to_domain(self.name),
+            msg=self.msg,
+            state=self.state,
+        )
+
+
 class BidResponseModel(BaseModel):
     id: str
     status: BidStatus
+    metrics: List[MetricValue]
+    trace: List[TraceLogRowModel]
     reason: Optional[str] = None
     msg: Optional[str] = None
-    metrics: List[MetricValue]
 
     def get_metric_value(self, metric: Metric) -> Optional[MetricValue]:
         found = [m for m in self.metrics if m.id == metric]

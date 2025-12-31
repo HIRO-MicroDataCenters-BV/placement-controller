@@ -9,6 +9,7 @@ from placement_controller.clients.k8s.client import KubeClient, NamespacedName
 from placement_controller.core.application import AnyApplication
 from placement_controller.jobs.types import Action, ActionId, ActionResult, ExecutorContext
 from placement_controller.membership.types import PlacementZone
+from placement_controller.resources.trace_log import TraceLogRow
 from placement_controller.store.types import DecisionStore
 from placement_controller.util.clock import Clock
 
@@ -18,7 +19,7 @@ class PlacementDecision:
     spec: str
     placements: List[PlacementZone]
     reason: str
-    trace: str
+    trace: List[TraceLogRow]
 
 
 class SetPlacementActionResult(ActionResult):
@@ -109,13 +110,14 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
             logger.error(f"{self.get_application_name()}: Unable to emit event {e}")
 
     async def store_decision(self, store: DecisionStore, zones: List[str], timestamp: int) -> None:
+        trace = sorted(self.decision.trace, key=lambda t: t.timestamp)
         try:
             await store.save(
                 name=self.get_application_name(),
                 spec=self.decision.spec,
                 placement=zones,
                 reason=self.decision.reason,
-                trace=self.decision.trace,
+                trace=trace,
                 timestamp=timestamp,
             )
         except Exception as e:

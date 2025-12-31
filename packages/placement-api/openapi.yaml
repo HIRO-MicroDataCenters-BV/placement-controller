@@ -211,6 +211,8 @@ components:
         id:
           type: string
           title: Id
+        name:
+          $ref: '#/components/schemas/NamespacedNameModel'
         spec:
           type: string
           title: Spec
@@ -228,6 +230,7 @@ components:
       type: object
       required:
       - id
+      - name
       - spec
       - bid_criteria
       - metrics
@@ -239,6 +242,16 @@ components:
           title: Id
         status:
           $ref: '#/components/schemas/BidStatus'
+        metrics:
+          items:
+            $ref: '#/components/schemas/MetricValue'
+          type: array
+          title: Metrics
+        trace:
+          items:
+            $ref: '#/components/schemas/TraceLogRowModel'
+          type: array
+          title: Trace
         reason:
           anyOf:
           - type: string
@@ -249,16 +262,12 @@ components:
           - type: string
           - type: 'null'
           title: Msg
-        metrics:
-          items:
-            $ref: '#/components/schemas/MetricValue'
-          type: array
-          title: Metrics
       type: object
       required:
       - id
       - status
       - metrics
+      - trace
       title: BidResponseModel
     BidStatus:
       type: string
@@ -322,6 +331,19 @@ components:
       - value
       - unit
       title: MetricValue
+    NamespacedNameModel:
+      properties:
+        name:
+          type: string
+          title: Name
+        namespace:
+          type: string
+          title: Namespace
+      type: object
+      required:
+      - name
+      - namespace
+      title: NamespacedNameModel
     SchedulingEntry:
       properties:
         seq_nr:
@@ -347,6 +369,31 @@ components:
       - msg
       - running_jobs
       title: SchedulingEntry
+    TraceLogRowModel:
+      properties:
+        timestamp:
+          type: integer
+          title: Timestamp
+        zone:
+          type: string
+          title: Zone
+        name:
+          $ref: '#/components/schemas/NamespacedNameModel'
+        msg:
+          type: string
+          title: Msg
+        state:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: State
+      type: object
+      required:
+      - timestamp
+      - zone
+      - name
+      - msg
+      title: TraceLogRowModel
     ValidationError:
       properties:
         loc:

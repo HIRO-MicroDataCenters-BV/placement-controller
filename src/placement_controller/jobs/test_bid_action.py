@@ -13,6 +13,7 @@ from placement_controller.api.model import (
     Metric,
     MetricUnit,
     MetricValue,
+    NamespacedNameModel,
 )
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
@@ -59,12 +60,17 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
             resources=[self.make_pod_spec("pod1", 1, {"cpu": "2", "memory": "200Mi"}, {})],
         )
         self.request = BidRequestModel(
-            id="test", spec=json.dumps(self.spec.to_dict()), bid_criteria=[BidCriteria.cpu], metrics={Metric.cost}
+            id="test",
+            name=NamespacedNameModel(name="test", namespace="test"),
+            spec=json.dumps(self.spec.to_dict()),
+            bid_criteria=[BidCriteria.cpu],
+            metrics={Metric.cost},
         )
         self.response1 = models.BidResponseModel(
             id="test",
             status=models.BidStatus.ACCEPTED,
             metrics=[models.MetricValue(id=models.Metric.COST, value="1.01", unit=models.MetricUnit.EUR)],
+            trace=[],
             reason=None,
             msg="OK",
         )
@@ -72,6 +78,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
             id="test",
             status=models.BidStatus.ACCEPTED,
             metrics=[models.MetricValue(id=models.Metric.COST, value="1.03", unit=models.MetricUnit.EUR)],
+            trace=[],
             reason=None,
             msg="OK",
         )
@@ -79,6 +86,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
             id="test",
             status=BidStatus.accepted,
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.00"), unit=MetricUnit.eur)],
+            trace=[],
             reason=None,
             msg="OK",
         )
@@ -129,7 +137,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
         action = BidAction(operation, self.request, self.name)
 
         result = self.loop.run_until_complete(action.run(self.context))
-
+        print(result.response)
         self.assertEqual(
             result.response,
             {
@@ -138,6 +146,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
                 ),
                 "zone2": BidResponseModel(
@@ -145,6 +154,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.03"), unit=MetricUnit.eur)],
                 ),
                 "zone3": BidResponseModel(
@@ -152,6 +162,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.00"), unit=MetricUnit.eur)],
                 ),
             },
@@ -176,6 +187,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
                 ),
                 "zone2": BidResponseModel(
@@ -183,6 +195,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.03"), unit=MetricUnit.eur)],
                 ),
             },
@@ -206,6 +219,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
                 ),
                 "zone2": BidResponseModel(
@@ -213,6 +227,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.03"), unit=MetricUnit.eur)],
                 ),
                 "zone3": BidResponseModel(
@@ -220,6 +235,7 @@ class BidActionTest(AsyncTestFixture, ResourceTestFixture):
                     status=BidStatus.accepted,
                     reason=None,
                     msg="OK",
+                    trace=[],
                     metrics=[MetricValue(id=Metric.cost, value=Decimal("1.00"), unit=MetricUnit.eur)],
                 ),
             },

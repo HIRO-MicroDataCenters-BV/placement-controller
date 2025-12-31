@@ -31,7 +31,12 @@ class FSMFailureTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
@@ -63,7 +68,12 @@ class FSMFailureTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 
@@ -103,7 +113,12 @@ class FSMFailureTest(FSMTestBase):
 
         # UNMANAGED state by default
         context = SchedulingContext.new(
-            self.application, self.now, self.name, "zone1", [PlacementZone(id="zone1"), PlacementZone(id="zone2")]
+            self.application,
+            self.trace,
+            self.now,
+            self.name,
+            "zone1",
+            [PlacementZone(id="zone1"), PlacementZone(id="zone2")],
         )
         self.assertEqual(context.state, SchedulingState.new(SchedulingStep.UNMANAGED, sys.maxsize - 60000))
 

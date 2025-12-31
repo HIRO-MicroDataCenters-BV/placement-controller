@@ -19,6 +19,8 @@ from placement_controller.jobs.get_spec_action import GetSpecAction, GetSpecResu
 from placement_controller.jobs.placement_action import SetPlacementAction, SetPlacementActionResult
 from placement_controller.membership.types import PlacementZone
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.resources.trace_log import TraceLog
+from placement_controller.util.mock_clock import MockClock
 
 
 class FSMTestBase(unittest.TestCase, ResourceTestFixture):
@@ -26,7 +28,9 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
     options: FSMOptions
     now: int
     name: NamespacedName
+    clock: MockClock
     application: AnyApplication
+    trace: TraceLog
     spec: models.ApplicationSpec
     response1: BidResponseModel
     response2: BidResponseModel
@@ -34,6 +38,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
 
     def setUp(self) -> None:
         self.now = 0
+        self.clock = MockClock()
         self.options = FSMOptions(
             reschedule_default_delay_seconds=10,
             reschedule_failure_delay_seconds=20,
@@ -43,7 +48,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
         self.application = AnyApplication(
             self.make_anyapp(self.name.name, 1) | self.make_anyapp_status("Placement", "zone1", [])
         )
-
+        self.trace = TraceLog(self.current_zone, self.name, self.clock)
         self.spec = models.ApplicationSpec(
             id=models.ResourceId(name=self.name.name, namespace=self.name.namespace),
             resources=[self.make_pod_spec("pod1", 1, {"cpu": "2", "memory": "200Mi"}, {})],
@@ -54,6 +59,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
             status=BidStatus.accepted,
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.01"), unit=MetricUnit.eur)],
             reason=None,
+            trace=[],
             msg="OK",
         )
         self.response2 = BidResponseModel(
@@ -61,6 +67,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
             status=BidStatus.accepted,
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.03"), unit=MetricUnit.eur)],
             reason=None,
+            trace=[],
             msg="OK",
         )
         self.response3 = BidResponseModel(
@@ -68,6 +75,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
             status=BidStatus.accepted,
             metrics=[MetricValue(id=Metric.cost, value=Decimal("1.05"), unit=MetricUnit.eur)],
             reason=None,
+            trace=[],
             msg="OK",
         )
 
@@ -163,7 +171,7 @@ class FSMTestBase(unittest.TestCase, ResourceTestFixture):
         if action is None:
             self.fail("action expected")
 
-        decision_result = DecisionActionResult(placements, self.name, action.get_id())
+        decision_result = DecisionActionResult(placements, [], self.name, action.get_id())
         result = FSM(context, self.now, self.options).on_action_result(decision_result)
 
         if result.context is None:

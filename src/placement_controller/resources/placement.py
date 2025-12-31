@@ -25,10 +25,10 @@ class PodBinding:
 
 @dataclass
 class PlacementResult:
+    trace: TraceLog
     bound_pods: Dict[PodName, Set[NodeName]] = field(default_factory=dict)
     unbound_pods: Set[PodName] = field(default_factory=set)
     reason: Optional[str] = None
-    trace: TraceLog = field(default_factory=TraceLog)
 
     def bind_pod(self, pod: PodName, node: NodeName) -> None:
         nodes = self.bound_pods.setdefault(pod, set())
@@ -41,7 +41,7 @@ class PlacementResult:
         return len(self.unbound_pods) == 0
 
     def log_result_placement(self) -> None:
-        self.trace.log("-- result --")
+        self.trace.log("-- placement result --")
         for pod, nodes in self.bound_pods.items():
             nodes_str = ",".join(nodes)
             self.trace.log(f" - pod {pod} is bound to nodes: {nodes_str}")
@@ -51,17 +51,25 @@ class PlacementResult:
 
 
 class GreedyPlacement:
+    trace: TraceLog
     nodes: List[NodeInfo]
     spec: ApplicationSpec
     bid_criteria: List[BidCriteria]
 
-    def __init__(self, nodes: List[NodeInfo], spec: ApplicationSpec, bid_criteria: List[BidCriteria]):
+    def __init__(
+        self,
+        trace: TraceLog,
+        nodes: List[NodeInfo],
+        spec: ApplicationSpec,
+        bid_criteria: List[BidCriteria],
+    ):
+        self.trace = trace
         self.nodes = sorted(nodes, key=functools.cmp_to_key(node_info_comparator(bid_criteria)))
         self.spec = spec
         self.bid_criteria = bid_criteria
 
     def try_place(self) -> PlacementResult:
-        placement_result = PlacementResult()
+        placement_result = PlacementResult(self.trace)
         trace = placement_result.trace
         for resource in self.spec.resources:
             if isinstance(resource, PodResources):
@@ -81,11 +89,13 @@ class GreedyPlacement:
                         placement_result.bind_pod(namespaced_name(resource.id), node_info.name)
                         trace.log(
                             f"Instance {instance} of pod {namespaced_name(resource.id)} "
-                            + f"is assigned to node {node_info.name}."
+                            + f"is assigned to node {node_info.name}.",
                         )
                     else:
                         placement_result.unbind_pod(namespaced_name(resource.id))
-                        trace.log(f"Failed to bind replica #{instance} of pod {namespaced_name(resource.id)}.")
+                        trace.log(
+                            f"Failed to bind replica #{instance} of pod {namespaced_name(resource.id)}.",
+                        )
                     instance += 1
         placement_result.log_result_placement()
         return placement_result

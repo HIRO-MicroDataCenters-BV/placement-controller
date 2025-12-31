@@ -30,9 +30,9 @@ class SchedulingContext:
     current_zone: str
     available_zones: List[PlacementZone]
     application: AnyApplication
+    trace: TraceLog
 
     retry_attempt: int = field(default=0)
-    trace: TraceLog = field(default_factory=TraceLog)
     msg: Optional[str] = field(default=None)
     inprogress_actions: Dict[ActionId, Action[ActionResult]] = field(default_factory=dict)
 
@@ -48,6 +48,7 @@ class SchedulingContext:
     @staticmethod
     def new(
         application: AnyApplication,
+        trace: TraceLog,
         timestamp: int,
         name: NamespacedName,
         current_zone: str,
@@ -55,6 +56,7 @@ class SchedulingContext:
     ) -> "SchedulingContext":
         return SchedulingContext(
             name=name,
+            trace=trace,
             seq_nr=0,
             action_nr=0,
             timestamp=timestamp,
@@ -85,7 +87,7 @@ class SchedulingContext:
         self, state: SchedulingState, application: Optional[AnyApplication], timestamp: int, msg: Optional[str]
     ) -> "SchedulingContext":
         logger.info(f"{self.name.to_string()}: state={state}, msg='{msg}', ts={timestamp}")
-        self.trace.log(f"{self.name.to_string()}: state={state}, msg='{msg}', ts={timestamp}")
+        self.trace.log_state(msg or "", str(state))
         return SchedulingContext(
             name=self.name,
             seq_nr=self.seq_nr + 1,
@@ -166,10 +168,10 @@ class SchedulingContext:
 
     def reset(self) -> None:
         self.retry_attempt = 0
-        self.trace = TraceLog()
         self.msg = None
         self.inprogress_actions = dict()
 
+        self.trace.reset()
         self.application_spec = None
         self.bid_responses = None
         self.decision = None

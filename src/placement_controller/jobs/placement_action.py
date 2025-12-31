@@ -110,13 +110,14 @@ class SetPlacementAction(Action[SetPlacementActionResult]):
             logger.error(f"{self.get_application_name()}: Unable to emit event {e}")
 
     async def store_decision(self, store: DecisionStore, zones: List[str], timestamp: int) -> None:
+        trace = sorted(self.decision.trace, key=lambda t: t.timestamp)
         try:
             await store.save(
                 name=self.get_application_name(),
                 spec=self.decision.spec,
                 placement=zones,
                 reason=self.decision.reason,
-                trace=self.decision.trace,
+                trace=trace,
                 timestamp=timestamp,
             )
         except Exception as e:

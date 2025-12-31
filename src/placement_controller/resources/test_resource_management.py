@@ -84,19 +84,19 @@ class ResourceManagementTest(AsyncTestFixture, ResourceTestFixture):
                 reason=None,
                 trace=[
                     TraceLogRowModel(
-                        timestamp=1,
+                        timestamp=1000,
                         zone="zone",
                         name=NamespacedNameModel(name="test", namespace="test"),
                         msg="Instance 0 of pod test/pod1 is assigned to node node1.",
                     ),
                     TraceLogRowModel(
-                        timestamp=1,
+                        timestamp=1000,
                         zone="zone",
                         name=NamespacedNameModel(name="test", namespace="test"),
                         msg="-- placement result --",
                     ),
                     TraceLogRowModel(
-                        timestamp=1,
+                        timestamp=1000,
                         zone="zone",
                         name=NamespacedNameModel(name="test", namespace="test"),
                         msg=" - pod test/pod1 is bound to nodes: node1",

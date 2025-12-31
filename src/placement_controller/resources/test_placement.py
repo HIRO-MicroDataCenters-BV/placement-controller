@@ -69,7 +69,7 @@ class PlacementTest(TestCase, ResourceTestFixture):
             result.trace.get_raw(),
             [
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg="-- placement result --",
@@ -93,21 +93,21 @@ class PlacementTest(TestCase, ResourceTestFixture):
             result.trace.get_raw(),
             [
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg="Instance 0 of pod test/pod1 is assigned to node node1.",
                     state=None,
                 ),
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg="-- placement result --",
                     state=None,
                 ),
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg=" - pod test/pod1 is bound to nodes: node1",
@@ -131,28 +131,28 @@ class PlacementTest(TestCase, ResourceTestFixture):
             result.trace.get_raw(),
             [
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg="Node node1 placement rejected. Not enough cpu.",
                     state=None,
                 ),
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg="Failed to bind replica #0 of pod test/pod2.",
                     state=None,
                 ),
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg="-- placement result --",
                     state=None,
                 ),
                 TraceLogRow(
-                    timestamp=1,
+                    timestamp=1000,
                     zone="test",
                     name=NamespacedName(name="test", namespace="test"),
                     msg=" - unbounded pods test/pod2",

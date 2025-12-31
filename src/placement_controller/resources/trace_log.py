@@ -24,7 +24,7 @@ class TraceLog:
 
     def log(self, msg: str) -> None:
         row = TraceLogRow(
-            timestamp=self.clock.now_seconds(),
+            timestamp=self.clock.now_millis(),
             zone=self.zone,
             name=self.name,
             msg=msg,
@@ -33,7 +33,7 @@ class TraceLog:
 
     def log_state(self, msg: str, state: str) -> None:
         row = TraceLogRow(
-            timestamp=self.clock.now_seconds(),
+            timestamp=self.clock.now_millis(),
             zone=self.zone,
             name=self.name,
             msg=msg,

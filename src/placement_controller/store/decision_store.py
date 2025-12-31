@@ -1,5 +1,6 @@
-from typing import List
+from typing import Any, List
 
+import dataclasses
 import datetime
 import json
 from datetime import timezone
@@ -35,7 +36,7 @@ class DecisionStoreImpl(DecisionStore):
         decision_id = PlacementDecisionID(name=name.name, namespace=name.namespace)
         spec_dict = json.loads(spec)
         create_spec = PlacementDecisionCreateSpec.from_dict(spec_dict)
-        trace_json = json.dumps(trace)
+        trace_json = json.dumps(trace, default=encode_value)
         ts = datetime.datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
         request = PlacementDecisionCreate(
             id=decision_id,
@@ -48,3 +49,9 @@ class DecisionStoreImpl(DecisionStore):
         if response is None:
             raise Exception("Empty response received while saving decision.")
         logger.info(f"{name}: Save decision response: {response}")
+
+
+def encode_value(x: Any) -> Any:
+    if dataclasses.is_dataclass(x):
+        return dataclasses.asdict(x)  # type: ignore
+    return x

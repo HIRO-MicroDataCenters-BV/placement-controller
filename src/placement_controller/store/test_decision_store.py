@@ -9,6 +9,7 @@ from orchestrationlib_client.models.placement_decision_id import PlacementDecisi
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.client import NamespacedName
 from placement_controller.resource_fixture import ResourceTestFixture
+from placement_controller.resources.trace_log import TraceLogRow
 from placement_controller.store.decision_store import DecisionStoreImpl
 from placement_controller.store.fake_orchestrationlib_server import FakeOrchestrationlibServer
 
@@ -38,7 +39,16 @@ class DecisionStoreImplTest(AsyncTestFixture, ResourceTestFixture):
         super().tearDown()
 
     def test_save_decision(self) -> None:
-        self.loop.run_until_complete(self.store.save(self.name, self.spec, ["zone1", "zone2"], "reason", [], 0))
+        trace = [
+            TraceLogRow(
+                timestamp=1,
+                zone="test",
+                name=self.name,
+                msg="msg",
+                state="state",
+            ),
+        ]
+        self.loop.run_until_complete(self.store.save(self.name, self.spec, ["zone1", "zone2"], "reason", trace, 0))
 
         requests = self.fake_server.get_save_requests()
         self.assertEqual(
@@ -49,7 +59,8 @@ class DecisionStoreImplTest(AsyncTestFixture, ResourceTestFixture):
                     spec=PlacementDecisionCreateSpec.from_dict({"test": "test"}),
                     decision=PlacementDecisionField(placement=["zone1", "zone2"], reason="reason"),
                     timestamp=datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc),
-                    trace="[]",
+                    trace="""[{"timestamp": 1, "zone": "test", "name": """
+                    + """{"name": "test", "namespace": "test"}, "msg": "msg", "state": "state"}]""",
                 )
             ],
         )

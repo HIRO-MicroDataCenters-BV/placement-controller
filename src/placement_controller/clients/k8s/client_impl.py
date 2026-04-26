@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from kubernetes_asyncio import client, config
 from kubernetes_asyncio.client import ApiClient, CoreV1Api, CustomObjectsApi
+from typing import Union
 from kubernetes_asyncio.client.configuration import Configuration
 from kubernetes_asyncio.dynamic import DynamicClient
 from kubernetes_asyncio.watch import Watch
@@ -50,7 +51,7 @@ class KubeClientImpl(KubeClient):
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         queue = AsyncQueue[KubeEvent]()
 
-        async def watcher_func(api_client: DynamicClient | ApiClient) -> None:
+        async def watcher_func(api_client: ApiClient) -> None:
             while not is_terminated.is_set():
                 try:
                     await KubeClientImpl.watch_internal(
@@ -67,7 +68,7 @@ class KubeClientImpl(KubeClient):
                     else:
                         logger.error(f"watch exception {type(e)}: {e}")
 
-        task = self.loop.create_task(self.execute(watcher_func, is_dynamic_client=False))
+        task = self.loop.create_task(self.execute(watcher_func, is_dynamic_client=False))  # type: ignore[arg-type]
         subscription = Subscription(queue, task)
 
         self.subscriber_ids += 1
@@ -78,7 +79,7 @@ class KubeClientImpl(KubeClient):
 
     @staticmethod
     async def watch_internal(
-        api_client: DynamicClient | ApiClient,
+        api_client: ApiClient,
         gvk: GroupVersionKind,
         namespace: Optional[str],
         version_since: int,
@@ -126,19 +127,19 @@ class KubeClientImpl(KubeClient):
             if plural == "pods":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_namespaced_pod(namespace=namespace, **kwargs)
 
             elif plural == "nodes":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_node(**kwargs)
 
             else:
                 api = CustomObjectsApi(api_client)  # type: ignore
 
-                def api_func(**kwargs) -> Any:
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_namespaced_custom_object(  # type: ignore[attr-defined]
                         group=gvk.group,
                         version=gvk.version,
@@ -151,19 +152,19 @@ class KubeClientImpl(KubeClient):
             if plural == "pods":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_pod_for_all_namespaces(**kwargs)
 
             elif plural == "nodes":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_node(**kwargs)
 
             else:
                 api = CustomObjectsApi(api_client)  # type: ignore
 
-                def api_func(**kwargs) -> Any:
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_custom_object_for_all_namespaces(  # type: ignore[attr-defined]
                         group=gvk.group,
                         version=gvk.version,
@@ -216,7 +217,7 @@ class KubeClientImpl(KubeClient):
 
     @override
     async def patch(self, gvk: GroupVersionKind, object: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        async def patch_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
+        async def patch_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.patch(body=object, content_type="application/merge-patch+json")
             result_dict: Dict[str, Any] = result.to_dict()
@@ -224,13 +225,13 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(patch_internal)
+        return await self.execute(patch_internal)  # type: ignore[arg-type]
 
     @override
     async def patch_status(
         self, gvk: GroupVersionKind, name: NamespacedName, status: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
-        async def patch_status_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
+        async def patch_status_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.status.patch(  # type: ignore[attr-defined]
                 name=name.name, namespace=name.namespace, body=status, content_type="application/merge-patch+json"
@@ -240,11 +241,11 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(patch_status_internal)
+        return await self.execute(patch_status_internal)  # type: ignore[arg-type]
 
     @override
     async def get(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
-        async def get_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
+        async def get_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.get(name=name.name, namespace=name.namespace)
             result_dict: Dict[str, Any] = result.to_dict()
@@ -252,11 +253,11 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(get_internal)
+        return await self.execute(get_internal)  # type: ignore[arg-type]
 
     @override
     async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
-        async def list_internal(client: DynamicClient | ApiClient) -> List[Dict[str, Any]]:
+        async def list_internal(client: DynamicClient) -> List[Dict[str, Any]]:
 
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.get()
@@ -265,11 +266,11 @@ class KubeClientImpl(KubeClient):
                 return []
             return result_dict["items"] or []
 
-        return await self.execute(list_internal)
+        return await self.execute(list_internal)  # type: ignore[arg-type]
 
     @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
-        async def delete_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
+        async def delete_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.delete(name=name.name, namespace=name.namespace)
             result_dict: Dict[str, Any] = result.to_dict()
@@ -277,7 +278,7 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(delete_internal)
+        return await self.execute(delete_internal)  # type: ignore[arg-type]
 
     async def emit_event(
         self,
@@ -300,7 +301,7 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(emit_internal, is_dynamic_client=False)
+        return await self.execute(emit_internal, is_dynamic_client=False)  # type: ignore[arg-type]
 
     async def execute(
         self, func: Callable[[DynamicClient | ApiClient], Coroutine[Any, Any, T]], is_dynamic_client: bool = True

@@ -12,6 +12,16 @@ entries:
     - https://HIRO-MicroDataCenters-BV.github.io/placement-controller/helm-charts/placement-controller-0.2.11.tgz
     version: 0.2.11
   - apiVersion: v2
+    appVersion: 0.2.11-dev.21.cost-monitoring.b6dae7ab
+    created: "2026-04-26T17:43:09.985487963Z"
+    description: Placement controller for decentralized control plane.
+    digest: 9b738b83d9a4ad91b2dcc73a9b12397948fc0810150a72ff2dc9ce72d5c5be49
+    name: placement-controller
+    type: application
+    urls:
+    - https://HIRO-MicroDataCenters-BV.github.io/placement-controller/helm-charts/placement-controller-0.2.11-dev.21.cost-monitoring.b6dae7ab.tgz
+    version: 0.2.11-dev.21.cost-monitoring.b6dae7ab
+  - apiVersion: v2
     appVersion: 0.2.11-dev.20.cost-monitoring.f150f5b3
     created: "2026-04-26T15:45:44.539469011Z"
     description: Placement controller for decentralized control plane.
@@ -1741,4 +1751,4 @@ entries:
     urls:
     - https://HIRO-MicroDataCenters-BV.github.io/placement-controller/helm-charts/placement-controller-0.0.1-dev.5.kube-event-liste.99aa4846.tgz
     version: 0.0.1-dev.5.kube-event-liste.99aa4846
-generated: "2026-04-26T15:45:44.538784558Z"
+generated: "2026-04-26T17:43:09.984754949Z"

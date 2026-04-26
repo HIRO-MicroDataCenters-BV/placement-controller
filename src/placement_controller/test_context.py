@@ -13,6 +13,7 @@ from placement_controller.settings import (
     ApiSettings,
     OrchestrationLibSettings,
     PlacementSettings,
+    PrometheusClientSettings,
     PrometheusSettings,
     Settings,
 )
@@ -73,7 +74,8 @@ class ContextTest(AsyncTestFixture):
                 enabled=False,
                 base_url="http://127.0.0.1",
             ),
-            prometheus=PrometheusSettings(endpoint="http://localhost:8080"),
+            prometheus=PrometheusSettings(endpoint_port=8080),
+            prometheus_client=PrometheusClientSettings(),
             metrics=MetricSettings(
                 static_metrics=[
                     MetricDefinition(

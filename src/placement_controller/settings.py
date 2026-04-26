@@ -7,6 +7,10 @@ from placement_controller.resources.resource_metrics import MetricSettings
 
 
 class PrometheusSettings(BaseSettings):
+    endpoint_port: int = 8080
+
+
+class PrometheusClientSettings(BaseSettings):
     endpoint: str = "http://localhost:9090"
 
 
@@ -33,4 +37,5 @@ class Settings(BaseSettings):
     placement: PlacementSettings
     orchestrationlib: OrchestrationLibSettings
     prometheus: PrometheusSettings
+    prometheus_client: PrometheusClientSettings
     metrics: MetricSettings

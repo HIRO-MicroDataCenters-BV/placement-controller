@@ -136,7 +136,7 @@ class KubeClientImpl(KubeClient):
                     return api.list_node(**kwargs)
 
             else:
-                api = CustomObjectsApi(api_client)
+                api = CustomObjectsApi(api_client)  # type: ignore
 
                 def api_func(**kwargs):
                     return api.list_namespaced_custom_object(
@@ -161,7 +161,7 @@ class KubeClientImpl(KubeClient):
                     return api.list_node(**kwargs)
 
             else:
-                api = CustomObjectsApi(api_client)
+                api = CustomObjectsApi(api_client)  # type: ignore
 
                 def api_func(**kwargs):
                     return api.list_custom_object_for_all_namespaces(

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, TypeVar, Union, override
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, TypeVar, override
 
 import asyncio
 from dataclasses import dataclass

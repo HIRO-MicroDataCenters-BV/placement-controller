@@ -1,5 +1,5 @@
 from placement_controller.async_fixture import AsyncTestFixture
-from placement_controller.clients.metrics.real_client import PrometheusMetricsClient
+from placement_controller.clients.metrics.client import PrometheusMetricsClient
 
 
 class PrometheusMetricsClientTest(AsyncTestFixture):

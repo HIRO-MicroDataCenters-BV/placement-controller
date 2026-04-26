@@ -115,8 +115,8 @@ app = create_api()
 
 
 def get_applications(app: FastAPI) -> Applications:
-    return app.state.applications  # type:ignore
+    return app.state.applications  # type: ignore
 
 
 def get_resource_management(app: FastAPI) -> ResourceManagement:
-    return app.state.resource_management  # type:ignore
+    return app.state.resource_management  # type: ignore

@@ -1,11 +1,10 @@
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, TypeVar, override
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, TypeVar, Union, override
 
 import asyncio
 from dataclasses import dataclass
 
 from kubernetes_asyncio import client, config
 from kubernetes_asyncio.client import ApiClient, CoreV1Api, CustomObjectsApi
-from typing import Union
 from kubernetes_asyncio.client.configuration import Configuration
 from kubernetes_asyncio.dynamic import DynamicClient
 from kubernetes_asyncio.watch import Watch

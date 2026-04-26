@@ -78,7 +78,7 @@ class KubeClientImpl(KubeClient):
 
     @staticmethod
     async def watch_internal(
-        api_client: ApiClient,
+        api_client: DynamicClient | ApiClient,
         gvk: GroupVersionKind,
         namespace: Optional[str],
         version_since: int,

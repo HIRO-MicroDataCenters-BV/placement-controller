@@ -138,8 +138,8 @@ class KubeClientImpl(KubeClient):
             else:
                 api = CustomObjectsApi(api_client)  # type: ignore
 
-                def api_func(**kwargs):
-                    return api.list_namespaced_custom_object(
+                def api_func(**kwargs) -> Any:
+                    return api.list_namespaced_custom_object(  # type: ignore[attr-defined]
                         group=gvk.group,
                         version=gvk.version,
                         namespace=namespace,
@@ -163,8 +163,8 @@ class KubeClientImpl(KubeClient):
             else:
                 api = CustomObjectsApi(api_client)  # type: ignore
 
-                def api_func(**kwargs):
-                    return api.list_custom_object_for_all_namespaces(
+                def api_func(**kwargs) -> Any:
+                    return api.list_custom_object_for_all_namespaces(  # type: ignore[attr-defined]
                         group=gvk.group,
                         version=gvk.version,
                         resource_plural=plural,

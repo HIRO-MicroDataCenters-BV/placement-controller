@@ -216,7 +216,7 @@ class KubeClientImpl(KubeClient):
 
     @override
     async def patch(self, gvk: GroupVersionKind, object: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        async def patch_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
+        async def patch_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.patch(body=object, content_type="application/merge-patch+json")
             result_dict: Dict[str, Any] = result.to_dict()
@@ -230,9 +230,9 @@ class KubeClientImpl(KubeClient):
     async def patch_status(
         self, gvk: GroupVersionKind, name: NamespacedName, status: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
-        async def patch_status_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
+        async def patch_status_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
-            result = await api.status.patch(
+            result = await api.status.patch(  # type: ignore[attr-defined]
                 name=name.name, namespace=name.namespace, body=status, content_type="application/merge-patch+json"
             )
             result_dict: Dict[str, Any] = result.to_dict()
@@ -244,7 +244,7 @@ class KubeClientImpl(KubeClient):
 
     @override
     async def get(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
-        async def get_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
+        async def get_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.get(name=name.name, namespace=name.namespace)
             result_dict: Dict[str, Any] = result.to_dict()
@@ -256,7 +256,7 @@ class KubeClientImpl(KubeClient):
 
     @override
     async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
-        async def list_internal(client: DynamicClient) -> List[Dict[str, Any]]:
+        async def list_internal(client: DynamicClient | ApiClient) -> List[Dict[str, Any]]:
 
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.get()
@@ -269,7 +269,7 @@ class KubeClientImpl(KubeClient):
 
     @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
-        async def delete_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
+        async def delete_internal(client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
             result = await api.delete(name=name.name, namespace=name.namespace)
             result_dict: Dict[str, Any] = result.to_dict()

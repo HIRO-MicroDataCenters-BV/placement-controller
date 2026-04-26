@@ -67,7 +67,7 @@ class KubeClientImpl(KubeClient):
                     else:
                         logger.error(f"watch exception {type(e)}: {e}")
 
-        task = self.loop.create_task(self.execute(watcher_func, is_dynamic_client=False))
+        task = self.loop.create_task(self.execute(watcher_func, is_dynamic_client=False))  # type: ignore[arg-type]
         subscription = Subscription(queue, task)
 
         self.subscriber_ids += 1
@@ -126,20 +126,20 @@ class KubeClientImpl(KubeClient):
             if plural == "pods":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_namespaced_pod(namespace=namespace, **kwargs)
 
             elif plural == "nodes":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_node(**kwargs)
 
             else:
-                api = CustomObjectsApi(api_client)
+                api = CustomObjectsApi(api_client)  # type: ignore
 
-                def api_func(**kwargs):
-                    return api.list_namespaced_custom_object(
+                def api_func(**kwargs: Any) -> Any:
+                    return api.list_namespaced_custom_object(  # type: ignore[attr-defined]
                         group=gvk.group,
                         version=gvk.version,
                         namespace=namespace,
@@ -151,20 +151,20 @@ class KubeClientImpl(KubeClient):
             if plural == "pods":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_pod_for_all_namespaces(**kwargs)
 
             elif plural == "nodes":
                 api = CoreV1Api(api_client)
 
-                def api_func(**kwargs):
+                def api_func(**kwargs: Any) -> Any:
                     return api.list_node(**kwargs)
 
             else:
-                api = CustomObjectsApi(api_client)
+                api = CustomObjectsApi(api_client)  # type: ignore
 
-                def api_func(**kwargs):
-                    return api.list_custom_object_for_all_namespaces(
+                def api_func(**kwargs: Any) -> Any:
+                    return api.list_custom_object_for_all_namespaces(  # type: ignore[attr-defined]
                         group=gvk.group,
                         version=gvk.version,
                         resource_plural=plural,
@@ -224,7 +224,7 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(patch_internal)
+        return await self.execute(patch_internal)  # type: ignore[arg-type]
 
     @override
     async def patch_status(
@@ -232,7 +232,7 @@ class KubeClientImpl(KubeClient):
     ) -> Optional[Dict[str, Any]]:
         async def patch_status_internal(client: DynamicClient) -> Optional[Dict[str, Any]]:
             api = await client.resources.get(group=gvk.group, api_version=gvk.version, kind=gvk.kind)
-            result = await api.status.patch(
+            result = await api.status.patch(  # type: ignore[attr-defined]
                 name=name.name, namespace=name.namespace, body=status, content_type="application/merge-patch+json"
             )
             result_dict: Dict[str, Any] = result.to_dict()
@@ -240,7 +240,7 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(patch_status_internal)
+        return await self.execute(patch_status_internal)  # type: ignore[arg-type]
 
     @override
     async def get(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
@@ -252,7 +252,7 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(get_internal)
+        return await self.execute(get_internal)  # type: ignore[arg-type]
 
     @override
     async def list(self, gvk: GroupVersionKind) -> List[Dict[str, Any]]:
@@ -265,7 +265,7 @@ class KubeClientImpl(KubeClient):
                 return []
             return result_dict["items"] or []
 
-        return await self.execute(list_internal)
+        return await self.execute(list_internal)  # type: ignore[arg-type]
 
     @override
     async def delete(self, gvk: GroupVersionKind, name: NamespacedName) -> Optional[Dict[str, Any]]:
@@ -277,7 +277,7 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(delete_internal)
+        return await self.execute(delete_internal)  # type: ignore[arg-type]
 
     async def emit_event(
         self,
@@ -300,7 +300,7 @@ class KubeClientImpl(KubeClient):
                 return None
             return result_dict
 
-        return await self.execute(emit_internal, is_dynamic_client=False)
+        return await self.execute(emit_internal, is_dynamic_client=False)  # type: ignore[arg-type]
 
     async def execute(
         self, func: Callable[[DynamicClient | ApiClient], Coroutine[Any, Any, T]], is_dynamic_client: bool = True

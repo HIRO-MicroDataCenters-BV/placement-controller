@@ -292,7 +292,7 @@ class KubeClientImpl(KubeClient):
     ) -> Optional[Dict[str, Any]]:
         event = KubeClient.new_event(gvk, name, uid, reason, action, message, event_type, timestamp)
 
-        async def emit_internal(api_client: ApiClient) -> Optional[Dict[str, Any]]:
+        async def emit_internal(api_client: DynamicClient | ApiClient) -> Optional[Dict[str, Any]]:
             events_api = client.EventsV1Api(api_client)
             result = await events_api.create_namespaced_event(name.namespace, event)
             result_dict: Dict[str, Any] = result.to_dict()

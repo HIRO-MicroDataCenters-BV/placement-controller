@@ -30,7 +30,7 @@ class PyDanticYamlTest(TestCase):
                 },
             ),
             orchestrationlib=OrchestrationLibSettings(enabled=True, base_url="http://127.0.0.1/"),
-            prometheus=PrometheusSettings(endpoint_port=8080),
+            prometheus=PrometheusSettings(endpoint="http://localhost:8080"),
             metrics=MetricSettings(
                 static_metrics=[
                     MetricDefinition(

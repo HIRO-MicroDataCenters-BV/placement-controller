@@ -22,7 +22,7 @@ api:
   port: 8001
 
 prometheus:
-  endpoint_port: 8085
+  endpoint: http://localhost:8085
 
 metrics:
   static_metrics:

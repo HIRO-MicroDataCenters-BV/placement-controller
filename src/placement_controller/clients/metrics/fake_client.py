@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Dict
 
 from placement_controller.clients.metrics.types import MetricsClient
 

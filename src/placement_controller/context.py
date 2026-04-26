@@ -75,7 +75,7 @@ class Context:
         self.tasks.append(
             self.loop.create_task(start_fastapi(self.settings.api.port, self.applications, self.resource_management))
         )
-        self.prometheus_server = await start_http_server(port=self.settings.prometheus.endpoint_port)
+        self.prometheus_server = await start_http_server(port=9090)
 
     def stop(self) -> None:
         self.terminated.set()

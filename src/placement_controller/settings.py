@@ -7,7 +7,7 @@ from placement_controller.resources.resource_metrics import MetricSettings
 
 
 class PrometheusSettings(BaseSettings):
-    endpoint_port: int = 8080
+    endpoint: str = "http://localhost:9090"
 
 
 class ApiSettings(BaseSettings):

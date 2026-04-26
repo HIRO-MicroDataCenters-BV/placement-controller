@@ -50,7 +50,7 @@ class KubeClientImpl(KubeClient):
     ) -> Tuple[SubscriberId, AsyncQueue[KubeEvent]]:
         queue = AsyncQueue[KubeEvent]()
 
-        async def watcher_func(api_client: ApiClient) -> None:
+        async def watcher_func(api_client: DynamicClient | ApiClient) -> None:
             while not is_terminated.is_set():
                 try:
                     await KubeClientImpl.watch_internal(

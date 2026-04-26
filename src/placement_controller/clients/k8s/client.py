@@ -109,8 +109,7 @@ class KubeClient:
         event_type: str,
         timestamp: int,
     ) -> client.EventsV1Event:
-        dt = datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
-        event_time = dt.isoformat(timespec="microseconds").replace("+00:00", "Z")
+        event_time = datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
         return client.EventsV1Event(
             api_version="events.k8s.io/v1",
             kind="Event",

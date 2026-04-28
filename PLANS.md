@@ -12,21 +12,10 @@ Current and upcoming execution plans.
 
 ### Q1 2026
 
--
-
-
-## Technical Debt Tracker
-
-| Issue | Priority | Age | Resolution |
-|--------|----------|------|------------|
-
-## Planning Process
-
-1. **Gather requirements** from users and monitoring
-2. **Create execution plan** in docs/exec-plans/active/
-3. **Review with team** for feasibility
-4. **Execute** with agent workflow
-5. **Document results** and close plan
+- Story 0001: Dynamic Metrics from Prometheus (completed)
+  - Feature: Load cost and energy metrics from Prometheus in addition to static configuration
+  - Maintains backward compatibility with static-only configuration
+  - Implements hybrid metrics system with caching and fallback
 
 ---
 

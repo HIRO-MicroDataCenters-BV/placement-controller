@@ -63,13 +63,21 @@ metrics:
 - Missing Prometheus data falls back to static values
 - Failed queries logged but don't break scheduling
 
+## Execution Instructions
+
+**Execute using TDD principle with minimal broken code.** After each module and task:
+- Write tests first, then implement code
+- Every commit should be a working checkpoint with all tests passing
+- Follow existing code patterns (e.g., `test_resource_metrics.py` for test structure)
+- Run `uv run pytest`, `uv run mypy src`, `uv run black src`, and `uv run flake8 src` before committing
+
 ## Tasks Completed
 
-1. ✅ Extend `MetricSettings` to support `prometheus_metrics` configuration
-2. ✅ Create `DynamicResourceMetrics` wrapper class combining static + dynamic
-3. ✅ Update `context.py` to initialize and inject Prometheus client
-4. ✅ Add tests for mixed static+dynamic mode and failure handling
-5. ✅ Document configuration and add example
+1. ✅ Story 0001 Task 01: Extend MetricSettings for Prometheus Metrics
+2. ✅ Story 0001 Task 02: Create DynamicResourceMetrics wrapper class
+3. ✅ Story 0001 Task 03: Update Context to initialize Prometheus client
+4. ✅ Story 0001 Task 04: Add tests for DynamicResourceMetrics
+5. ✅ Story 0001 Task 05: Documentation and config examples
 
 ## Success Criteria
 

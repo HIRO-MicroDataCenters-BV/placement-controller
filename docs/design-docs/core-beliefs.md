@@ -43,6 +43,17 @@ Foundational principles for agent development.
 - Coverage gates in CI
 - Flaky tests flagged immediately
 
+## Execution Workflow
+
+**TDD during story execution with minimal broken code.** Stories must execute cleanly with steering.
+
+- Follow TDD: Write tests first, then implement code to make tests pass
+- Every task within a story should complete with all tests passing
+- Minimize broken code state - each commit should be a working checkpoint
+- After each story, update core beliefs with instructions to minimize next human steering
+- Use story/task file naming conventions: `story-NNNN-<title>-task-N-<title>.md`
+- Always pass type checking, linting, and formatting before committing
+
 ---
 
 *Auto-generated from core beliefs*

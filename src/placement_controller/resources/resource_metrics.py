@@ -1,6 +1,7 @@
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 
@@ -12,6 +13,7 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 from placement_controller.api.model import Metric, MetricValue
+from placement_controller.clients.metrics.types import MetricsClient
 from placement_controller.resources.types import ResourceMetrics
 
 ResourceName = str
@@ -34,8 +36,17 @@ class MetricDefinition(BaseSettings):
         return {k: Decimal(str(val)) for k, val in v.items()}
 
 
+@dataclass
+class PrometheusMetricDefinition:
+    metric: Metric
+    query: str
+    labels: Dict[str, str]
+    default_value: Optional[Decimal] = None
+
+
 class MetricSettings(BaseSettings):
     static_metrics: List[MetricDefinition]
+    prometheus_metrics: Optional[List[PrometheusMetricDefinition]] = None
 
 
 class ResourceMetricsImpl(ResourceMetrics):

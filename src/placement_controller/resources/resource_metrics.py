@@ -122,3 +122,88 @@ class WeightedAverage:
             resource_weight = self.weights.get(resource_name) or Decimal(0.0)
             result = result + resource_units * cost_per_unit * resource_weight
         return result
+
+
+@dataclass
+class CachedMetricValue:
+    value: MetricValue
+    query_time: float
+
+
+class DynamicResourceMetrics(ResourceMetrics):
+    static_metrics: ResourceMetricsImpl
+    client: MetricsClient
+    prometheus_definitions: List[PrometheusMetricDefinition]
+    cache: Dict[str, CachedMetricValue]
+    cache_ttl_seconds: int = 60
+    last_update: Optional[float] = None
+
+    def __init__(
+        self,
+        static_config: MetricSettings,
+        client: MetricsClient,
+        prometheus_definitions: List[PrometheusMetricDefinition],
+    ):
+        self.static_metrics = ResourceMetricsImpl(config=static_config)
+        self.client = client
+        self.prometheus_definitions = prometheus_definitions
+        self.cache = {}
+
+    def estimate(self, spec: ApplicationSpec, metrics: List[Metric]) -> List[MetricValue]:
+        static_estimates = self.static_metrics.estimate(spec, metrics)
+
+        self._update_prometheus_metrics()
+
+        results = []
+        for metric in metrics:
+            cache_key = self._make_cache_key(metric)
+            if cache_key in self.cache:
+                cache_entry = self.cache[cache_key]
+                if self._is_cache_valid(cache_entry):
+                    results.append(cache_entry.value)
+                else:
+                    static_value = next((v for v in static_estimates if v.id == metric), None)
+                    if static_value:
+                        results.append(static_value)
+                    else:
+                        results.append(MetricValue(id=metric, value=Decimal(0), unit=metric.unit()))
+            else:
+                static_value = next((v for v in static_estimates if v.id == metric), None)
+                if static_value:
+                    results.append(static_value)
+                else:
+                    results.append(MetricValue(id=metric, value=Decimal(0), unit=metric.unit()))
+
+        return results
+
+    def _update_prometheus_metrics(self) -> None:
+        current_time = self._get_current_time()
+        for prom_def in self.prometheus_definitions:
+            cache_key = self._make_cache_key(prom_def.metric)
+            result = self.client.get_metric_sync(prom_def.query, prom_def.labels)
+            if result and "value" in result:
+                value = Decimal(str(result["value"]))
+                metric_value = MetricValue(
+                    id=prom_def.metric, value=value.quantize(Decimal("1.0001")), unit=prom_def.metric.unit()
+                )
+                self.cache[cache_key] = CachedMetricValue(value=metric_value, query_time=current_time)
+            elif prom_def.default_value is not None:
+                metric_value = MetricValue(
+                    id=prom_def.metric,
+                    value=prom_def.default_value.quantize(Decimal("1.0001")),
+                    unit=prom_def.metric.unit(),
+                )
+                self.cache[cache_key] = CachedMetricValue(value=metric_value, query_time=current_time)
+
+    def _get_current_time(self) -> float:
+        import time
+
+        return time.time()
+
+    def _is_cache_valid(self, entry: CachedMetricValue) -> bool:
+        if self.cache_ttl_seconds <= 0:
+            return True
+        return self._get_current_time() - entry.query_time < self.cache_ttl_seconds
+
+    def _make_cache_key(self, metric: Metric) -> str:
+        return f"metric_{metric.value}"

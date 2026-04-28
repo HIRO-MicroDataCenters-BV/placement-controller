@@ -17,6 +17,14 @@ class FakeMetricsClient(MetricsClient):
         key = self._make_key(name, labels)
         return self.metrics.get(key)
 
+    def get_metric_sync(
+        self,
+        name: str,
+        labels: Dict[str, str] | None = None,
+    ) -> Dict[str, float] | None:
+        key = self._make_key(name, labels)
+        return self.metrics.get(key)
+
     def _make_key(self, name: str, labels: Dict[str, str] | None) -> str:
         if labels:
             label_str = ",".join(f"{k}={v}" for k, v in sorted(labels.items()))

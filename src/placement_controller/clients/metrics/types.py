@@ -8,3 +8,10 @@ class MetricsClient:
         labels: Dict[str, str] | None = None,
     ) -> Dict[str, float] | None:
         raise NotImplementedError
+
+    def get_metric_sync(
+        self,
+        name: str,
+        labels: Dict[str, str] | None = None,
+    ) -> Dict[str, float] | None:
+        raise NotImplementedError

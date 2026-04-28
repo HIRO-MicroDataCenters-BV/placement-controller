@@ -156,9 +156,8 @@ class DynamicResourceMetrics(ResourceMetrics):
 
         results = []
         for metric in metrics:
-            cache_key = self._make_cache_key(metric)
-            if cache_key in self.cache:
-                cache_entry = self.cache[cache_key]
+            if metric in self.cache:
+                cache_entry = self.cache[metric]
                 if self._is_cache_valid(cache_entry):
                     results.append(cache_entry.value)
                 else:
@@ -179,21 +178,20 @@ class DynamicResourceMetrics(ResourceMetrics):
     def _update_prometheus_metrics(self) -> None:
         current_time = self._get_current_time()
         for prom_def in self.prometheus_definitions:
-            cache_key = self._make_cache_key(prom_def.metric)
             result = self.client.get_metric_sync(prom_def.query, prom_def.labels)
             if result and "value" in result:
                 value = Decimal(str(result["value"]))
                 metric_value = MetricValue(
                     id=prom_def.metric, value=value.quantize(Decimal("1.0001")), unit=prom_def.metric.unit()
                 )
-                self.cache[cache_key] = CachedMetricValue(value=metric_value, query_time=current_time)
+                self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
             elif prom_def.default_value is not None:
                 metric_value = MetricValue(
                     id=prom_def.metric,
                     value=prom_def.default_value.quantize(Decimal("1.0001")),
                     unit=prom_def.metric.unit(),
                 )
-                self.cache[cache_key] = CachedMetricValue(value=metric_value, query_time=current_time)
+                self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
 
     def _get_current_time(self) -> float:
         import time
@@ -204,6 +202,3 @@ class DynamicResourceMetrics(ResourceMetrics):
         if self.cache_ttl_seconds <= 0:
             return True
         return self._get_current_time() - entry.query_time < self.cache_ttl_seconds
-
-    def _make_cache_key(self, metric: Metric) -> str:
-        return f"metric_{metric.value}"

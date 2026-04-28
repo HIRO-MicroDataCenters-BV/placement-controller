@@ -1,4 +1,4 @@
-# Task: Extend MetricSettings for Prometheus Metrics (Story 0001)
+# Task: Extend MetricSettings for Prometheus Metrics (Story 0001, Task 01)
 
 ## Overview
 

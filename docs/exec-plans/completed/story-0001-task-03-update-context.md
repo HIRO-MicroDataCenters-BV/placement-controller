@@ -1,4 +1,4 @@
-# Task: Update Context to Initialize Dynamic Metrics (Story 0001)
+# Task: Update Context to Initialize Dynamic Metrics (Story 0001, Task 03)
 
 ## Overview
 

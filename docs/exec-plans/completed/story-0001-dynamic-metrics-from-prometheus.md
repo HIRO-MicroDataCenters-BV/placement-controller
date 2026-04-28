@@ -73,11 +73,11 @@ metrics:
 
 ## Tasks Completed
 
-1. ✅ Story 0001 Task 01: Extend MetricSettings for Prometheus Metrics
-2. ✅ Story 0001 Task 02: Create DynamicResourceMetrics wrapper class
-3. ✅ Story 0001 Task 03: Update Context to initialize Prometheus client
-4. ✅ Story 0001 Task 04: Add tests for DynamicResourceMetrics
-5. ✅ Story 0001 Task 05: Documentation and config examples
+1. ✅ Story 0001, Task 01: Extend MetricSettings for Prometheus Metrics
+2. ✅ Story 0001, Task 02: Create DynamicResourceMetrics wrapper class
+3. ✅ Story 0001, Task 03: Update Context to initialize Prometheus client
+4. ✅ Story 0001, Task 04: Add tests for DynamicResourceMetrics
+5. ✅ Story 0001, Task 05: Documentation and config examples
 
 ## Success Criteria
 

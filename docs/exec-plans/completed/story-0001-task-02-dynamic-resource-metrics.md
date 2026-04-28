@@ -1,4 +1,4 @@
-# Task: Create DynamicResourceMetrics Wrapper (Story 0001)
+# Task: Create DynamicResourceMetrics Wrapper (Story 0001, Task 02)
 
 ## Overview
 

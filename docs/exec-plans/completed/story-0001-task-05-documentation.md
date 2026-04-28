@@ -1,4 +1,4 @@
-# Task: Documentation and Config Examples (Story 0001)
+# Task: Documentation and Config Examples (Story 0001, Task 05)
 
 ## Overview
 

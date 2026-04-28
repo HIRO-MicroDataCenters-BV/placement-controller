@@ -17,6 +17,8 @@ Foundational principles for agent development.
 - Design docs in `docs/`
 - Execution plans in `docs/exec-plans/`
 - Architecture in `ARCHITECTURE.md`
+- Never delete docs without asking permission
+- Always update documentation when code changes
 
 ## Legibility Over Style
 
@@ -51,7 +53,8 @@ Foundational principles for agent development.
 - Every task within a story should complete with all tests passing
 - Minimize broken code state - each commit should be a working checkpoint
 - After each story, update core beliefs with instructions to minimize next human steering
-- Use story/task file naming conventions: `story-NNNN-<title>-task-N-<title>.md`
+- Use story file naming conventions: `story-NNNN-<title>.md`
+- Use task file naming conventions: `story-NNNN-<title>-task-NN-<title>.md`
 - Always pass type checking, linting, and formatting before committing
 
 ---

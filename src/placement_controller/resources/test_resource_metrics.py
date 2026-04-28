@@ -14,7 +14,6 @@ from placement_controller.api.model import Metric, MetricUnit, MetricValue
 from placement_controller.clients.metrics.fake_client import FakeMetricsClient
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.resource_metrics import (
-    CachedMetricValue,
     DynamicResourceMetrics,
     EstimateMethod,
     MetricDefinition,
@@ -47,10 +46,12 @@ class ResourceMetricsTest(TestCase, ResourceTestFixture):
         fake_client = FakeMetricsClient()
         fake_client.metrics = {"node_energy{zone=zone1}": {"value": 150.5}}
 
+        prometheus_definitions = static_config.prometheus_metrics
+        assert prometheus_definitions is not None
         dynamic_metrics = DynamicResourceMetrics(
             static_config=static_config,
             client=fake_client,
-            prometheus_definitions=static_config.prometheus_metrics,
+            prometheus_definitions=prometheus_definitions,
         )
 
         pod1 = PodResources(
@@ -89,10 +90,12 @@ class ResourceMetricsTest(TestCase, ResourceTestFixture):
 
         fake_client = FakeMetricsClient()
 
+        prometheus_definitions = static_config.prometheus_metrics
+        assert prometheus_definitions is not None
         dynamic_metrics = DynamicResourceMetrics(
             static_config=static_config,
             client=fake_client,
-            prometheus_definitions=static_config.prometheus_metrics,
+            prometheus_definitions=prometheus_definitions,
         )
 
         pod1 = PodResources(
@@ -124,10 +127,12 @@ class ResourceMetricsTest(TestCase, ResourceTestFixture):
         fake_client = FakeMetricsClient()
         fake_client.metrics = {"node_energy{zone=zone1}": {"value": 200.0}}
 
+        prometheus_definitions = static_config.prometheus_metrics
+        assert prometheus_definitions is not None
         dynamic_metrics = DynamicResourceMetrics(
             static_config=static_config,
             client=fake_client,
-            prometheus_definitions=static_config.prometheus_metrics,
+            prometheus_definitions=prometheus_definitions,
         )
 
         pod1 = PodResources(
@@ -142,6 +147,7 @@ class ResourceMetricsTest(TestCase, ResourceTestFixture):
         energy_result = next(r for r in results if r.id == Metric.energy)
 
         self.assertEqual(energy_result.value, Decimal("200.0000"))
+
     resource_metrics: ResourceMetricsImpl
 
     pod1: PodResources

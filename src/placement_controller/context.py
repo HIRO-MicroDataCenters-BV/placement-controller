@@ -14,7 +14,7 @@ from placement_controller.clients.placement.local import LocalPlacementClient
 from placement_controller.core.applications import Applications
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resources.resource_managment import ResourceManagementImpl
-from placement_controller.resources.resource_metrics import DynamicResourceMetrics, MetricSettings, ResourceMetricsImpl
+from placement_controller.resources.resource_metrics import DynamicResourceMetrics, ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
 from placement_controller.settings import Settings
 from placement_controller.store.types import DecisionStore
@@ -49,14 +49,12 @@ class Context:
         self.terminated = asyncio.Event()
         self.loop = loop
         self.tasks = []
-        
+
         # Initialize Prometheus client if configured
         self.metrics_client: Optional[MetricsClient] = None
         if self.settings.metrics.prometheus_metrics:
-            self.metrics_client = PrometheusMetricsClient(
-                endpoint=self.settings.prometheus_client.endpoint
-            )
-        
+            self.metrics_client = PrometheusMetricsClient(endpoint=self.settings.prometheus_client.endpoint)
+
         # Initialize resource metrics
         self._init_resource_metrics()
         self.resource_tracking = ResourceTrackingImpl(kube_client, self.terminated)

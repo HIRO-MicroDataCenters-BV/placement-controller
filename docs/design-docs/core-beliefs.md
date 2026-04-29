@@ -47,14 +47,34 @@ Foundational principles for agent development.
 
 ## Execution Workflow
 
-**TDD during story execution with minimal broken code.** Stories must execute cleanly with steering.
+* Story implementation consists of 3 steps story writing, design writing, and tasks execution
+
+**Story writing**
+
+- Every story must include a task that creates a design doc and an execution plan in `docs/`
+- Use story file naming conventions: `story-NNNN-<title>.md`
+- See template `docs/design-docs/story-template.md`
+
+**Design writing**
+
+- Design should be detailed enough to allow an agent to break down story into tasks without human intervention
+- Use design file naming conventions: `story-NNNN-design-<title>.md`
+- See template `docs/design-docs/design-template.md`
+- Tasks Break down rules:
+   - each task has a scope of one or several units - source file/module/component
+   - combination of 1 unit tasks makes an integration task, e.g. file1 + file2 -> module, module1 + module2 -> high level module or component
+- Irrespectively of a unit, each self contained change should not break the codebase
+
+**Task Execution** 
 
 - Follow TDD: Write tests first, then implement code to make tests pass
 - Every task within a story should complete with all tests passing
-- Minimize broken code state - each commit should be a working checkpoint
+- Always pass type checking, linting, and formatting before committing
+- Minimize broken code state - each commit should be a working checkpo int
+
+**After execution**
+
 - After each story, update core beliefs with instructions to minimize next human steering
-- Use story file naming conventions: `story-NNNN-<title>.md`
-- Use task file naming conventions: `story-NNNN-<title>-task-NN-<title>.md`
 - Always pass type checking, linting, and formatting before committing
 
 ---

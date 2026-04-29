@@ -24,6 +24,15 @@ Index of design documents for placement-controller.
 | [Testing Patterns](testing-patterns.md) | Test structure and fixtures | 2026-04-27 |
 | [Integration Tests](integration-tests.md) | E2E testing strategy | 2026-04-27 |
 
+## Templates
+
+| Document | Description | Last Updated |
+|------       |-------------|-- ------|
+| [Story Template](story-template.md) | Template and example of a story | 2026-04-27 |
+| [Design Template](design-template.md) | Template and example of a design doc | 2026-04-27 |
+| [Task Template](task-template.md) | Template and example of a task | 2026-04-27 |
+
+
 ---
 
 *Generated from docs/index.md*

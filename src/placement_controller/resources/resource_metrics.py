@@ -1,3 +1,5 @@
+import asyncio
+from time import time
 from typing import Dict, List, Optional, Set
 
 from dataclasses import dataclass
@@ -136,17 +138,21 @@ class DynamicResourceMetrics(ResourceMetrics):
     cache: Dict[str, CachedMetricValue]
     cache_ttl_seconds: int = 60
     last_update: Optional[float] = None
+    prometheus_update_interval: float = 1.0
+    _update_task: Optional["asyncio.Task[None]"] = None
 
     def __init__(
         self,
         static_config: MetricSettings,
         client: MetricsClient,
         prometheus_definitions: List[PrometheusMetricDefinition],
+        prometheus_update_interval: float = 1.0,
     ):
         self.static_metrics = ResourceMetricsImpl(config=static_config)
         self.client = client
         self.prometheus_definitions = prometheus_definitions
         self.cache = {}
+        self.prometheus_update_interval = prometheus_update_interval
 
     def estimate(self, spec: ApplicationSpec, metrics: List[Metric]) -> List[MetricValue]:
         static_estimates = self.static_metrics.estimate(spec, metrics)
@@ -174,8 +180,15 @@ class DynamicResourceMetrics(ResourceMetrics):
 
         return results
 
+    def _should_update_prometheus(self) -> bool:
+        if self.last_update is None:
+            return True
+        return time() - self.last_update >= self.prometheus_update_interval
+
     def _update_prometheus_metrics(self) -> None:
-        current_time = self._get_current_time()
+        if not self._should_update_prometheus():
+            return
+        current_time = time()
         for prom_def in self.prometheus_definitions:
             result = self.client.get_metric_sync(prom_def.query, prom_def.labels)
             if result and "value" in result:
@@ -191,13 +204,48 @@ class DynamicResourceMetrics(ResourceMetrics):
                     unit=prom_def.metric.unit(),
                 )
                 self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
-
-    def _get_current_time(self) -> float:
-        import time
-
-        return time.time()
+        self.last_update = current_time
 
     def _is_cache_valid(self, entry: CachedMetricValue) -> bool:
         if self.cache_ttl_seconds <= 0:
             return True
-        return self._get_current_time() - entry.query_time < self.cache_ttl_seconds
+        return time() - entry.query_time < self.cache_ttl_seconds
+
+    async def start_prometheus_updates(self) -> None:
+        if self._update_task is not None:
+            return
+        self._update_task = asyncio.create_task(self._prometheus_update_loop())
+
+    async def stop_prometheus_updates(self) -> None:
+        if self._update_task is not None:
+            self._update_task.cancel()
+            try:
+                await self._update_task
+            except asyncio.CancelledError:
+                pass
+            self._update_task = None
+
+    async def _prometheus_update_loop(self) -> None:
+        while True:
+            try:
+                await asyncio.sleep(self.prometheus_update_interval)
+                current_time = time()
+                for prom_def in self.prometheus_definitions:
+                    result = self.client.get_metric_sync(prom_def.query, prom_def.labels)
+                    if result and "value" in result:
+                        value = Decimal(str(result["value"]))
+                        metric_value = MetricValue(
+                            id=prom_def.metric, value=value.quantize(Decimal("1.0001")), unit=prom_def.metric.unit()
+                        )
+                        self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
+                    elif prom_def.default_value is not None:
+                        metric_value = MetricValue(
+                            id=prom_def.metric,
+                            value=prom_def.default_value.quantize(Decimal("1.0001")),
+                            unit=prom_def.metric.unit(),
+                        )
+                        self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                pass

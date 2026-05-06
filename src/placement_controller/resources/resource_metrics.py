@@ -1,4 +1,4 @@
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 from dataclasses import dataclass
 from decimal import Decimal
@@ -12,6 +12,7 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 from placement_controller.api.model import Metric, MetricValue
+from placement_controller.clients.metrics.types import MetricsClient
 from placement_controller.resources.types import ResourceMetrics
 
 ResourceName = str
@@ -34,8 +35,17 @@ class MetricDefinition(BaseSettings):
         return {k: Decimal(str(val)) for k, val in v.items()}
 
 
+@dataclass
+class PrometheusMetricDefinition:
+    metric: Metric
+    query: str
+    labels: Dict[str, str]
+    default_value: Optional[Decimal] = None
+
+
 class MetricSettings(BaseSettings):
     static_metrics: List[MetricDefinition]
+    prometheus_metrics: Optional[List[PrometheusMetricDefinition]] = None
 
 
 class ResourceMetricsImpl(ResourceMetrics):
@@ -111,3 +121,83 @@ class WeightedAverage:
             resource_weight = self.weights.get(resource_name) or Decimal(0.0)
             result = result + resource_units * cost_per_unit * resource_weight
         return result
+
+
+@dataclass
+class CachedMetricValue:
+    value: MetricValue
+    query_time: float
+
+
+class DynamicResourceMetrics(ResourceMetrics):
+    static_metrics: ResourceMetricsImpl
+    client: MetricsClient
+    prometheus_definitions: List[PrometheusMetricDefinition]
+    cache: Dict[str, CachedMetricValue]
+    cache_ttl_seconds: int = 60
+    last_update: Optional[float] = None
+
+    def __init__(
+        self,
+        static_config: MetricSettings,
+        client: MetricsClient,
+        prometheus_definitions: List[PrometheusMetricDefinition],
+    ):
+        self.static_metrics = ResourceMetricsImpl(config=static_config)
+        self.client = client
+        self.prometheus_definitions = prometheus_definitions
+        self.cache = {}
+
+    def estimate(self, spec: ApplicationSpec, metrics: List[Metric]) -> List[MetricValue]:
+        static_estimates = self.static_metrics.estimate(spec, metrics)
+
+        self._update_prometheus_metrics()
+
+        results = []
+        for metric in metrics:
+            if metric in self.cache:
+                cache_entry = self.cache[metric]
+                if self._is_cache_valid(cache_entry):
+                    results.append(cache_entry.value)
+                else:
+                    static_value = next((v for v in static_estimates if v.id == metric), None)
+                    if static_value:
+                        results.append(static_value)
+                    else:
+                        results.append(MetricValue(id=metric, value=Decimal(0), unit=metric.unit()))
+            else:
+                static_value = next((v for v in static_estimates if v.id == metric), None)
+                if static_value:
+                    results.append(static_value)
+                else:
+                    results.append(MetricValue(id=metric, value=Decimal(0), unit=metric.unit()))
+
+        return results
+
+    def _update_prometheus_metrics(self) -> None:
+        current_time = self._get_current_time()
+        for prom_def in self.prometheus_definitions:
+            result = self.client.get_metric_sync(prom_def.query, prom_def.labels)
+            if result and "value" in result:
+                value = Decimal(str(result["value"]))
+                metric_value = MetricValue(
+                    id=prom_def.metric, value=value.quantize(Decimal("1.0001")), unit=prom_def.metric.unit()
+                )
+                self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
+            elif prom_def.default_value is not None:
+                metric_value = MetricValue(
+                    id=prom_def.metric,
+                    value=prom_def.default_value.quantize(Decimal("1.0001")),
+                    unit=prom_def.metric.unit(),
+                )
+                self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
+
+    def _get_current_time(self) -> float:
+        import time
+
+        return time.time()
+
+    def _is_cache_valid(self, entry: CachedMetricValue) -> bool:
+        if self.cache_ttl_seconds <= 0:
+            return True
+        return self._get_current_time() - entry.query_time < self.cache_ttl_seconds

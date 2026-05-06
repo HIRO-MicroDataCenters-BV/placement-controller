@@ -11,16 +11,143 @@ from application_client.models.pvc_resources_requests import PVCResourcesRequest
 from application_client.models.resource_id import ResourceId
 
 from placement_controller.api.model import Metric, MetricUnit, MetricValue
+from placement_controller.clients.metrics.fake_client import FakeMetricsClient
 from placement_controller.resource_fixture import ResourceTestFixture
 from placement_controller.resources.resource_metrics import (
+    DynamicResourceMetrics,
     EstimateMethod,
     MetricDefinition,
     MetricSettings,
+    PrometheusMetricDefinition,
     ResourceMetricsImpl,
 )
 
 
 class ResourceMetricsTest(TestCase, ResourceTestFixture):
+    def test_dynamic_metrics_combined_static_and_dynamic(self) -> None:
+        static_config = MetricSettings(
+            static_metrics=[
+                MetricDefinition(
+                    metric=Metric.cost,
+                    value_per_unit={"cpu": Decimal(1.0)},
+                    weight={"cpu": Decimal(1.0)},
+                    method=EstimateMethod.WEIGHTED_AVERAGE,
+                )
+            ],
+            prometheus_metrics=[
+                PrometheusMetricDefinition(
+                    metric=Metric.energy,
+                    query="node_energy",
+                    labels={"zone": "zone1"},
+                )
+            ],
+        )
+
+        fake_client = FakeMetricsClient()
+        fake_client.metrics = {"node_energy{zone=zone1}": {"value": 150.5}}
+
+        prometheus_definitions = static_config.prometheus_metrics
+        assert prometheus_definitions is not None
+        dynamic_metrics = DynamicResourceMetrics(
+            static_config=static_config,
+            client=fake_client,
+            prometheus_definitions=prometheus_definitions,
+        )
+
+        pod1 = PodResources(
+            id=ResourceId(name="pod1", namespace="test"),
+            replica=1,
+            requests=PodResourcesRequests.from_dict({"cpu": 1, "memory": 6 * self.GIGA}),
+            limits=PodResourcesLimits.from_dict({"cpu": 2}),
+        )
+        spec = ApplicationSpec(id=ResourceId(name="test", namespace="test"), resources=[pod1])
+        results = dynamic_metrics.estimate(spec, [Metric.cost, Metric.energy])
+
+        cost_result = next(r for r in results if r.id == Metric.cost)
+        energy_result = next(r for r in results if r.id == Metric.energy)
+
+        self.assertEqual(cost_result.value, Decimal("1.0000"))
+        self.assertEqual(energy_result.value, Decimal("150.5000"))
+
+    def test_dynamic_metrics_fallback_when_prometheus_unavailable(self) -> None:
+        static_config = MetricSettings(
+            static_metrics=[
+                MetricDefinition(
+                    metric=Metric.energy,
+                    value_per_unit={"cpu": Decimal(0.5)},
+                    weight={"cpu": Decimal(1.0)},
+                    method=EstimateMethod.WEIGHTED_AVERAGE,
+                )
+            ],
+            prometheus_metrics=[
+                PrometheusMetricDefinition(
+                    metric=Metric.energy,
+                    query="node_energy",
+                    labels={"zone": "zone1"},
+                )
+            ],
+        )
+
+        fake_client = FakeMetricsClient()
+
+        prometheus_definitions = static_config.prometheus_metrics
+        assert prometheus_definitions is not None
+        dynamic_metrics = DynamicResourceMetrics(
+            static_config=static_config,
+            client=fake_client,
+            prometheus_definitions=prometheus_definitions,
+        )
+
+        pod1 = PodResources(
+            id=ResourceId(name="pod1", namespace="test"),
+            replica=1,
+            requests=PodResourcesRequests.from_dict({"cpu": 1, "memory": 6 * self.GIGA}),
+            limits=PodResourcesLimits.from_dict({"cpu": 2}),
+        )
+        spec = ApplicationSpec(id=ResourceId(name="test", namespace="test"), resources=[pod1])
+        results = dynamic_metrics.estimate(spec, [Metric.energy])
+
+        energy_result = next(r for r in results if r.id == Metric.energy)
+
+        # Prometheus returns None, no default_value set, so use static estimate (cpu=1, value=0.5 per cpu)
+        self.assertEqual(energy_result.value, Decimal("0.5000"))
+
+    def test_dynamic_metrics_missing_static_with_dynamic(self) -> None:
+        static_config = MetricSettings(
+            static_metrics=[],
+            prometheus_metrics=[
+                PrometheusMetricDefinition(
+                    metric=Metric.energy,
+                    query="node_energy",
+                    labels={"zone": "zone1"},
+                )
+            ],
+        )
+
+        fake_client = FakeMetricsClient()
+        fake_client.metrics = {"node_energy{zone=zone1}": {"value": 200.0}}
+
+        prometheus_definitions = static_config.prometheus_metrics
+        assert prometheus_definitions is not None
+        dynamic_metrics = DynamicResourceMetrics(
+            static_config=static_config,
+            client=fake_client,
+            prometheus_definitions=prometheus_definitions,
+        )
+
+        pod1 = PodResources(
+            id=ResourceId(name="pod1", namespace="test"),
+            replica=1,
+            requests=PodResourcesRequests.from_dict({"cpu": 1, "memory": 6 * self.GIGA}),
+            limits=PodResourcesLimits.from_dict({"cpu": 2}),
+        )
+        spec = ApplicationSpec(id=ResourceId(name="test", namespace="test"), resources=[pod1])
+        results = dynamic_metrics.estimate(spec, [Metric.energy])
+
+        energy_result = next(r for r in results if r.id == Metric.energy)
+
+        self.assertEqual(energy_result.value, Decimal("200.0000"))
+
     resource_metrics: ResourceMetricsImpl
 
     pod1: PodResources

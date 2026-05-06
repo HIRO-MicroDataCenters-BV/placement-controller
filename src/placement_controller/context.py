@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 import asyncio
 
@@ -8,11 +8,13 @@ from prometheus_async.aio.web import start_http_server
 
 from placement_controller.api.app import start_fastapi
 from placement_controller.clients.k8s.client import KubeClient
+from placement_controller.clients.metrics.client import PrometheusMetricsClient
+from placement_controller.clients.metrics.types import MetricsClient
 from placement_controller.clients.placement.local import LocalPlacementClient
 from placement_controller.core.applications import Applications
 from placement_controller.jobs.types import ExecutorContext
 from placement_controller.resources.resource_managment import ResourceManagementImpl
-from placement_controller.resources.resource_metrics import ResourceMetricsImpl
+from placement_controller.resources.resource_metrics import DynamicResourceMetrics, ResourceMetricsImpl
 from placement_controller.resources.resource_tracking import ResourceTrackingImpl
 from placement_controller.settings import Settings
 from placement_controller.store.types import DecisionStore
@@ -26,7 +28,8 @@ class Context:
     tasks: List[asyncio.Task[Any]]
     settings: Settings
 
-    resource_metrics: ResourceMetricsImpl
+    metrics_client: Optional[MetricsClient]
+    resource_metrics: ResourceMetricsImpl | DynamicResourceMetrics
     resource_tracking: ResourceTrackingImpl
     resource_management: ResourceManagementImpl
     executor_context: ExecutorContext
@@ -46,7 +49,14 @@ class Context:
         self.terminated = asyncio.Event()
         self.loop = loop
         self.tasks = []
-        self.resource_metrics = ResourceMetricsImpl(config=self.settings.metrics)
+
+        # Initialize Prometheus client if configured
+        self.metrics_client: Optional[MetricsClient] = None
+        if self.settings.metrics.prometheus_metrics:
+            self.metrics_client = PrometheusMetricsClient(endpoint=self.settings.prometheus_client.endpoint)
+
+        # Initialize resource metrics
+        self._init_resource_metrics()
         self.resource_tracking = ResourceTrackingImpl(kube_client, self.terminated)
         self.resource_management = ResourceManagementImpl(
             self.settings.placement.current_zone, clock, kube_client, self.resource_tracking, self.resource_metrics
@@ -62,6 +72,19 @@ class Context:
         )
 
         self.applications = Applications(clock, self.executor_context, kube_client, self.terminated, settings.placement)
+
+    def _init_resource_metrics(self) -> None:
+        from placement_controller.resources.resource_metrics import DynamicResourceMetrics
+
+        if self.settings.metrics.prometheus_metrics:
+            assert self.metrics_client is not None
+            self.resource_metrics = DynamicResourceMetrics(
+                static_config=self.settings.metrics,
+                client=self.metrics_client,
+                prometheus_definitions=self.settings.metrics.prometheus_metrics,
+            )
+        else:
+            self.resource_metrics = ResourceMetricsImpl(config=self.settings.metrics)
 
     def start(self) -> None:
         if self.terminated.is_set():

@@ -73,6 +73,9 @@ class Context:
 
         self.applications = Applications(clock, self.executor_context, kube_client, self.terminated, settings.placement)
 
+        if isinstance(self.resource_metrics, DynamicResourceMetrics):
+            loop.create_task(self.resource_metrics.start_prometheus_updates())
+
     def _init_resource_metrics(self) -> None:
         from placement_controller.resources.resource_metrics import DynamicResourceMetrics
 

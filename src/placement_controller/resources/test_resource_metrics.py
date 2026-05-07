@@ -1,5 +1,4 @@
 from decimal import Decimal
-from time import sleep
 from unittest import TestCase
 
 from application_client.models.application_spec import ApplicationSpec

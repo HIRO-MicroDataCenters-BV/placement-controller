@@ -60,6 +60,8 @@ class ContextBuilder:
             return False, message.getvalue()
 
     def build(self) -> Context:
+        self.initialize_loop()
+
         clock = ClockImpl()
         loop = asyncio.get_event_loop()
         kube_client = KubeClientImpl(self.settings.k8s, loop)
@@ -76,3 +78,9 @@ class ContextBuilder:
 
         context = Context(clock, app_client, decision_store, zone_api_factory, kube_client, self.settings, loop)
         return context
+
+    def initialize_loop(self) -> None:
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(asyncio.new_event_loop())

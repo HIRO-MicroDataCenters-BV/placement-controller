@@ -109,7 +109,8 @@ class KubeClient:
         event_type: str,
         timestamp: int,
     ) -> client.EventsV1Event:
-        event_time = datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
+        dt = datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
+        event_time = dt.isoformat(timespec="microseconds").replace("+00:00", "Z")
         return client.EventsV1Event(
             api_version="events.k8s.io/v1",
             kind="Event",
@@ -125,7 +126,7 @@ class KubeClient:
             reason=reason,
             note=message,
             type=event_type,
-            event_time=event_time,
+            event_time=event_time,  # type: ignore
             reporting_controller="placement-controller",
             reporting_instance="placement-controller",  # TODO pod_id
         )

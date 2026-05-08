@@ -6,6 +6,7 @@ from placement_controller.api.model import Metric
 from placement_controller.async_fixture import AsyncTestFixture
 from placement_controller.clients.k8s.fake_client import FakeClient
 from placement_controller.clients.k8s.settings import K8SSettings
+from placement_controller.clients.metrics.fake_client import FakeMetricsClient
 from placement_controller.clients.placement.types import PlacementClient
 from placement_controller.context import Context
 from placement_controller.resources.resource_metrics import EstimateMethod, MetricDefinition, MetricSettings
@@ -29,6 +30,7 @@ class ContextTest(AsyncTestFixture):
     settings: Settings
     app_client: Client
     zone_api_client: ZoneApiFactoryImpl
+    prometheus_client: FakeMetricsClient
     context: Context
 
     def setUp(self) -> None:
@@ -37,12 +39,14 @@ class ContextTest(AsyncTestFixture):
         self.decision_store = FakeDecisionStore()
         self.k8s_client = FakeClient()
         self.app_client = Client(base_url="http://127.0.0.1/")
+        self.prometheus_client = FakeMetricsClient()
         self.settings = self.make_settings()
         self.zone_api_client = ZoneApiFactoryImpl(self.settings.placement, PlacementClient())
         self.context = Context(
             self.clock,
             self.app_client,
             self.decision_store,
+            self.prometheus_client,
             self.zone_api_client,
             self.k8s_client,
             self.settings,

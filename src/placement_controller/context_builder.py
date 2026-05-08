@@ -9,6 +9,8 @@ from application_client.client import Client
 from orchestrationlib_client.client import Client as OrchestrationLibClient
 
 from placement_controller.clients.k8s.client_impl import KubeClientImpl
+from placement_controller.clients.metrics.client import PrometheusMetricsClient
+from placement_controller.clients.metrics.types import MetricsClient
 from placement_controller.clients.placement.types import PlacementClient
 from placement_controller.context import Context
 from placement_controller.pydantic_yaml import from_yaml
@@ -60,6 +62,8 @@ class ContextBuilder:
             return False, message.getvalue()
 
     def build(self) -> Context:
+        self.initialize_loop()
+
         clock = ClockImpl()
         loop = asyncio.get_event_loop()
         kube_client = KubeClientImpl(self.settings.k8s, loop)
@@ -74,5 +78,17 @@ class ContextBuilder:
         else:
             decision_store = FakeDecisionStore()
 
-        context = Context(clock, app_client, decision_store, zone_api_factory, kube_client, self.settings, loop)
+        prometheus_client: Optional[MetricsClient] = None
+        if self.settings.metrics.prometheus_metrics:
+            prometheus_client = PrometheusMetricsClient(endpoint=self.settings.prometheus_client.endpoint)
+
+        context = Context(
+            clock, app_client, decision_store, prometheus_client, zone_api_factory, kube_client, self.settings, loop
+        )
         return context
+
+    def initialize_loop(self) -> None:
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(asyncio.new_event_loop())

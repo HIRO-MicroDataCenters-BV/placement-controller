@@ -47,9 +47,14 @@ metrics:
   # Optional: Prometheus-based metrics (overrides static values when available)
   # Can be mixed with static_metrics - static provides defaults, Prometheus provides live data
   prometheus_metrics:
-    - metric: energy
-      query: "node_energy_watts"
+    - metric: cost
+      query: cloud_cost
       labels:
-        zone: zone1
+        source: cloud
+    - metric: energy
+      query: energy_cost
+      labels:
+        source: energy
+
       # Optional: default value if Prometheus returns no data
       # default_value: 0.5

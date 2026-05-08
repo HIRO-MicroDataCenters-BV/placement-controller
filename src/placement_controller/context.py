@@ -8,7 +8,6 @@ from prometheus_async.aio.web import start_http_server
 
 from placement_controller.api.app import start_fastapi
 from placement_controller.clients.k8s.client import KubeClient
-from placement_controller.clients.metrics.client import PrometheusMetricsClient
 from placement_controller.clients.metrics.types import MetricsClient
 from placement_controller.clients.placement.local import LocalPlacementClient
 from placement_controller.core.applications import Applications
@@ -27,8 +26,8 @@ class Context:
     terminated: asyncio.Event
     tasks: List[asyncio.Task[Any]]
     settings: Settings
+    prometheus_client: Optional[MetricsClient]
 
-    metrics_client: Optional[MetricsClient]
     resource_metrics: ResourceMetricsImpl | DynamicResourceMetrics
     resource_tracking: ResourceTrackingImpl
     resource_management: ResourceManagementImpl
@@ -40,6 +39,7 @@ class Context:
         clock: Clock,
         app_client: Client,
         decision_store: DecisionStore,
+        prometheus_client: Optional[MetricsClient],
         zone_api_factory: ZoneApiFactoryImpl,
         kube_client: KubeClient,
         settings: Settings,
@@ -49,11 +49,7 @@ class Context:
         self.terminated = asyncio.Event()
         self.loop = loop
         self.tasks = []
-
-        # Initialize Prometheus client if configured
-        self.metrics_client: Optional[MetricsClient] = None
-        if self.settings.metrics.prometheus_metrics:
-            self.metrics_client = PrometheusMetricsClient(endpoint=self.settings.prometheus_client.endpoint)
+        self.prometheus_client = prometheus_client
 
         # Initialize resource metrics
         self._init_resource_metrics()
@@ -74,14 +70,13 @@ class Context:
         self.applications = Applications(clock, self.executor_context, kube_client, self.terminated, settings.placement)
 
     def _init_resource_metrics(self) -> None:
-        from placement_controller.resources.resource_metrics import DynamicResourceMetrics
-
-        if self.settings.metrics.prometheus_metrics:
-            assert self.metrics_client is not None
+        if self.settings.metrics.prometheus_metrics and self.prometheus_client:
+            logger.info("Initializing dynamic metrics...")
             self.resource_metrics = DynamicResourceMetrics(
                 static_config=self.settings.metrics,
-                client=self.metrics_client,
+                client=self.prometheus_client,
                 prometheus_definitions=self.settings.metrics.prometheus_metrics,
+                is_terminated=self.terminated,
             )
         else:
             self.resource_metrics = ResourceMetricsImpl(config=self.settings.metrics)
@@ -98,6 +93,9 @@ class Context:
         self.tasks.append(
             self.loop.create_task(start_fastapi(self.settings.api.port, self.applications, self.resource_management))
         )
+        if isinstance(self.resource_metrics, DynamicResourceMetrics):
+            self.tasks.append(self.loop.create_task(self.resource_metrics.prometheus_update_loop()))
+
         self.prometheus_server = await start_http_server(port=self.settings.prometheus.endpoint_port)
 
     def stop(self) -> None:

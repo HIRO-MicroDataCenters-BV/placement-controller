@@ -1,13 +1,16 @@
 from typing import Dict, List, Optional, Set
 
+import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
+from time import time
 
 from application_client.models.application_spec import ApplicationSpec
 from application_client.models.pod_resources import PodResources
 from application_client.models.pvc_resources import PVCResources
 from kubernetes.utils.quantity import parse_quantity
+from loguru import logger
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
@@ -136,17 +139,23 @@ class DynamicResourceMetrics(ResourceMetrics):
     cache: Dict[str, CachedMetricValue]
     cache_ttl_seconds: int = 60
     last_update: Optional[float] = None
+    prometheus_update_interval: float = 1.0
+    is_terminated: asyncio.Event
 
     def __init__(
         self,
         static_config: MetricSettings,
         client: MetricsClient,
         prometheus_definitions: List[PrometheusMetricDefinition],
+        is_terminated: asyncio.Event,
+        prometheus_update_interval: float = 1.0,
     ):
         self.static_metrics = ResourceMetricsImpl(config=static_config)
         self.client = client
         self.prometheus_definitions = prometheus_definitions
         self.cache = {}
+        self.prometheus_update_interval = prometheus_update_interval
+        self.is_terminated = is_terminated
 
     def estimate(self, spec: ApplicationSpec, metrics: List[Metric]) -> List[MetricValue]:
         static_estimates = self.static_metrics.estimate(spec, metrics)
@@ -174,8 +183,15 @@ class DynamicResourceMetrics(ResourceMetrics):
 
         return results
 
+    def _should_update_prometheus(self) -> bool:
+        if self.last_update is None:
+            return True
+        return time() - self.last_update >= self.prometheus_update_interval
+
     def _update_prometheus_metrics(self) -> None:
-        current_time = self._get_current_time()
+        if not self._should_update_prometheus():
+            return
+        current_time = time()
         for prom_def in self.prometheus_definitions:
             result = self.client.get_metric_sync(prom_def.query, prom_def.labels)
             if result and "value" in result:
@@ -191,13 +207,35 @@ class DynamicResourceMetrics(ResourceMetrics):
                     unit=prom_def.metric.unit(),
                 )
                 self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
-
-    def _get_current_time(self) -> float:
-        import time
-
-        return time.time()
+        self.last_update = current_time
 
     def _is_cache_valid(self, entry: CachedMetricValue) -> bool:
         if self.cache_ttl_seconds <= 0:
             return True
-        return self._get_current_time() - entry.query_time < self.cache_ttl_seconds
+        return time() - entry.query_time < self.cache_ttl_seconds
+
+    async def prometheus_update_loop(self) -> None:
+        while not self.is_terminated.is_set():
+            try:
+                await asyncio.sleep(self.prometheus_update_interval)
+                current_time = time()
+                for prom_def in self.prometheus_definitions:
+                    result = await self.client.get_metric(prom_def.query, prom_def.labels)
+                    if result and "value" in result:
+                        value = Decimal(str(result["value"]))
+                        metric_value = MetricValue(
+                            id=prom_def.metric, value=value.quantize(Decimal("1.0001")), unit=prom_def.metric.unit()
+                        )
+                        self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
+                    elif prom_def.default_value is not None:
+                        metric_value = MetricValue(
+                            id=prom_def.metric,
+                            value=prom_def.default_value.quantize(Decimal("1.0001")),
+                            unit=prom_def.metric.unit(),
+                        )
+                        self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
+            except asyncio.CancelledError:
+                logger.error("_prometheus_update_loop is cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Error in _prometheus_update_loop: {e}")

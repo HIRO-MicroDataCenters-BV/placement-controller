@@ -25,7 +25,6 @@ class PrometheusMetricsClient(MetricsClient):
 
             data = response.json()
             result = data.get("data", {}).get("result", [])
-
             if not result:
                 return None
 

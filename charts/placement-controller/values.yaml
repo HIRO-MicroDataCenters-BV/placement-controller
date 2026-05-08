@@ -134,10 +134,12 @@ settings:
     # prometheus_metrics:
     #   - metric: cost
     #     query: cloud_cost
-    #     labels: {}
+    #     labels:
+    #       source: cloud
     #   - metric: energy
     #     query: energy_cost
-    #     labels: {}
+    #     labels:
+    #       source: energy
 
   # Placement API settings
   api:

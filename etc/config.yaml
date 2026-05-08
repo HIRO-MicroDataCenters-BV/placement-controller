@@ -49,9 +49,12 @@ metrics:
   prometheus_metrics:
     - metric: cost
       query: cloud_cost
-      labels: {}
+      labels:
+        source: cloud
     - metric: energy
       query: energy_cost
-      labels: {}
+      labels:
+        source: energy
+
       # Optional: default value if Prometheus returns no data
       # default_value: 0.5

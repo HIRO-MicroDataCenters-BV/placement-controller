@@ -71,6 +71,7 @@ class Context:
 
     def _init_resource_metrics(self) -> None:
         if self.settings.metrics.prometheus_metrics and self.prometheus_client:
+            logger.info("Initializing dynamic metrics...")
             self.resource_metrics = DynamicResourceMetrics(
                 static_config=self.settings.metrics,
                 client=self.prometheus_client,

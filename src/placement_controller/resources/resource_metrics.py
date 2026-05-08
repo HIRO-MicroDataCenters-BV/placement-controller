@@ -10,6 +10,7 @@ from application_client.models.application_spec import ApplicationSpec
 from application_client.models.pod_resources import PodResources
 from application_client.models.pvc_resources import PVCResources
 from kubernetes.utils.quantity import parse_quantity
+from loguru import logger
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
@@ -139,13 +140,14 @@ class DynamicResourceMetrics(ResourceMetrics):
     cache_ttl_seconds: int = 60
     last_update: Optional[float] = None
     prometheus_update_interval: float = 1.0
-    _update_task: Optional["asyncio.Task[None]"] = None
+    is_terminated: asyncio.Event
 
     def __init__(
         self,
         static_config: MetricSettings,
         client: MetricsClient,
         prometheus_definitions: List[PrometheusMetricDefinition],
+        is_terminated: asyncio.Event,
         prometheus_update_interval: float = 1.0,
     ):
         self.static_metrics = ResourceMetricsImpl(config=static_config)
@@ -153,6 +155,7 @@ class DynamicResourceMetrics(ResourceMetrics):
         self.prometheus_definitions = prometheus_definitions
         self.cache = {}
         self.prometheus_update_interval = prometheus_update_interval
+        self.is_terminated = is_terminated
 
     def estimate(self, spec: ApplicationSpec, metrics: List[Metric]) -> List[MetricValue]:
         static_estimates = self.static_metrics.estimate(spec, metrics)
@@ -211,27 +214,13 @@ class DynamicResourceMetrics(ResourceMetrics):
             return True
         return time() - entry.query_time < self.cache_ttl_seconds
 
-    async def start_prometheus_updates(self) -> None:
-        if self._update_task is not None:
-            return
-        self._update_task = asyncio.create_task(self._prometheus_update_loop())
-
-    async def stop_prometheus_updates(self) -> None:
-        if self._update_task is not None:
-            self._update_task.cancel()
-            try:
-                await self._update_task
-            except asyncio.CancelledError:
-                pass
-            self._update_task = None
-
-    async def _prometheus_update_loop(self) -> None:
-        while True:
+    async def prometheus_update_loop(self) -> None:
+        while not self.is_terminated.is_set():
             try:
                 await asyncio.sleep(self.prometheus_update_interval)
                 current_time = time()
                 for prom_def in self.prometheus_definitions:
-                    result = self.client.get_metric_sync(prom_def.query, prom_def.labels)
+                    result = await self.client.get_metric(prom_def.query, prom_def.labels)
                     if result and "value" in result:
                         value = Decimal(str(result["value"]))
                         metric_value = MetricValue(
@@ -246,6 +235,7 @@ class DynamicResourceMetrics(ResourceMetrics):
                         )
                         self.cache[prom_def.metric] = CachedMetricValue(value=metric_value, query_time=current_time)
             except asyncio.CancelledError:
+                logger.error("_prometheus_update_loop is cancelled")
                 break
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Error in _prometheus_update_loop: {e}")

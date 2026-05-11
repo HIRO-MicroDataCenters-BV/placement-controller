@@ -153,7 +153,7 @@ class DynamicResourceMetrics(ResourceMetrics):
         self.static_metrics = ResourceMetricsImpl(config=static_config)
         self.client = client
         self.prometheus_definitions = prometheus_definitions
-        self.cache = {}
+        self.cache = dict()
         self.prometheus_update_interval = prometheus_update_interval
         self.is_terminated = is_terminated
 

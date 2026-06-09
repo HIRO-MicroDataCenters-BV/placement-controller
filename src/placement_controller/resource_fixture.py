@@ -172,6 +172,7 @@ class ResourceTestFixture:
                 "ownership": {
                     "state": state,
                     "owner": owner,
+                    "ownerVersion": 1,
                     "placements": [{"node-affinity": None, "zone": placement} for placement in placements],
                 },
                 "conditions": [

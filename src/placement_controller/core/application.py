@@ -14,6 +14,7 @@ class GlobalState(StrEnum):
     RelocationGlobalState = "Relocation"
     FailureGlobalState = "Failure"
     OwnershipTransferGlobalState = "OwnershipTransfer"
+    RemovingGlobalState = "Removing"
 
 
 class PlacementStrategy(StrEnum):
@@ -97,6 +98,7 @@ class AnyApplication:
             raise Exception("Application status missing ownership section.")
 
         ownership["placements"] = [{"zone": zone, "node-affinity": None} for zone in zones]
+        ownership["ownerVersion"] += 1
 
     def get_placement_zones(self) -> List[str]:
         status = self.object.get("status") or {}
@@ -120,6 +122,7 @@ class AnyApplication:
 
         ownership["owner"] = owner
         ownership["epoch"] = ownership.get("epoch", 0) + 1
+        ownership["ownerVersion"] += 1
 
     def get_desired_replica(self) -> int:
         spec = self.get_spec() or {}
@@ -146,3 +149,6 @@ class AnyApplication:
     def fail_if_none(self, value: Any, msg: str) -> None:
         if not value:
             raise Exception(msg)
+
+    def get_resource_version(self) -> Optional[int]:
+        return 0
